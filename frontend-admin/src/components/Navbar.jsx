@@ -1,93 +1,40 @@
-import SearchInput from "@/components/SearchInput";
-import { Link } from "react-router-dom";
-import { Bell, Menu, ShoppingCart } from "lucide-react";
-import EnvioNavbar from "@/components/EnvioNavbar";
+// src/components/Navbar.jsx
+import { useAppContext } from "../context/AppContext";
 
 const Navbar = () => {
+  const { sidebarOpen, setSidebarOpen, navbarTitle } = useAppContext();
   return (
-    <header className="flex sticky top-0 left-0 w-full bg-main-blue z-10">
-      <div className="flex w-full items-center lg:w-15/20 h-14 lg:h-26 gap-6 lg:mx-auto pr-6 pl-4 lg:px-0">
-        {/*Logo*/}
-        <div className="hidden lg:block size-22 aspect-square">
-          <img
-            src="/favicon.svg"
-            alt="Abastecedora Valette"
-            className="aspect-square"
-          />
-        </div>
-        {/*Menu hamburguesa mobile*/}
-        <div className="flex lg:hidden size-10 aspect-square">
-          <button type="button" aria-label="Menu">
-            <Menu className="size-6 stroke-1 text-white" />
-          </button>
-        </div>
-
-        {/*Buscador y links desktop*/}
-        <div className="flex flex-row-reverse lg:flex-col h-fit w-full items-center lg:gap-3">
-          <div className="flex w-full h-fit lg:gap-6">
-            <div className="hidden lg:flex w-full h-fit">
-              <SearchInput />
-            </div>
-            {/*Carrito, Notificaciones y Cuenta*/}
-            <div className="flex w-fit h-fit text-white gap-7 lg:gap-8 items-center ml-auto lg:ml-0">
-              <button
-                type="button"
-                aria-label="Carrito"
-                className="relative mt-2"
-              >
-                <ShoppingCart className="size-6 stroke-1" />
-                <p className="flex size-5 lg:size-5.5 items-center justify-center absolute -top-2 lg:-top-3 -right-2 lg:-right-3 bg-red-500 rounded-full text-xs p-1">
-                  0
-                </p>
-              </button>
-              <button
-                type="button"
-                aria-label="Notificaciones"
-                className="relative mt-2"
-              >
-                <Bell className="size-6 stroke-1" />
-                <p className="flex size-5 lg:size-5.5 items-center justify-center absolute -top-2 lg:-top-3 -right-2 lg:-right-3 bg-red-500 rounded-full text-xs p-1">
-                  10
-                </p>
-              </button>
-              {/*Cuenta desktop*/}
-              <div className="hidden lg:flex size-9 rounded-full bg-white text-neutral-800 items-center justify-center">
-                JN
-              </div>
-            </div>
-          </div>
-
-          {/*Envio y links*/}
-          <div className="flex w-full h-fit items-center lg:gap-6">
-            {/*Envio*/}
-            <div className="hidden lg:block">
-              <EnvioNavbar />
-            </div>
-            {/*Links desktop (oculto en mobile)*/}
-            <nav
-              aria-label="Navegación principal"
-              className="hidden lg:flex w-fit ml-auto gap-4 items-center text-white"
+    <>
+      <header className="sticky top-0 z-20 flex h-18 lg:h-fit items-center justify-between border-b border-gray-200 bg-white px-6 py-4 lg:hidden">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            aria-expanded={sidebarOpen}
+            aria-controls="dashboard-sidebar"
+            onClick={() => setSidebarOpen((v) => !v)}
+            className="cursor-pointer rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 lg:hidden"
+          >
+            <svg
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              className="size-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              <Link to="/categorias" aria-label="Categorías">
-                Categorías
-              </Link>
-              <Link to="/productos" aria-label="Productos">
-                Productos
-              </Link>
-              <Link to="/ofertas" aria-label="Ofertas">
-                Ofertas
-              </Link>
-              <Link to="/sucursales" aria-label="Sucursales">
-                Sucursales
-              </Link>
-              <Link to="/envios" aria-label="Envíos">
-                Envíos
-              </Link>
-            </nav>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+
+          <h1 className="text-lg font-semibold text-gray-900">{navbarTitle}</h1>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 };
 

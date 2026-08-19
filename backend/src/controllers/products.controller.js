@@ -144,7 +144,6 @@ const getProductFromCatalog = async (req, res) => {
 // Crear un nuevo producto
 const createProduct = async (req, res) => {
   const {
-    activo,
     nombre_producto,
     slug,
     especie,
@@ -155,12 +154,11 @@ const createProduct = async (req, res) => {
     calorias,
     grasas,
     imagen_url,
-    destacado,
   } = req.body;
 
   try {
     const result = await pool.query(
-      `INSERT INTO catalogo (nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, activo, destacado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO catalogo (nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         nombre_producto,
         slug,
@@ -172,8 +170,6 @@ const createProduct = async (req, res) => {
         calorias,
         proteinas,
         grasas,
-        activo,
-        destacado,
       ],
     );
 

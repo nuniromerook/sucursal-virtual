@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
 import BasicDropdown from "../components/ui/BasicDropdown";
@@ -7,9 +7,10 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 
+import { API_URL } from "../config/api";
+
 const ProductEditor = () => {
   const [formValues, setFormValues] = useState({
-    activo: true,
     nombre_producto: "",
     slug: "",
     especie: "vacuno",
@@ -20,10 +21,9 @@ const ProductEditor = () => {
     grasas: "",
     imagen_url: "",
     unidad_medida: "kilogramo",
-    destacado: false,
   });
 
-  const { isLoading, setIsLoading, navigate } = useAppContext();
+  const { isLoading, setIsLoading, navigate, setNavbarTitle } = useAppContext();
 
   const itemsEspecie = [
     { value: "vacuno", label: "Vacuno" },
@@ -56,7 +56,7 @@ const ProductEditor = () => {
 
     setIsLoading(true);
 
-    const res = await fetch("http://localhost:3000/products", {
+    const res = await fetch(`${API_URL}/products`, {
       method: "POST",
       body: JSON.stringify(formValues),
       headers: {
@@ -68,6 +68,7 @@ const ProductEditor = () => {
     console.log(data);
 
     setIsLoading(false);
+    navigate("/catalogo");
   };
 
   const handleChange = (e) => {
@@ -79,9 +80,13 @@ const ProductEditor = () => {
     });
   };
 
+  useEffect(() => {
+    setNavbarTitle("Nuevo producto");
+  }, []);
+
   return (
     <>
-      <div className="flex flex-col gap-y-4 lg:gap-y-8 p-2 lg:p-4">
+      <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
         <nav aria-label="Breadcrumb" className="flex items-center h-fit w-full">
           <ol className="flex items-center gap-1 text-sm text-gray-700">
             <li>
@@ -134,47 +139,16 @@ const ProductEditor = () => {
             <h2 className="hidden sm:block text-lg font-bold text-gray-900">
               Información del nuevo producto
             </h2>
-
-            <li className="flex items-center justify-between gap-4 ml-auto">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                Estado:
-                <p
-                  className={`inline-flex items-center justify-center rounded-md px-2.5 py-0.5 text-white ${
-                    formValues.productActive ? "bg-emerald-700" : "bg-red-700"
-                  }`}
-                >
-                  <span className="text-sm whitespace-nowrap">
-                    {formValues.productActive ? "Activo" : "Inactivo"}
-                  </span>
-                </p>
-              </div>
-
-              <label
-                htmlFor="productActive"
-                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full bg-gray-200 transition has-checked:bg-main-blue"
-              >
-                <input
-                  type="checkbox"
-                  id="productActive"
-                  name="productActive"
-                  className="peer sr-only"
-                  checked={formValues.activo}
-                  onChange={handleChange}
-                />
-
-                <span className="size-4 translate-x-1 rounded-full bg-white transition peer-checked:translate-x-6"></span>
-              </label>
-            </li>
           </div>
 
           <div className="flex flex-col mt-6 gap-4">
             <div className="flex flex-col md:flex-row gap-4">
               <Input
                 label="Nombre del producto"
-                id="productName"
-                inputName="productName"
+                id="nombre_producto"
+                inputName="nombre_producto"
                 inputType="text"
-                autoComplete="productName"
+                autoComplete="nombre_producto"
                 placeholder="Bife Ancho"
                 value={formValues.nombre_producto}
                 setOnChange={handleChange}
@@ -182,10 +156,10 @@ const ProductEditor = () => {
 
               <Input
                 label="Slug (URL)"
-                id="productSlug"
-                inputName="productSlug"
+                id="slug"
+                inputName="slug"
                 inputType="text"
-                autoComplete="productSlug"
+                autoComplete="slug"
                 placeholder="bife-ancho"
                 value={formValues.slug}
                 setOnChange={handleChange}
@@ -193,7 +167,7 @@ const ProductEditor = () => {
 
               <BasicDropdown
                 label="Especie:"
-                id="productEspecie"
+                id="especie"
                 items={itemsEspecie}
                 value={formValues.especie}
                 setOnChange={handleChange}
@@ -201,7 +175,7 @@ const ProductEditor = () => {
 
               <BasicDropdown
                 label="Categoría:"
-                id="productCategoria"
+                id="categoria"
                 items={itemsCategoria}
                 value={formValues.categoria}
                 setOnChange={handleChange}
@@ -209,7 +183,7 @@ const ProductEditor = () => {
 
               <BasicDropdown
                 label="Unidad de medida:"
-                id="productUnidadMedida"
+                id="unidad_medida"
                 items={itemsUnidadMedida}
                 value={formValues.unidad_medida}
                 setOnChange={handleChange}
@@ -218,9 +192,9 @@ const ProductEditor = () => {
 
             <TextArea
               label="Descripción del producto"
-              id="productDescription"
-              inputName="productDescription"
-              autoComplete="productDescription"
+              id="descripcion"
+              inputName="descripcion"
+              autoComplete="descripcion"
               placeholder="Agregá una descripción corta"
               classNames={`col-span-2 ${isLoading && "bg-gray-100"}`}
               value={formValues.descripcion}
@@ -230,10 +204,10 @@ const ProductEditor = () => {
             <div className="flex flex-col md:flex-row gap-4">
               <Input
                 label="Proteínas (g) (cada 100gr)"
-                id="productProteins"
-                inputName="productProteins"
+                id="proteinas"
+                inputName="proteinas"
                 inputType="number"
-                autoComplete="productProteins"
+                autoComplete="proteinas"
                 placeholder="20"
                 value={formValues.proteinas}
                 setOnChange={handleChange}
@@ -241,10 +215,10 @@ const ProductEditor = () => {
 
               <Input
                 label="Calorías (kcal) (cada 100gr)"
-                id="productCalories"
-                inputName="productCalories"
+                id="calorias"
+                inputName="calorias"
                 inputType="number"
-                autoComplete="productCalories"
+                autoComplete="calorias"
                 placeholder="205"
                 value={formValues.calorias}
                 setOnChange={handleChange}
@@ -252,44 +226,14 @@ const ProductEditor = () => {
 
               <Input
                 label="Grasas (g) (cada 100gr)"
-                id="productFats"
-                inputName="productFats"
+                id="grasas"
+                inputName="grasas"
                 inputType="number"
-                autoComplete="productFats"
+                autoComplete="grasas"
                 placeholder="13"
                 value={formValues.grasas}
                 setOnChange={handleChange}
               />
-            </div>
-
-            <div>
-              <li className="flex items-center justify-between gap-4 py-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Destacar producto
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Si el producto se marca como destacado, se mostrará con
-                    prioridad en la página principal.
-                  </p>
-                </div>
-
-                <label
-                  htmlFor="productFeatured"
-                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full bg-gray-200 transition has-checked:bg-main-blue"
-                >
-                  <input
-                    type="checkbox"
-                    id="productFeatured"
-                    name="productFeatured"
-                    className="peer sr-only"
-                    checked={formValues.destacado}
-                    onChange={handleChange}
-                  />
-
-                  <span className="size-4 translate-x-1 rounded-full bg-white transition peer-checked:translate-x-6"></span>
-                </label>
-              </li>
             </div>
           </div>
 

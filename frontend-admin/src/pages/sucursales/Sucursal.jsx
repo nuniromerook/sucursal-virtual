@@ -1,66 +1,59 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useAppContext } from "../../context/AppContext";
 
-const Sucursal = ({ sucursalId }) => {
+const NavLinkTab = ({ to, text }) => {
   return (
     <>
-      <div role="tablist" className="flex gap-2">
-        <NavLink
-          to={`/sucursal/${sucursalId}`}
-          role="tab"
-          end
-          aria-selected="true"
-          className={({ isActive }) =>
-            `border-b-2 border-transparent px-4 py-2 text-sm font-medium transition-colors hover:text-gray-700 ${
-              isActive ? "border-b-blue-600 text-blue-600" : "text-gray-600"
-            }`
-          }
-        >
-          Overview
-        </NavLink>
+      <NavLink
+        to={to}
+        role="tab"
+        end
+        aria-selected="true"
+        className={({ isActive }) =>
+          // Añadidos whitespace-nowrap y shrink-0 aquí
+          `whitespace-nowrap py-2 px-4 rounded-t font-medium transition-colors hover:cursor-pointer ${
+            isActive ? "bg-white text-neutral-800" : "text-neutral-700"
+          }`
+        }
+      >
+        {text}
+      </NavLink>
+    </>
+  );
+};
 
-        <NavLink
-          to="stock"
-          role="tab"
-          aria-selected="false"
-          className={({ isActive }) =>
-            `border-b-2 border-transparent px-4 py-2 text-sm font-medium transition-colors hover:text-gray-700 ${
-              isActive ? "border-b-blue-600 text-blue-600" : "text-gray-600"
-            }`
-          }
-        >
-          Stock
-        </NavLink>
+const Sucursal = ({ sucursalId }) => {
+  const { setNavbarTitle } = useAppContext();
 
-        <NavLink
-          to="empleados"
-          role="tab"
-          aria-selected="false"
-          className={({ isActive }) =>
-            `border-b-2 border-transparent px-4 py-2 text-sm font-medium transition-colors hover:text-gray-700 ${
-              isActive ? "border-b-blue-600 text-blue-600" : "text-gray-600"
-            }`
-          }
-        >
-          Empleados
-        </NavLink>
+  useEffect(() => {
+    setNavbarTitle("Sucursal");
+  }, []);
 
-        <NavLink
-          to="informacion"
-          role="tab"
-          aria-selected="false"
-          className={({ isActive }) =>
-            `border-b-2 border-transparent px-4 py-2 text-sm font-medium transition-colors hover:text-gray-700 ${
-              isActive ? "border-b-blue-600 text-blue-600" : "text-gray-600"
-            }`
-          }
+  return (
+    <>
+      <div className="flex flex-col">
+        <div
+          role="tablist"
+          className="sticky top-18 z-20 flex max-w-screen overflow-x-auto lg:top-0 bg-white scrollbar-none"
         >
-          Información
-        </NavLink>
-      </div>
+          <div className="flex bg-neutral-100 px-4 pt-3 gap-3 lg:w-full">
+            <NavLinkTab
+              to={`/sucursal/${sucursalId}`}
+              text="Información general"
+            />
 
-      <div role="tabpanel" className="mt-4">
-        <Outlet />
+            <NavLinkTab to="stock" text="Stock" />
+
+            <NavLinkTab to="empleados" text="Empleados" />
+
+            <NavLinkTab to="informacion" text="Propiedades" />
+          </div>
+        </div>
+
+        <div role="tabpanel" className="flex-1 p-4">
+          <Outlet />
+        </div>
       </div>
     </>
   );
