@@ -8,6 +8,7 @@ export function AppContextProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [navbarTitle, setNavbarTitle] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [breadcrumbExtra, setBreadcrumbExtra] = useState({});
 
   return (
     <AppContext.Provider
@@ -19,6 +20,8 @@ export function AppContextProvider({ children }) {
         setNavbarTitle,
         sidebarOpen,
         setSidebarOpen,
+        breadcrumbExtra,
+        setBreadcrumbExtra,
       }}
     >
       {children}

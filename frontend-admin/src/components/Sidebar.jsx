@@ -2,14 +2,27 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import {
+  ChevronDown,
+  Home,
+  List,
+  Plus,
+  ShoppingCart,
+  Store,
+  User,
+} from "lucide-react";
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
+  const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-600";
 
-  const closeSidebar = () => setSidebarOpen(false);
+  const closeSidebar = () => {
+    window.scroll({ top: 0, left: 0, behavior: "smooth" });
+    setSidebarOpen(false);
+  };
 
   const linkClassName = ({ isActive }) =>
-    `block rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+    `block rounded-lg px-4 py-2 text-sm font-medium transition-colors flex gap-x-2 items-center text-gray-700 ${
       isActive
         ? "bg-gray-100 text-gray-900"
         : "hover:bg-gray-100 hover:text-gray-900"
@@ -27,11 +40,11 @@ const Sidebar = () => {
 
       <div
         id="dashboard-sidebar"
-        className={`fixed inset-y-0 start-0 z-40 flex w-64 flex-col justify-between overflow-y-auto border-e border-gray-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 ${
+        className={`fixed inset-y-0 start-0 z-40 flex w-64 flex-col justify-between overflow-y-auto border-e border-gray-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 select-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="px-4 py-2">
+        <div className="p-2">
           <img
             src="/favicon.svg"
             alt=""
@@ -42,29 +55,18 @@ const Sidebar = () => {
           <ul className="mt-8 space-y-1">
             <li>
               <NavLink to="/" onClick={closeSidebar} className={linkClassName}>
-                Inicio
+                <Home className={iconStyle} /> Inicio
               </NavLink>
             </li>
 
             <li>
               <details className="group [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  Sucursales
-                  <span className="shrink-0 transition duration-300 group-open:-rotate-180">
-                    <svg
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="size-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
+                  <p className="flex items-center gap-x-2">
+                    <Store className={iconStyle} />
+                    Sucursales
+                  </p>
+                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
                 </summary>
 
                 <ul className="mt-2 space-y-1 px-4">
@@ -84,7 +86,7 @@ const Sidebar = () => {
                       onClick={closeSidebar}
                       className={linkClassName}
                     >
-                      + Agregar Sucursal
+                      <Plus className={iconStyle} /> Agregar Sucursal
                     </NavLink>
                   </li>
                 </ul>
@@ -94,22 +96,11 @@ const Sidebar = () => {
             <li>
               <details className="group [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  Catálogo de productos
-                  <span className="shrink-0 transition duration-300 group-open:-rotate-180">
-                    <svg
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="size-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
+                  <p className="flex items-center gap-x-2">
+                    <List className={iconStyle} />
+                    Catálogo
+                  </p>
+                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
                 </summary>
 
                 <ul className="mt-2 space-y-1 px-4">
@@ -129,7 +120,7 @@ const Sidebar = () => {
                       onClick={closeSidebar}
                       className={linkClassName}
                     >
-                      + Nuevo producto
+                      <Plus className={iconStyle} /> Nuevo producto
                     </NavLink>
                   </li>
                 </ul>
@@ -139,22 +130,11 @@ const Sidebar = () => {
             <li>
               <details className="group [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  Pedidos
-                  <span className="shrink-0 transition duration-300 group-open:-rotate-180">
-                    <svg
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="size-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
+                  <p className="flex items-center gap-x-2">
+                    <ShoppingCart className={iconStyle} />
+                    Pedidos
+                  </p>
+                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
                 </summary>
 
                 <ul className="mt-2 space-y-1 px-4">
@@ -164,6 +144,7 @@ const Sidebar = () => {
                       onClick={closeSidebar}
                       className={linkClassName}
                     >
+                      <Plus className={iconStyle} />
                       Nuevo pedido
                     </NavLink>
                   </li>
@@ -187,6 +168,7 @@ const Sidebar = () => {
                 onClick={closeSidebar}
                 className={linkClassName}
               >
+                <User className={iconStyle} />
                 Gestionar Usuarios
               </NavLink>
             </li>

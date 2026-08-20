@@ -5,10 +5,10 @@ import EnvioNavbar from "@/components/EnvioNavbar";
 
 const Navbar = () => {
   return (
-    <header className="flex sticky top-0 left-0 w-full bg-main-blue z-10">
+    <header className="flex sticky top-0 left-0 w-full bg-main-blue z-100">
       <div className="flex w-full items-center lg:w-15/20 h-14 lg:h-26 gap-6 lg:mx-auto pr-6 pl-4 lg:px-0">
         {/*Logo*/}
-        <div className="hidden lg:block size-22 aspect-square">
+        <div className="hidden lg:block size-25 aspect-square">
           <img
             src="/favicon.svg"
             alt="Abastecedora Valette"

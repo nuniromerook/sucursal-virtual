@@ -24,15 +24,16 @@ const NavLinkTab = ({ to, text }) => {
 };
 
 const Sucursal = ({ sucursalId }) => {
-  const { setNavbarTitle } = useAppContext();
+  const { setNavbarTitle, setBreadcrumbExtra } = useAppContext();
 
   useEffect(() => {
     setNavbarTitle("Sucursal");
+    setBreadcrumbExtra({ sucursalName: "Luis Guillon" });
   }, []);
 
   return (
     <>
-      <div className="flex flex-col">
+      <div className="flex flex-col bg-white h-full">
         <div
           role="tablist"
           className="sticky top-18 z-20 flex max-w-screen overflow-x-auto lg:top-0 bg-white scrollbar-none"

@@ -87,45 +87,6 @@ const ProductEditor = () => {
   return (
     <>
       <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
-        <nav aria-label="Breadcrumb" className="flex items-center h-fit w-full">
-          <ol className="flex items-center gap-1 text-sm text-gray-700">
-            <li>
-              <Link
-                to="/"
-                className="block transition-colors hover:text-gray-900"
-              >
-                Inicio
-              </Link>
-            </li>
-
-            <li>
-              <ChevronRight className="stroke-1 shrink-0 text-neutral-700 size-5" />
-            </li>
-
-            <li>
-              <Link
-                to="/catalogo"
-                className="block transition-colors hover:text-gray-900"
-              >
-                Catálogo
-              </Link>
-            </li>
-
-            <li>
-              <ChevronRight className="stroke-1 shrink-0 text-neutral-700 size-5" />
-            </li>
-
-            <li>
-              <Link
-                to="/catalogo/nuevo-producto"
-                className="block transition-colors hover:text-gray-900"
-              >
-                Nuevo producto
-              </Link>
-            </li>
-          </ol>
-        </nav>
-
         <h1 className="text-2xl font-bold text-gray-900">
           Nuevo producto - ID: #1
         </h1>
@@ -135,13 +96,7 @@ const ProductEditor = () => {
           className="rounded-lg border border-gray-200 bg-white p-6"
           onSubmit={handleSubmit}
         >
-          <div className="flex items-center w-full justify-between">
-            <h2 className="hidden sm:block text-lg font-bold text-gray-900">
-              Información del nuevo producto
-            </h2>
-          </div>
-
-          <div className="flex flex-col mt-6 gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row gap-4">
               <Input
                 label="Nombre del producto"
