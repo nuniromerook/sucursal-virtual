@@ -165,7 +165,7 @@ export default function Example() {
                   <fieldset aria-label="Elegir paquete" className="mt-4">
                     <div className="grid grid-cols-4 lg:grid-cols-5 gap-3">
                       {product.paquetes.map((paquete) => (
-                        <button
+                        <label
                           key={paquete.id}
                           aria-label={paquete.value}
                           type="button"
@@ -185,7 +185,7 @@ export default function Example() {
                           <span className="text-sm font-medium text-gray-900 group-has-checked:text-white">
                             {paquete.value} kg
                           </span>
-                        </button>
+                        </label>
                       ))}
                     </div>
                   </fieldset>

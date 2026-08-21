@@ -1,7 +1,8 @@
 // src/components/Sidebar.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { API_URL } from "../config/api";
 import {
   ChevronDown,
   Home,
@@ -14,12 +15,28 @@ import {
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
+  const [sucursales, setSucursales] = useState([]);
   const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-600";
 
   const closeSidebar = () => {
     window.scroll({ top: 0, left: 0, behavior: "smooth" });
     setSidebarOpen(false);
   };
+
+  useEffect(() => {
+    const loadSucursales = async () => {
+      try {
+        const res = await fetch(`${API_URL}/sucursales`);
+        const data = await res.json();
+
+        setSucursales(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadSucursales();
+  }, []);
 
   const linkClassName = ({ isActive }) =>
     `block rounded-lg px-4 py-2 text-sm font-medium transition-colors flex gap-x-2 items-center text-gray-700 ${
@@ -70,19 +87,21 @@ const Sidebar = () => {
                 </summary>
 
                 <ul className="mt-2 space-y-1 px-4">
-                  <li>
-                    <NavLink
-                      to="/sucursal/luis-guillon"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      Luis Guillon
-                    </NavLink>
-                  </li>
+                  {sucursales.map((sucursal) => (
+                    <li key={sucursal.id}>
+                      <NavLink
+                        to={`/sucursal/${sucursal.slug}`}
+                        onClick={closeSidebar}
+                        className={linkClassName}
+                      >
+                        {sucursal.nombre}
+                      </NavLink>
+                    </li>
+                  ))}
 
                   <li>
                     <NavLink
-                      to="/"
+                      to="/sucursales/nueva"
                       onClick={closeSidebar}
                       className={linkClassName}
                     >

@@ -11,7 +11,7 @@ const DUMMY_IMAGE =
 // TODO: reemplazar por datos reales de inventario/paquetes por sucursal
 // una vez que el endpoint de stock esté listo. Determinístico por id de
 // producto para que no cambie en cada render.
-const SUCURSALES_DUMMY = ["Luis Guillon", "Moreno"];
+const SUCURSALES_DUMMY = ["Luis Guillon"];
 
 const getStockPorSucursalDummy = (product) => {
   return SUCURSALES_DUMMY.map((sucursal, index) => {

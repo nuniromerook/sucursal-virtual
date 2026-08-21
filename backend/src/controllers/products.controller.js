@@ -2,8 +2,7 @@
 const pool = require("../db");
 
 // GET /products
-// Listado general de productos (sin sucursal)
-// Solo devuelve productos activos del catálogo
+// Listado general de productos (sin sucursal) — todo el catálogo
 const getAllProducts = async (req, res) => {
   try {
     const result = await pool.query(
@@ -43,7 +42,6 @@ const getProducts = async (req, res) => {
          JOIN inventario i ON c.id = i.catalogo_id
          LEFT JOIN paquetes p ON p.inventario_id = i.id
          WHERE i.sucursal_id = $1
-           AND c.activo = true
          GROUP BY c.id, i.id
          ORDER BY c.nombre_producto`,
       [sucursal_id],
@@ -84,15 +82,14 @@ const getProduct = async (req, res) => {
          c.unidad_medida,
          c.calorias,
          c.proteinas,
-         c.grasas_totales,
+         c.grasas,
          i.id AS inventario_id,
          i.precio_por_kg,
          i.precio_anterior
        FROM catalogo c
        JOIN inventario i ON c.id = i.catalogo_id
        WHERE c.id = $1
-         AND i.sucursal_id = $2
-         AND c.activo = true`,
+         AND i.sucursal_id = $2`,
       [id, sucursal_id],
     );
 

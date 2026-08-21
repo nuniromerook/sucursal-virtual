@@ -10,6 +10,7 @@ import Stock from "@/pages/sucursales/sucursal-data/Stock";
 import Informacion from "@/pages/sucursales/sucursal-data/Info";
 import Empleados from "@/pages/sucursales/sucursal-data/Empleados";
 import Catalogo from "./pages/Catalogo";
+import SucursalEditor from "./pages/sucursales/SucursalEditor";
 
 function App() {
   return (
@@ -25,9 +26,11 @@ function App() {
           <Route path="/sucursal/:id" element={<Sucursal />}>
             <Route index element={<Overview />} />
             <Route path="stock" element={<Stock />} />
-            <Route path="informacion" element={<Informacion />} />
+            <Route path="ajustes" element={<Informacion />} />
             <Route path="empleados" element={<Empleados />} />
           </Route>
+          <Route path="/sucursales/nueva" element={<SucursalEditor />} />
+          <Route path="/sucursales/editar/:id" element={<SucursalEditor />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

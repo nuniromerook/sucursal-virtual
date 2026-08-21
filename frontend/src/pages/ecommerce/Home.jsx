@@ -79,7 +79,7 @@ export default function Home() {
       </div>
 
       {/* SECCIÓN DE PRODUCTOS DESTACADOS */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
           Productos destacados
         </h2>
@@ -94,7 +94,7 @@ export default function Home() {
       </section>
 
       {/* SECCIÓN DE CATEGORÍAS */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight text-gray-900">
             Categorías
@@ -107,7 +107,7 @@ export default function Home() {
             <a
               key={index}
               href={`/categoria/${category.nameId?.toLowerCase() || ""}`}
-              className="group relative flex aspect-4/3 sm:aspect-square w-full overflow-hidden rounded-md bg-gray-100 shadow-sm transition-all hover:shadow-md"
+              className="group relative flex aspect-4/3 sm:aspect-video w-full overflow-hidden rounded-md bg-gray-100 shadow-sm transition-all hover:shadow-md"
             >
               {/* Imagen de fondo */}
               <img

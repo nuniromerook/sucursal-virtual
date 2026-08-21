@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation, matchPath } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
 
 /**
  * Breadcrumb dinámico basado en la ruta actual.
@@ -42,6 +42,7 @@ const Breadcrumb = ({
   return (
     <nav aria-label="Breadcrumb">
       <ol className="flex flex-wrap items-center gap-1 p-4">
+        <Home className="size-4 shrink-0 text-gray-900 mx-1" />
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
 

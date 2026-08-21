@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import Footer from "../components/Footer";
 
 export default function ecomLayout() {
   return (
@@ -8,6 +9,7 @@ export default function ecomLayout() {
       <Navbar />
       {/* will either be <Home/> or <Settings/> */}
       <Outlet />
+      <Footer />
     </div>
   );
 }

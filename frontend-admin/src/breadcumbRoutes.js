@@ -35,6 +35,51 @@ export const ADMIN_BREADCRUMB_ROUTES = [
     ],
   },
   {
+    path: "/sucursal/:id/stock",
+    crumbs: ({ extra }) => [
+      { name: "Sucursal", href: "/sucursales" },
+      {
+        name: extra.sucursalName ? `${extra.sucursalName}` : "Sucursal",
+      },
+      { name: "Stock" },
+    ],
+  },
+  {
+    path: "/sucursal/:id/empleados",
+    crumbs: ({ extra }) => [
+      { name: "Sucursal", href: "/sucursales" },
+      {
+        name: extra.sucursalName ? `${extra.sucursalName}` : "Sucursal",
+      },
+      { name: "Empleados" },
+    ],
+  },
+  {
+    path: "/sucursal/:id/ajustes",
+    crumbs: ({ extra }) => [
+      { name: "Sucursal", href: "/sucursales" },
+      {
+        name: extra.sucursalName ? `${extra.sucursalName}` : "Sucursal",
+      },
+      { name: "Ajustes" },
+    ],
+  },
+  {
+    path: "/sucursales/nueva",
+    crumbs: () => [{ name: "Sucursales" }, { name: "Nueva sucursal" }],
+  },
+  {
+    path: "/sucursales/editar/:id",
+    crumbs: ({ extra }) => [
+      { name: "Sucursales" },
+      {
+        name: extra.sucursalName ? `${extra.sucursalName}` : "Sucursal",
+        href: `/sucursal/${extra.slug}`,
+      },
+      { name: "Editar sucursal" },
+    ],
+  },
+  {
     path: "/nuevo-pedido",
     crumbs: () => [{ name: "Nuevo pedido" }],
   },
