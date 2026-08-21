@@ -3,13 +3,13 @@ import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { API_URL } from "../../config/api";
 
-const NavLinkTab = ({ to, text }) => {
+const NavLinkTab = ({ to, text, end }) => {
   return (
     <>
       <NavLink
         to={to}
         role="tab"
-        end
+        end={end}
         aria-selected="true"
         className={({ isActive }) =>
           // Añadidos whitespace-nowrap y shrink-0 aquí
@@ -29,7 +29,7 @@ const NavLinkTab = ({ to, text }) => {
 const Sucursal = () => {
   // El segmento :id de la ruta "/sucursal/:id" en realidad contiene el
   // slug (ej: "luis-guillon"), igual que ya hacíamos con productos.
-  const { id: sucursalSlug } = useParams();
+  const { slug: sucursalSlug } = useParams();
   const { setNavbarTitle, setBreadcrumbExtra } = useAppContext();
   const [sucursal, setSucursal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +48,9 @@ const Sucursal = () => {
 
         setSucursal(data);
         setNavbarTitle(data.nombre);
-        setBreadcrumbExtra({ sucursalName: data.nombre });
+        setBreadcrumbExtra({
+          sucursalName: data.nombre,
+        });
       } catch (error) {
         console.error(error);
       } finally {
@@ -72,13 +74,14 @@ const Sucursal = () => {
             <NavLinkTab
               to={`/sucursal/${sucursalSlug}`}
               text="Información general"
+              end={true}
             />
 
-            <NavLinkTab to="stock" text="Stock" />
+            <NavLinkTab to="stock" text="Stock" end={false} />
 
-            <NavLinkTab to="empleados" text="Empleados" />
+            <NavLinkTab to="empleados" text="Empleados" end={true} />
 
-            <NavLinkTab to="ajustes" text="Ajustes" />
+            <NavLinkTab to="ajustes" text="Ajustes" end={true} />
             <div className="flex w-full border-b border-b-neutral-300" />
           </div>
         </div>

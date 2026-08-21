@@ -45,6 +45,17 @@ export const ADMIN_BREADCRUMB_ROUTES = [
     ],
   },
   {
+    path: "/sucursal/:id/stock/:catalogoProducto/paquetes",
+    crumbs: ({ extra }) => [
+      { name: "Sucursal", href: "/sucursales" },
+      {
+        name: extra.sucursalName ? `${extra.sucursalName}` : "Sucursal",
+      },
+      { name: "Stock" },
+      { name: `${extra.productName}` },
+    ],
+  },
+  {
     path: "/sucursal/:id/empleados",
     crumbs: ({ extra }) => [
       { name: "Sucursal", href: "/sucursales" },

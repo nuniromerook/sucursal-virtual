@@ -55,6 +55,7 @@ const getProducts = async (req, res) => {
 
     res.json(productos);
   } catch (error) {
+    console.log(error.message);
     res.json({ error: "Error al obtener productos" });
   }
 };

@@ -1,56 +1,63 @@
-import React from "react";
+// frontend/src/pages/ecommerce/Home.jsx
+import React, { useEffect, useState } from "react";
 import EnvioNavbar from "../../components/EnvioNavbar";
 import SearchInput from "../../components/SearchInput";
 import { categories } from "../../assets/assets.js";
 import ProductCard from "../../components/ProductCard.jsx";
+import { API_URL } from "../../config/api.js";
 
 export default function Home() {
-  const products = [
-    {
-      id: 1,
-      name: "Asado de Tira",
-      slug: "asado-de-tira",
-      imageSrc:
-        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
-      imageAlt: "Asado de tira vacuno",
-      price: 8500,
-      previousPrice: 10200, // nuevo — opcional, si no existe no se muestra el badge de descuento
-      earnsPoints: true, // nuevo — opcional
-      points: 10,
-      isFavorite: false, // nuevo — opcional, estado inicial (después vendría del backend según usuario)
-      unidad_medida: "Kg",
-      stockFrom: 1.2,
-    },
-    {
-      id: 2,
-      name: "Pechuga de Pollo",
-      slug: "pechuga-de-pollo",
-      imageSrc:
-        "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=800",
-      imageAlt: "Pechuga de pollo fresca",
-      price: 4200,
-      earnsPoints: true,
-      points: 15,
-      isFavorite: true,
-      unidad_medida: "Kg",
-      stockFrom: 0.9,
-    },
-    {
-      id: 3,
-      name: "Vacío de Ternera",
-      slug: "vacio-de-ternera",
-      imageSrc:
-        "https://dcdn-us.mitiendanube.com/stores/002/558/768/products/ingredientes-del-vacio-de-ternera-a-la-plancha1-6c82cdd03849e7fc6a16908073107018-480-0.webp",
-      imageAlt: "Vacío de ternera",
-      price: 17200,
-      previousPrice: 19200,
-      earnsPoints: true,
-      points: 20,
-      isFavorite: false,
-      unidad_medida: "Kg",
-      stockFrom: 2.1,
-    },
-  ];
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        // 1. Verificá si la URL requiere /api/productos o /productos según tu backend
+        const res = await fetch(`${API_URL}/products`);
+
+        if (!res.ok) {
+          throw new Error(
+            `Error en la petición: ${res.status} ${res.statusText}`,
+          );
+        }
+
+        const data = await res.json();
+
+        // 2. Extrae el array ya sea que venga directo o envuelto en una propiedad
+        const rawList = Array.isArray(data)
+          ? data
+          : data.productos || data.products || data.data || [];
+
+        const mappedProducts = rawList.map((item) => ({
+          id: item.id,
+          name: item.nombre_producto || item.nombre,
+          slug: item.slug,
+          imageSrc:
+            item.imagen_url ||
+            "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
+          imageAlt: item.nombre_producto || item.nombre,
+          price: Number(item.precio_por_kg || item.precio || 0),
+          previousPrice: item.precio_anterior
+            ? Number(item.precio_anterior)
+            : null,
+          earnsPoints: Boolean(item.puntos),
+          points: item.puntos || 10,
+          isFavorite: Boolean(item.isFavorite),
+          unidad_medida: item.unidad_medida || "Kg",
+          stockFrom: item.min_peso ? Number(item.min_peso) : 0.5,
+        }));
+
+        setProducts(mappedProducts);
+      } catch (error) {
+        console.error("Error al obtener los productos:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProductos();
+  }, []);
 
   return (
     <div className="w-full bg-gray-50/50 min-h-screen">
@@ -84,13 +91,25 @@ export default function Home() {
           Productos destacados
         </h2>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
-          {products.map((product) => (
-            <div key={product.id}>
-              <ProductCard product={product} />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="animate-pulse flex flex-col gap-3">
+                <div className="bg-gray-200 aspect-square rounded-md w-full" />
+                <div className="bg-gray-200 h-4 rounded w-3/4" />
+                <div className="bg-gray-200 h-4 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+            {products.map((product) => (
+              <div key={product.id}>
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* SECCIÓN DE CATEGORÍAS */}
@@ -101,7 +120,6 @@ export default function Home() {
           </h2>
         </div>
 
-        {/* Grid consistente con productos */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 lg:gap-6">
           {categories.map((category, index) => (
             <a
@@ -109,17 +127,12 @@ export default function Home() {
               href={`/categoria/${category.nameId?.toLowerCase() || ""}`}
               className="group relative flex aspect-4/3 sm:aspect-video w-full overflow-hidden rounded-md bg-gray-100 shadow-sm transition-all hover:shadow-md"
             >
-              {/* Imagen de fondo */}
               <img
                 src={category.image}
                 alt={category.name || category.nameId}
                 className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
               />
-
-              {/* Sombra gradual solo en la parte inferior */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-              {/* Nombre de la categoría */}
               <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col justify-end">
                 <span className="text-base sm:text-lg font-bold text-white uppercase tracking-wide group-hover:text-blue-200 transition-colors">
                   {category.nameId || category.name}

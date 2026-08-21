@@ -148,9 +148,64 @@ const createPaquete = async (req, res) => {
   }
 };
 
+// PUT /inventario/precio
+// Actualiza el precio global del producto en la sucursal (afecta el cálculo de todo el stock)
+const updatePrecioInventario = async (req, res) => {
+  const { inventario_id, precio_por_kg, precio_anterior } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE inventario 
+       SET precio_por_kg = $1, precio_anterior = $2 
+       WHERE id = $3 RETURNING *`,
+      [precio_por_kg, precio_anterior, inventario_id],
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: "Error al actualizar precio" });
+  }
+};
+
+// DELETE /paquetes/:id
+// Elimina un paquete de la base de datos
+const deletePaquete = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(`DELETE FROM paquetes WHERE id = $1`, [id]);
+    res.json({ message: "Paquete eliminado exitosamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error al eliminar paquete" });
+  }
+};
+
+// PUT /paquetes/:id
+// Edita un paquete existente (peso o estado)
+const updatePaquete = async (req, res) => {
+  const { id } = req.params;
+  const { peso, estado } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE paquetes 
+       SET peso = $1, estado = $2 
+       WHERE id = $3 RETURNING *`,
+      [peso, estado, id],
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: "Error al actualizar paquete" });
+  }
+};
+
 module.exports = {
   getResumenSucursal,
   getStockSucursal,
   createInventario,
   createPaquete,
+  updatePrecioInventario,
+  deletePaquete,
+  updatePaquete,
 };

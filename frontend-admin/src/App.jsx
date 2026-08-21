@@ -11,6 +11,7 @@ import Informacion from "@/pages/sucursales/sucursal-data/Info";
 import Empleados from "@/pages/sucursales/sucursal-data/Empleados";
 import Catalogo from "./pages/Catalogo";
 import SucursalEditor from "./pages/sucursales/SucursalEditor";
+import GestionPaquetes from "./pages/sucursales/sucursal-data/GestionPaquetes";
 
 function App() {
   return (
@@ -23,12 +24,20 @@ function App() {
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/catalogo/editar/:id" element={<ProductEditor />} />
           <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
-          <Route path="/sucursal/:id" element={<Sucursal />}>
+
+          {/* Cambiado :id a :slug para que coincida con useParams() en los componentes */}
+          <Route path="/sucursal/:slug" element={<Sucursal />}>
             <Route index element={<Overview />} />
             <Route path="stock" element={<Stock />} />
+            {/* Ruta relativa para el gestor de paquetes de un producto específico */}
+            <Route
+              path="stock/:catalogoProducto/paquetes"
+              element={<GestionPaquetes />}
+            />
             <Route path="ajustes" element={<Informacion />} />
             <Route path="empleados" element={<Empleados />} />
           </Route>
+
           <Route path="/sucursales/nueva" element={<SucursalEditor />} />
           <Route path="/sucursales/editar/:id" element={<SucursalEditor />} />
         </Route>
