@@ -1,8 +1,7 @@
-// src/controllers/inventario.controller.js
+// backend/src/controllers/inventario.controller.js
 const pool = require("../db");
 
 // GET /inventario/resumen?sucursal_id=1
-// Números clave para el Overview de la sucursal
 const getResumenSucursal = async (req, res) => {
   const { sucursal_id } = req.query;
 
@@ -26,8 +25,6 @@ const getResumenSucursal = async (req, res) => {
       `SELECT COUNT(*) AS total FROM catalogo`,
     );
 
-    // Productos que ya tienen precio cargado en esta sucursal pero
-    // ningún paquete disponible ahora mismo (hay que reponer)
     const sinStockResult = await pool.query(
       `SELECT COUNT(*) AS total
        FROM inventario i
@@ -55,9 +52,6 @@ const getResumenSucursal = async (req, res) => {
 };
 
 // GET /inventario?sucursal_id=1
-// TODO el catálogo, con el precio y los paquetes que tenga cargados en esta
-// sucursal puntual. Si un producto todavía no se cargó acá, inventario_id
-// viene null — así el front sabe que hay que darlo de alta primero.
 const getStockSucursal = async (req, res) => {
   const { sucursal_id } = req.query;
 
@@ -75,7 +69,11 @@ const getStockSucursal = async (req, res) => {
          c.unidad_medida,
          i.id AS inventario_id,
          i.precio_por_kg,
-         i.precio_anterior
+         i.precio_anterior,
+         i.destacado,
+         i.gana_puntos,
+         i.puntos,
+         i.activo
        FROM catalogo c
        LEFT JOIN inventario i
          ON i.catalogo_id = c.id AND i.sucursal_id = $1
@@ -94,6 +92,10 @@ const getStockSucursal = async (req, res) => {
 
     const productos = productosResult.rows.map((producto) => ({
       ...producto,
+      destacado: Boolean(producto.destacado),
+      gana_puntos: Boolean(producto.gana_puntos),
+      puntos: Number(producto.puntos) || 0,
+      activo: producto.activo !== false,
       paquetes: paquetesResult.rows.filter(
         (paquete) => paquete.inventario_id === producto.inventario_id,
       ),
@@ -107,29 +109,94 @@ const getStockSucursal = async (req, res) => {
 };
 
 // POST /inventario
-// Da de alta el precio de un producto del catálogo en una sucursal puntual.
-// Paso obligatorio antes de poder cargarle paquetes ahí.
 const createInventario = async (req, res) => {
-  const { catalogo_id, sucursal_id, precio_por_kg } = req.body;
+  const {
+    catalogo_id,
+    sucursal_id,
+    precio_por_kg,
+    precio_anterior = null,
+    destacado = false,
+    gana_puntos = false,
+    puntos = 0,
+    activo = true,
+  } = req.body;
 
   try {
     const result = await pool.query(
-      `INSERT INTO inventario (catalogo_id, sucursal_id, precio_por_kg)
-       VALUES ($1, $2, $3)
+      `INSERT INTO inventario (
+         catalogo_id, 
+         sucursal_id, 
+         precio_por_kg, 
+         precio_anterior, 
+         destacado, 
+         gana_puntos, 
+         puntos, 
+         activo
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [catalogo_id, sucursal_id, precio_por_kg],
+      [
+        catalogo_id,
+        sucursal_id,
+        precio_por_kg,
+        precio_anterior,
+        destacado,
+        gana_puntos,
+        puntos,
+        activo,
+      ],
     );
 
     res.json(result.rows[0]);
   } catch (error) {
     console.log(error.message);
-    res.json({ error: "Error al cargar el precio en esta sucursal" });
+    res.json({ error: "Error al cargar la configuración en esta sucursal" });
+  }
+};
+
+// PUT /inventario/precio
+const updatePrecioInventario = async (req, res) => {
+  const {
+    inventario_id,
+    precio_por_kg,
+    precio_anterior,
+    destacado,
+    gana_puntos,
+    puntos,
+    activo,
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE inventario 
+       SET precio_por_kg = $1, 
+           precio_anterior = $2,
+           destacado = $3,
+           gana_puntos = $4,
+           puntos = $5,
+           activo = $6
+       WHERE id = $7 RETURNING *`,
+      [
+        precio_por_kg,
+        precio_anterior,
+        destacado,
+        gana_puntos,
+        puntos,
+        activo,
+        inventario_id,
+      ],
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.log(error.message);
+    res
+      .status(500)
+      .json({ error: "Error al actualizar la configuración del inventario" });
   }
 };
 
 // POST /paquetes
-// Agrega un paquete cerrado (peso + precio final) al stock de un producto
-// ya cargado en una sucursal.
 const createPaquete = async (req, res) => {
   const { inventario_id, peso, precio_final } = req.body;
 
@@ -148,27 +215,7 @@ const createPaquete = async (req, res) => {
   }
 };
 
-// PUT /inventario/precio
-// Actualiza el precio global del producto en la sucursal (afecta el cálculo de todo el stock)
-const updatePrecioInventario = async (req, res) => {
-  const { inventario_id, precio_por_kg, precio_anterior } = req.body;
-
-  try {
-    const result = await pool.query(
-      `UPDATE inventario 
-       SET precio_por_kg = $1, precio_anterior = $2 
-       WHERE id = $3 RETURNING *`,
-      [precio_por_kg, precio_anterior, inventario_id],
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: "Error al actualizar precio" });
-  }
-};
-
 // DELETE /paquetes/:id
-// Elimina un paquete de la base de datos
 const deletePaquete = async (req, res) => {
   const { id } = req.params;
 
@@ -181,7 +228,6 @@ const deletePaquete = async (req, res) => {
 };
 
 // PUT /paquetes/:id
-// Edita un paquete existente (peso o estado)
 const updatePaquete = async (req, res) => {
   const { id } = req.params;
   const { peso, estado } = req.body;

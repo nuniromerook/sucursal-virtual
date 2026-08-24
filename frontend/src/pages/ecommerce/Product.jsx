@@ -1,10 +1,14 @@
+// frontend/src/pages/ecommerce/Product.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ChevronRight, Info, ShoppingBag } from "lucide-react";
 import { API_URL } from "../../config/api";
+import { formatPrecio, formatCantidad } from "../../utils/formatters";
 
 export default function Product() {
-  const { slug } = useParams();
+  // Desestructuramos los parámetros definidos en App.jsx (:categoria/:especie/:slug)
+  const { categoria, especie, slug } = useParams();
+
   const [productData, setProductData] = useState(null);
   const [selectedPresentacion, setSelectedPresentacion] = useState(null);
   const [selectedPaquete, setSelectedPaquete] = useState(null);
@@ -16,18 +20,17 @@ export default function Product() {
       setIsLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${API_URL}/productos/${slug}`);
+        // Consultamos la API enviando el slug del producto
+        const res = await fetch(`${API_URL}/products/${slug}?sucursal_id=1`);
         if (!res.ok) throw new Error("Producto no encontrado");
 
         const data = await res.json();
         setProductData(data);
 
-        // Seleccionar por defecto la primera presentación si existe
         if (data.presentaciones && data.presentaciones.length > 0) {
           setSelectedPresentacion(data.presentaciones[0]);
         }
 
-        // Seleccionar por defecto el primer paquete disponible
         const paquetesDisponibles = data.paquetes?.filter(
           (p) => !p.reservado && p.estado !== "reservado",
         );
@@ -84,12 +87,20 @@ export default function Product() {
     unidad_medida = "kg",
   } = productData;
 
+  // Reemplaza los guiones por espacios para mostrar nombres limpios en el Breadcrumb
+  const formatBreadcrumb = (str) => (str ? str.replace(/-/g, " ") : "");
+
   const breadcrumbs = [
     { id: 1, name: "Inicio", href: "/" },
     {
       id: 2,
-      name: categoria_nombre || "Productos",
-      href: `/categoria/${(categoria_nombre || "general").toLowerCase()}`,
+      name: formatBreadcrumb(categoria) || categoria_nombre || "Categoría",
+      href: `/${categoria || "general"}`,
+    },
+    {
+      id: 3,
+      name: formatBreadcrumb(especie) || "Especie",
+      href: `/${categoria || "general"}/${especie || "general"}`,
     },
   ];
 
@@ -98,16 +109,16 @@ export default function Product() {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="flex flex-col pt-6 lg:max-w-7xl gap-4 p-4 mx-auto">
-        {/* Breadcrumb */}
+      <div className="flex flex-col pt-6 lg:max-w-6xl gap-4 p-4 mx-auto">
+        {/* Breadcrumb dinámico */}
         <nav aria-label="Breadcrumb">
-          <ol role="list" className="flex items-center">
+          <ol role="list" className="flex items-center flex-wrap gap-y-1">
             {breadcrumbs.map((breadcrumb) => (
               <li key={breadcrumb.id}>
                 <div className="flex items-center">
                   <Link
                     to={breadcrumb.href}
-                    className="text-sm lg:text-base font-medium text-gray-900 hover:text-main-blue"
+                    className="text-sm lg:text-base font-medium text-gray-900 hover:text-main-blue capitalize"
                   >
                     {breadcrumb.name}
                   </Link>
@@ -147,13 +158,12 @@ export default function Product() {
 
                   <div className="flex items-baseline gap-3 mt-2">
                     <p className="text-3xl font-bold tracking-tight text-gray-900">
-                      $ {priceNum.toLocaleString("es-AR")} /{unidad_medida}
+                      {formatPrecio(priceNum)} /{unidad_medida}
                     </p>
 
                     {lastPriceNum && lastPriceNum > priceNum && (
                       <p className="text-lg text-gray-400 line-through">
-                        $ {lastPriceNum.toLocaleString("es-AR")} /
-                        {unidad_medida}
+                        {formatPrecio(lastPriceNum)}
                       </p>
                     )}
                   </div>
@@ -199,7 +209,6 @@ export default function Product() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!selectedPaquete) return;
-                  // TODO: Lógica para agregar al carrito de compras
                   alert(
                     `Paquete de ${selectedPaquete.peso || selectedPaquete.value} ${unidad_medida} agregado al carrito.`,
                   );
@@ -244,7 +253,7 @@ export default function Product() {
                               }`}
                             >
                               <span>
-                                {pesoVal} {unidad_medida}
+                                {formatCantidad(pesoVal, unidad_medida)}
                               </span>
                             </button>
                           );

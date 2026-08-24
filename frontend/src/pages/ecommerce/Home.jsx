@@ -7,57 +7,46 @@ import ProductCard from "../../components/ProductCard.jsx";
 import { API_URL } from "../../config/api.js";
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
+  const [data, setData] = useState({
+    destacados: [],
+    ofertas: [],
+    todos: [],
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProductos = async () => {
+    const fetchHomeData = async () => {
       try {
-        // 1. Verificá si la URL requiere /api/productos o /productos según tu backend
-        const res = await fetch(`${API_URL}/products`);
+        const res = await fetch(`${API_URL}/products/home?sucursal_id=1`);
+        if (!res.ok) throw new Error(`Error: ${res.status}`);
 
-        if (!res.ok) {
-          throw new Error(
-            `Error en la petición: ${res.status} ${res.statusText}`,
-          );
-        }
-
-        const data = await res.json();
-
-        // 2. Extrae el array ya sea que venga directo o envuelto en una propiedad
-        const rawList = Array.isArray(data)
-          ? data
-          : data.productos || data.products || data.data || [];
-
-        const mappedProducts = rawList.map((item) => ({
-          id: item.id,
-          name: item.nombre_producto || item.nombre,
-          slug: item.slug,
-          imageSrc:
-            item.imagen_url ||
-            "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
-          imageAlt: item.nombre_producto || item.nombre,
-          price: Number(item.precio_por_kg || item.precio || 0),
-          previousPrice: item.precio_anterior
-            ? Number(item.precio_anterior)
-            : null,
-          earnsPoints: Boolean(item.puntos),
-          points: item.puntos || 10,
-          isFavorite: Boolean(item.isFavorite),
-          unidad_medida: item.unidad_medida || "Kg",
-          stockFrom: item.min_peso ? Number(item.min_peso) : 0.5,
-        }));
-
-        setProducts(mappedProducts);
+        const result = await res.json();
+        setData({
+          destacados: result.destacados || [],
+          ofertas: result.ofertas || [],
+          todos: result.todos || [],
+        });
       } catch (error) {
-        console.error("Error al obtener los productos:", error);
+        console.error("Error al cargar la portada:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProductos();
+    fetchHomeData();
   }, []);
+
+  const SkeletonGrid = () => (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="animate-pulse flex flex-col gap-3">
+          <div className="bg-gray-200 aspect-square rounded-md w-full" />
+          <div className="bg-gray-200 h-4 rounded w-3/4" />
+          <div className="bg-gray-200 h-4 rounded w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="w-full bg-gray-50/50 min-h-screen">
@@ -76,41 +65,55 @@ export default function Home() {
         <img
           src="/dummy-promo-mobile.jpg"
           alt="Promoción Abastecedora Valette"
-          className="flex lg:hidden w-11/12 mx-auto aspect-[12/4] object-cover rounded-xl shadow-sm"
+          className="flex lg:hidden w-11/12 mx-auto aspect-12/4 object-cover rounded-xl shadow-sm"
         />
         <img
           src="/dummy-promo-desktop.jpg"
           alt="Promoción Abastecedora Valette"
-          className="hidden lg:flex w-full h-[380px] object-cover object-center"
+          className="hidden lg:flex w-full h-95 object-cover object-center"
         />
       </div>
 
-      {/* SECCIÓN DE PRODUCTOS DESTACADOS */}
-      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
-          Productos destacados
-        </h2>
+      {/* 1. SECCIÓN DE PRODUCTOS DESTACADOS */}
+      {(isLoading || data.destacados.length > 0) && (
+        <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
+            Productos destacados
+          </h2>
+          {isLoading ? (
+            <SkeletonGrid />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+              {data.destacados.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-        {isLoading ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse flex flex-col gap-3">
-                <div className="bg-gray-200 aspect-square rounded-md w-full" />
-                <div className="bg-gray-200 h-4 rounded w-3/4" />
-                <div className="bg-gray-200 h-4 rounded w-1/2" />
-              </div>
-            ))}
+      {/* 2. SECCIÓN DE OFERTAS */}
+      {(isLoading || data.ofertas.length > 0) && (
+        <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8 bg-blue-50/40 rounded-2xl my-4">
+          <div className="flex items-center gap-2 mb-6">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+              Ofertas imperdibles
+            </h2>
+            <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full uppercase">
+              Promo
+            </span>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
-            {products.map((product) => (
-              <div key={product.id}>
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+          {isLoading ? (
+            <SkeletonGrid />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+              {data.ofertas.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* SECCIÓN DE CATEGORÍAS */}
       <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
@@ -144,6 +147,22 @@ export default function Home() {
             </a>
           ))}
         </div>
+      </section>
+
+      {/* 3. SECCIÓN DE TODOS LOS PRODUCTOS */}
+      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
+          Todos los productos
+        </h2>
+        {isLoading ? (
+          <SkeletonGrid />
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+            {data.todos.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

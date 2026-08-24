@@ -42,7 +42,7 @@ const ProductEditor = () => {
   ];
 
   const itemsUnidadMedida = [
-    { value: "kilogramo", label: "Kilogramo" },
+    { value: "kg", label: "Kilogramo" },
     { value: "unidad", label: "Unidad" },
     { value: "gancho", label: "Gancho" },
     { value: "paquete", label: "Paquete" },

@@ -11,6 +11,8 @@ import {
   Layers,
   Save,
   AlertCircle,
+  Star,
+  Coins,
 } from "lucide-react";
 import { API_URL } from "../../../config/api";
 import { formatCantidad } from "../../../utils/formatters";
@@ -20,7 +22,6 @@ const DUMMY_IMAGE =
   "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800";
 
 const GestionPaquetes = () => {
-  // En Sucursal.jsx
   const { slug, id, catalogoProducto } = useParams();
   const sucursalSlug = slug || id;
   const navigate = useNavigate();
@@ -31,11 +32,15 @@ const GestionPaquetes = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { setNavbarTitle, setBreadcrumbExtra } = useAppContext();
 
-  // Estados para formulario de precio y oferta global
+  // Guardar/Actualizar precio general, oferta, destacado, puntos y activo
   const [precioForm, setPrecioForm] = useState({
     precio_por_kg: "",
     precio_anterior: "",
     en_oferta: false,
+    destacado: false,
+    gana_puntos: false,
+    puntos: "",
+    activo: true,
   });
 
   // Estado para la carga rápida de paquete individual
@@ -70,6 +75,11 @@ const GestionPaquetes = () => {
 
       if (currentProd) {
         setProducto(currentProd);
+        setNavbarTitle(currentProd.nombre_producto);
+        setBreadcrumbExtra({
+          productName: currentProd.nombre_producto,
+        });
+
         setPrecioForm({
           precio_por_kg: currentProd.precio_por_kg || "",
           precio_anterior: currentProd.precio_anterior || "",
@@ -77,6 +87,10 @@ const GestionPaquetes = () => {
             currentProd.precio_anterior &&
             currentProd.precio_anterior > currentProd.precio_por_kg,
           ),
+          destacado: Boolean(currentProd.destacado),
+          gana_puntos: Boolean(currentProd.gana_puntos),
+          puntos: currentProd.puntos || "",
+          activo: currentProd.activo !== false,
         });
       }
     } catch (error) {
@@ -88,10 +102,6 @@ const GestionPaquetes = () => {
 
   useEffect(() => {
     loadData();
-    setNavbarTitle(`${catalogoProducto.nombre_producto}`);
-    setBreadcrumbExtra({
-      productName: catalogoProducto.nombre_producto,
-    });
   }, [slug, catalogoProducto]);
 
   // Convierte las entradas del usuario (gramos o kg) a valor decimal en Kilos
@@ -101,7 +111,6 @@ const GestionPaquetes = () => {
     const num = parseFloat(cleanStr);
     if (isNaN(num)) return 0;
 
-    // Si la unidad es peso (kg) y el número es > 10, asumimos que ingresó gramos (ej: 950 -> 0.95 kg)
     if (
       (!producto?.unidad_medida || producto?.unidad_medida === "kg") &&
       num >= 10
@@ -111,41 +120,47 @@ const GestionPaquetes = () => {
     return Number(num.toFixed(3));
   };
 
-  // Guardar/Actualizar precio general e inventario
+  // Handler de guardado de configuración
   const handleGuardarPrecio = async (e) => {
     e.preventDefault();
     if (!precioForm.precio_por_kg || !sucursalInfo?.id) return;
 
     setIsSaving(true);
+    const payload = {
+      precio_por_kg: Number(precioForm.precio_por_kg),
+      precio_anterior: precioForm.en_oferta
+        ? Number(precioForm.precio_anterior)
+        : null,
+      destacado: precioForm.destacado,
+      gana_puntos: precioForm.gana_puntos,
+      puntos: precioForm.gana_puntos ? Number(precioForm.puntos) : 0,
+      activo: precioForm.activo,
+    };
+
     try {
       if (producto.inventario_id) {
-        // Actualizar inventario existente
         await fetch(`${API_URL}/inventario/precio`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             inventario_id: producto.inventario_id,
-            precio_por_kg: Number(precioForm.precio_por_kg),
-            precio_anterior: precioForm.en_oferta
-              ? Number(precioForm.precio_anterior)
-              : null,
+            ...payload,
           }),
         });
       } else {
-        // Crear primer registro de inventario para esta sucursal
         await fetch(`${API_URL}/inventario`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             catalogo_id: producto.catalogo_id,
             sucursal_id: sucursalInfo.id,
-            precio_por_kg: Number(precioForm.precio_por_kg),
+            ...payload,
           }),
         });
       }
       await loadData();
     } catch (error) {
-      console.error("Error al guardar precio:", error);
+      console.error("Error al guardar configuración:", error);
     } finally {
       setIsSaving(false);
     }
@@ -159,7 +174,6 @@ const GestionPaquetes = () => {
     const pesoNormalizado = normalizePesoInput(nuevoPesoInput);
     if (pesoNormalizado <= 0) return;
 
-    // El precio final se calcula automáticamente con el precio fijado por kg/unidad
     const precioFinal = Number(
       (pesoNormalizado * producto.precio_por_kg).toFixed(2),
     );
@@ -327,13 +341,12 @@ const GestionPaquetes = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* COLUMNA IZQUIERDA: CONFIGURACIÓN DE PRECIO Y MÉTODOS DE CÁLCULO */}
+        {/* COLUMNA IZQUIERDA: CONFIGURACIÓN DE PRECIO, OFERTA, DESTACADO Y PUNTOS */}
         <div className="flex flex-col gap-6">
-          {/* CONFIGURACIÓN DE PRECIO Y OFERTA */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col gap-4">
             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
               <Tag className="size-4 text-emerald-600" />
-              Precio base en sucursal
+              Configuración en sucursal
             </h2>
 
             <form
@@ -356,11 +369,11 @@ const GestionPaquetes = () => {
                       precio_por_kg: e.target.value,
                     }))
                   }
-                  /* Evita zoom automático en móviles */
                   className="w-full rounded-lg border border-gray-300 p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                 />
               </div>
 
+              {/* CHECKBOX: EN OFERTA */}
               <div className="flex items-center gap-2 mt-1">
                 <input
                   type="checkbox"
@@ -372,7 +385,7 @@ const GestionPaquetes = () => {
                       en_oferta: e.target.checked,
                     }))
                   }
-                  className="size-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                  className="size-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
                 />
                 <label
                   htmlFor="en_oferta"
@@ -406,15 +419,86 @@ const GestionPaquetes = () => {
                 </div>
               )}
 
+              {/* CHECKBOX: DESTACADO */}
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  id="destacado"
+                  checked={precioForm.destacado}
+                  onChange={(e) =>
+                    setPrecioForm((prev) => ({
+                      ...prev,
+                      destacado: e.target.checked,
+                    }))
+                  }
+                  className="size-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="destacado"
+                  className="text-xs font-medium text-gray-700 select-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <Star className="size-3.5 text-amber-500 fill-amber-500" />
+                  Destacar este producto
+                </label>
+              </div>
+
+              {/* CHECKBOX: ACTIVAR PUNTOS */}
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  id="gana_puntos"
+                  checked={precioForm.gana_puntos}
+                  onChange={(e) =>
+                    setPrecioForm((prev) => ({
+                      ...prev,
+                      gana_puntos: e.target.checked,
+                    }))
+                  }
+                  className="size-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="gana_puntos"
+                  className="text-xs font-medium text-gray-700 select-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <Coins className="size-3.5 text-amber-600" />
+                  Activar programa de puntos
+                </label>
+              </div>
+
+              {/* INPUT: CANTIDAD DE PUNTOS */}
+              {precioForm.gana_puntos && (
+                <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 flex flex-col gap-1">
+                  <label className="block text-xs font-semibold text-amber-900">
+                    Cantidad de puntos
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Ej: 50"
+                    value={precioForm.puntos}
+                    onChange={(e) =>
+                      setPrecioForm((prev) => ({
+                        ...prev,
+                        puntos: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-amber-200 p-2 text-base sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                  />
+                  <p className="text-[11px] text-amber-700 mt-0.5">
+                    Puntos acumulables o necesarios para este producto.
+                  </p>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-emerald-700 py-2.5 px-4 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 transition-colors"
+                className="flex items-center justify-center gap-2 w-full mt-2 rounded-lg bg-emerald-700 py-2.5 px-4 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50 transition-colors"
               >
                 <Save className="size-4" />
                 {producto.inventario_id
-                  ? "Actualizar precio"
-                  : "Dar de alta precio"}
+                  ? "Actualizar configuración"
+                  : "Dar de alta configuración"}
               </button>
             </form>
           </div>
@@ -429,7 +513,8 @@ const GestionPaquetes = () => {
             {!producto.inventario_id ? (
               <p className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                 <AlertCircle className="size-4 shrink-0" />
-                Primero debés guardar el precio base antes de agregar paquetes.
+                Primero debés guardar la configuración base antes de agregar
+                paquetes.
               </p>
             ) : (
               <form
