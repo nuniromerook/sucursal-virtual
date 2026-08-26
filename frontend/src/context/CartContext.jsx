@@ -1,0 +1,270 @@
+// frontend/src/context/CartContext.jsx
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+
+export const CartContext = createContext();
+
+const CART_STORAGE_KEY = "valette_cart";
+
+/**
+ * Calcula el total regular, total con promociones y ahorro para un item dado su cantidad y promos activas.
+ */
+export const calculateItemPrice = (item) => {
+  const qty = Number(item.cantidad_kg) || 0;
+  const unitPrice = Number(item.precio) || 0;
+  const regularTotal = unitPrice * qty;
+  const promos = Array.isArray(item.promos) ? item.promos : [];
+
+  if (qty <= 0 || unitPrice <= 0) {
+    return {
+      total: 0,
+      regularTotal: 0,
+      ahorro: 0,
+      hasPromo: false,
+      appliedPromo: null,
+    };
+  }
+
+  // 1. Coincidencia exacta con un tramo promocional
+  const exactPromo = promos.find(
+    (p) => Number(p.cantidad_kg) === qty && p.activa !== false
+  );
+  if (exactPromo) {
+    const promoTotal = Number(exactPromo.precio_promocional);
+    const ahorro = Math.max(0, regularTotal - promoTotal);
+    return {
+      total: promoTotal,
+      regularTotal,
+      ahorro,
+      hasPromo: ahorro > 0,
+      appliedPromo: exactPromo,
+    };
+  }
+
+  // 2. Combinación / tramos descendentes para cantidades mayores
+  const sortedPromos = [...promos]
+    .filter((p) => p.activa !== false && Number(p.cantidad_kg) > 0)
+    .sort((a, b) => Number(b.cantidad_kg) - Number(a.cantidad_kg));
+
+  let remainingQty = qty;
+  let computedTotal = 0;
+  let promoApplied = null;
+
+  for (const promo of sortedPromos) {
+    const promoKg = Number(promo.cantidad_kg);
+    const promoPrice = Number(promo.precio_promocional);
+
+    if (remainingQty >= promoKg) {
+      const paquetes = Math.floor(remainingQty / promoKg);
+      computedTotal += paquetes * promoPrice;
+      remainingQty = remainingQty % promoKg;
+      if (!promoApplied) promoApplied = promo;
+    }
+  }
+
+  // El sobrante que no llega a promo se cobra a precio regular
+  if (remainingQty > 0) {
+    computedTotal += remainingQty * unitPrice;
+  }
+
+  const ahorro = Math.max(0, regularTotal - computedTotal);
+
+  return {
+    total: computedTotal,
+    regularTotal,
+    ahorro,
+    hasPromo: ahorro > 0,
+    appliedPromo: promoApplied,
+  };
+};
+
+export function CartContextProvider({ children }) {
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Error reading cart from localStorage:", e);
+      return [];
+    }
+  });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Sincronizar en localStorage cada vez que cambie cartItems
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+    } catch (e) {
+      console.error("Error saving cart to localStorage:", e);
+    }
+  }, [cartItems]);
+
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+  const toggleCart = () => setIsCartOpen((prev) => !prev);
+
+  /**
+   * Agrega un producto o incrementa su cantidad si ya existe
+   */
+  const addToCart = (product, cantidadKg = 1) => {
+    const qtyToAdd = Number(cantidadKg) > 0 ? Number(cantidadKg) : 1;
+
+    setCartItems((prevItems) => {
+      const existingIndex = prevItems.findIndex((item) => item.id === product.id);
+
+      if (existingIndex > -1) {
+        const updated = [...prevItems];
+        const currentQty = Number(updated[existingIndex].cantidad_kg) || 0;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...product,
+          cantidad_kg: currentQty + qtyToAdd,
+        };
+        return updated;
+      }
+
+      return [
+        ...prevItems,
+        {
+          id: product.id,
+          nombre_producto: product.nombre_producto,
+          slug: product.slug,
+          descripcion: product.descripcion,
+          especie: product.especie,
+          categoria: product.categoria,
+          imagen_url: product.imagen_url,
+          unidad_medida: product.unidad_medida || "kg",
+          precio: Number(product.precio) || 0,
+          precio_anterior: Number(product.precio_anterior) || 0,
+          promos: Array.isArray(product.promos) ? product.promos : [],
+          gana_puntos: Boolean(product.gana_puntos),
+          puntos: Number(product.puntos) || 0,
+          cantidad_kg: qtyToAdd,
+        },
+      ];
+    });
+
+    setIsCartOpen(true);
+  };
+
+  /**
+   * Actualiza la cantidad de kg de un producto
+   */
+  const updateQuantity = (productId, newQuantity) => {
+    const qty = Number(newQuantity);
+    if (qty <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === productId ? { ...item, cantidad_kg: qty } : item
+      )
+    );
+  };
+
+  /**
+   * Incrementa en 1 unidad/kg
+   */
+  const incrementQuantity = (productId) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === productId
+          ? { ...item, cantidad_kg: (Number(item.cantidad_kg) || 0) + 1 }
+          : item
+      )
+    );
+  };
+
+  /**
+   * Decrementa en 1 unidad/kg (o elimina si llega a 0)
+   */
+  const decrementQuantity = (productId) => {
+    setCartItems((prevItems) =>
+      prevItems
+        .map((item) => {
+          if (item.id === productId) {
+            const newQty = (Number(item.cantidad_kg) || 0) - 1;
+            return newQty > 0 ? { ...item, cantidad_kg: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  /**
+   * Elimina un producto del carrito
+   */
+  const removeFromCart = (productId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+  };
+
+  /**
+   * Vacía el carrito por completo
+   */
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  // Cálculos totales
+  const summary = useMemo(() => {
+    let subtotal = 0;
+    let totalEstimado = 0;
+    let totalAhorro = 0;
+    let totalKg = 0;
+    let totalItems = cartItems.length;
+    let totalPuntos = 0;
+
+    for (const item of cartItems) {
+      const calc = calculateItemPrice(item);
+      subtotal += calc.regularTotal;
+      totalEstimado += calc.total;
+      totalAhorro += calc.ahorro;
+      totalKg += Number(item.cantidad_kg) || 0;
+
+      if (item.gana_puntos && item.puntos > 0) {
+        totalPuntos += Number(item.puntos) * (Number(item.cantidad_kg) || 1);
+      }
+    }
+
+    return {
+      subtotal,
+      totalEstimado,
+      totalAhorro,
+      totalKg,
+      totalItems,
+      totalPuntos,
+    };
+  }, [cartItems]);
+
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        isCartOpen,
+        openCart,
+        closeCart,
+        toggleCart,
+        addToCart,
+        updateQuantity,
+        incrementQuantity,
+        decrementQuantity,
+        removeFromCart,
+        clearCart,
+        ...summary,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart debe ser usado dentro de un CartContextProvider");
+  }
+  return context;
+};

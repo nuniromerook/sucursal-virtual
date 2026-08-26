@@ -1,8 +1,8 @@
-// frontend/src/components/ProductCard.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Sparkles } from "lucide-react";
+import { Heart, Sparkles, ShoppingBag, Plus } from "lucide-react";
 import { formatPrecio } from "../utils/formatters";
+import { useCart } from "../context/CartContext";
 
 const DUMMY_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
@@ -50,12 +50,19 @@ const ProductCard = ({ product }) => {
   // por cantidad_kg ascendente — acá no hace falta filtrar ni ordenar.
   const promos = Array.isArray(product.promos) ? product.promos : [];
 
+  const { addToCart } = useCart();
   const [isFavorite, setIsFavorite] = useState(Boolean(product.isFavorite));
 
   const handleToggleFavorite = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite((prev) => !prev);
+  };
+
+  const handleQuickAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product, 1);
   };
 
   return (
@@ -141,6 +148,18 @@ const ProductCard = ({ product }) => {
             Ganá {points} puntos
           </span>
         )}
+
+        <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center justify-between z-10 relative">
+          <button
+            type="button"
+            onClick={handleQuickAdd}
+            aria-label={`Agregar 1 ${unidadMedida} de ${name} al carrito`}
+            className="w-full py-1.5 px-2 bg-main-blue/10 hover:bg-main-blue text-main-blue hover:text-white rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <ShoppingBag className="size-3.5" />
+            <span>Agregar 1 {unidadMedida}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

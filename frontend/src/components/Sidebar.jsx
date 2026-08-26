@@ -1,225 +1,265 @@
-// src/components/Sidebar.jsx
-import React, { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+// frontend/src/components/Sidebar.jsx
+import React from "react";
+import { NavLink, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { API_URL } from "../config/api";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import {
-  ChevronDown,
   Home,
-  List,
-  Plus,
-  ShoppingCart,
+  Tag,
   Store,
+  ShoppingBag,
+  ShoppingCart,
+  Package,
   User,
+  LogOut,
+  Sparkles,
+  ChevronRight,
+  Truck,
+  X,
 } from "lucide-react";
+
+const categories = [
+  { nameId: "vacuno", label: "Vacuno", emoji: "🐄" },
+  { nameId: "cerdo", label: "Cerdo", emoji: "🐷" },
+  { nameId: "pollo", label: "Pollo", emoji: "🐔" },
+  { nameId: "embutidos", label: "Embutidos", emoji: "🌭" },
+  { nameId: "preparados", label: "Preparados", emoji: "🍽️" },
+  { nameId: "almacen", label: "Almacén", emoji: "🛒" },
+];
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
-  const [sucursales, setSucursales] = useState([]);
-  const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-50";
+  const { user, isAuthenticated, logout } = useAuth();
+  const { totalItems, openCart } = useCart();
 
   const closeSidebar = () => {
     window.scroll({ top: 0, left: 0, behavior: "smooth" });
     setSidebarOpen(false);
   };
 
-  useEffect(() => {
-    const loadSucursales = async () => {
-      try {
-        const res = await fetch(`${API_URL}/sucursales`);
-        const data = await res.json();
+  const handleLogout = () => {
+    logout();
+    closeSidebar();
+  };
 
-        setSucursales(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    loadSucursales();
-  }, []);
-
-  const linkClassName = ({ isActive }) =>
-    `block rounded-lg px-4 py-2 text-sm font-medium transition-colors flex gap-x-2 items-center ${
+  const linkClass = ({ isActive }) =>
+    `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
       isActive
-        ? "bg-gray-100 text-gray-900 text-gray-700"
-        : "hover:bg-gray-100 hover:text-gray-900 text-gray-50"
+        ? "bg-white/15 text-white"
+        : "text-white/80 hover:bg-white/10 hover:text-white"
     }`;
 
   return (
     <>
+      {/* Backdrop */}
       {sidebarOpen && (
         <div
           aria-hidden="true"
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden"
+          onClick={closeSidebar}
+          className="fixed inset-0 z-30 bg-neutral-900/60 backdrop-blur-xs lg:hidden"
         />
       )}
 
+      {/* Panel lateral */}
       <div
-        id="dashboard-sidebar"
-        className={`fixed inset-y-0 start-0 z-40 flex w-64 flex-col justify-between overflow-y-auto border-e border-main-blue/30 bg-main-blue transition-transform duration-300 select-none ${
+        id="ecom-sidebar"
+        className={`fixed inset-y-0 start-0 z-40 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-2">
-          <img
-            src="/favicon.svg"
-            alt=""
-            className="size-50 drop-shadow-lg drop-shadow-black/20 aspect-square mx-auto"
-          />
-
-          <ul className="mt-8 space-y-1">
-            <li>
-              <NavLink to="/" onClick={closeSidebar} className={linkClassName}>
-                <Home
-                  className={`${iconStyle} ${
-                    linkClassName({
-                      isActive: true,
-                    })
-                      ? "text-neutral-700"
-                      : "text-neutral-50"
-                  }`}
-                />{" "}
-                Inicio
-              </NavLink>
-            </li>
-
-            <li>
-              <details className="group [&_summary::-webkit-details-marker]:hidden text-gray-50">
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
-                    <Store className={iconStyle} />
-                    Sucursales
-                  </p>
-                  <ChevronDown className="shrink-0 size-4 transition duration-300 group-open:-rotate-180" />
-                </summary>
-
-                <ul className="mt-2 space-y-1 px-4">
-                  {sucursales.map((sucursal) => (
-                    <li key={sucursal.id}>
-                      <NavLink
-                        to={`/sucursal/${sucursal.slug}`}
-                        onClick={closeSidebar}
-                        className={linkClassName}
-                      >
-                        {sucursal.nombre}
-                      </NavLink>
-                    </li>
-                  ))}
-
-                  <li>
-                    <NavLink
-                      to="/sucursales/nueva"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} /> Agregar Sucursal
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
-
-            <li>
-              <details className="group [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-50 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
-                    <List className={iconStyle} />
-                    Catálogo
-                  </p>
-                  <ChevronDown className="shrink-0 size-4 transition duration-300 group-open:-rotate-180" />
-                </summary>
-
-                <ul className="mt-2 space-y-1 px-4">
-                  <li>
-                    <NavLink
-                      to="/catalogo"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                      end
-                    >
-                      Todos los productos
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink
-                      to="/catalogo/nuevo-producto"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} /> Nuevo producto
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
-
-            <li>
-              <details className="group [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-50 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
-                    <ShoppingCart className={iconStyle} />
-                    Pedidos
-                  </p>
-                  <ChevronDown className="shrink-0 size-4 transition duration-300 group-open:-rotate-180" />
-                </summary>
-
-                <ul className="mt-2 space-y-1 px-4">
-                  <li>
-                    <NavLink
-                      to="/nuevo-pedido"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} />
-                      Nuevo pedido
-                    </NavLink>
-                  </li>
-
-                  <li>
-                    <NavLink
-                      to="/historial-pedidos"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      Historial de Pedidos
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
-
-            <li>
-              <NavLink
-                to="/gestionar-usuarios"
-                onClick={closeSidebar}
-                className={linkClassName}
-              >
-                <User className={iconStyle} />
-                Gestionar Usuarios
-              </NavLink>
-            </li>
-          </ul>
+        {/* Header del panel */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/10">
+          <Link to="/" onClick={closeSidebar}>
+            <img
+              src="/favicon.svg"
+              alt="Abastecedora Valette"
+              className="h-12 w-auto drop-shadow"
+            />
+          </Link>
+          <button
+            type="button"
+            onClick={closeSidebar}
+            aria-label="Cerrar menú"
+            className="size-8 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X className="size-5" />
+          </button>
         </div>
 
-        <div className="sticky inset-x-0 bottom-0 border-t border-gray-100">
-          <NavLink
-            to="/"
-            onClick={closeSidebar}
-            className="flex items-center gap-2 bg-white p-4 hover:bg-gray-50 hover:transition-colors"
-          >
-            <img
-              alt=""
-              src="https://images.unsplash.com/photo-1600486913747-55e5470d6f40?auto=format&fit=crop&q=80&w=1160"
-              className="size-10 rounded-full object-cover"
-            />
-
-            <p className="text-xs text-gray-900">
-              <strong className="block font-medium">Eric Frusciante</strong>
-
-              <span> eric@frusciante.com </span>
-            </p>
+        {/* Cuerpo del menú */}
+        <nav className="flex-1 px-4 py-5 space-y-1">
+          {/* Inicio */}
+          <NavLink to="/" end onClick={closeSidebar} className={linkClass}>
+            <Home className="size-5 shrink-0" />
+            <span>Inicio</span>
           </NavLink>
+
+          {/* Carrito (abre drawer) */}
+          <button
+            type="button"
+            onClick={() => {
+              closeSidebar();
+              openCart();
+            }}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+          >
+            <ShoppingCart className="size-5 shrink-0" />
+            <span>Mi Carrito</span>
+            {totalItems > 0 && (
+              <span className="ml-auto bg-main-red text-white text-[10px] font-bold rounded-full px-2 py-0.5 min-w-5 text-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
+
+          {/* Separador: Tienda */}
+          <div className="pt-4 pb-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-white/40 px-3">
+              Categorías
+            </p>
+          </div>
+
+          {categories.map((cat) => (
+            <NavLink
+              key={cat.nameId}
+              to={`/categoria/${cat.nameId}`}
+              onClick={closeSidebar}
+              className={linkClass}
+            >
+              <span className="text-base leading-none">{cat.emoji}</span>
+              <span>{cat.label}</span>
+              <ChevronRight className="size-4 ml-auto text-white/30" />
+            </NavLink>
+          ))}
+
+          {/* Separador: Más */}
+          <div className="pt-4 pb-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase text-white/40 px-3">
+              Información
+            </p>
+          </div>
+
+          <NavLink to="/ofertas" onClick={closeSidebar} className={linkClass}>
+            <Tag className="size-5 shrink-0" />
+            <span>Ofertas</span>
+          </NavLink>
+
+          <NavLink
+            to="/sucursales"
+            onClick={closeSidebar}
+            className={linkClass}
+          >
+            <Store className="size-5 shrink-0" />
+            <span>Sucursales</span>
+          </NavLink>
+
+          <NavLink to="/envios" onClick={closeSidebar} className={linkClass}>
+            <Truck className="size-5 shrink-0" />
+            <span>Envíos</span>
+          </NavLink>
+        </nav>
+
+        {/* Footer: sección de usuario */}
+        <div className="sticky bottom-0 inset-x-0 bg-main-blue border-t border-white/10 p-4">
+          {isAuthenticated && user ? (
+            <>
+              {/* Tarjeta de puntos (si tiene) */}
+              {Number(user.puntos_acumulados) > 0 && (
+                <div className="mb-3 flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-2">
+                  <Sparkles className="size-4 text-amber-300 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-amber-200 font-semibold uppercase tracking-wider">
+                      Puntos Valette
+                    </p>
+                    <p className="text-base font-extrabold text-amber-100 leading-tight">
+                      {user.puntos_acumulados}{" "}
+                      <span className="text-xs font-medium text-amber-300">
+                        pts
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Datos del usuario */}
+              <Link
+                to="/perfil"
+                onClick={closeSidebar}
+                className="flex items-center gap-3 rounded-xl p-3 hover:bg-white/10 transition-colors"
+              >
+                <div className="size-10 rounded-full bg-white text-main-blue font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden">
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.nombre}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    user.nombre?.substring(0, 2).toUpperCase() || "AV"
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white truncate">
+                    {user.nombre}
+                  </p>
+                  {user.usuario ? (
+                    <p className="text-xs text-white/60 truncate">
+                      @{user.usuario}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-300 truncate">
+                      Completá tu perfil → +50 pts
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="size-4 text-white/40 shrink-0" />
+              </Link>
+
+              {/* Mis Pedidos + Cerrar sesión */}
+              <div className="mt-2 flex gap-2">
+                <Link
+                  to="/perfil"
+                  onClick={closeSidebar}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all"
+                >
+                  <Package className="size-3.5" />
+                  <span>Mis Pedidos</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-red-500/30 text-white hover:text-red-200 text-xs font-semibold transition-all cursor-pointer"
+                  aria-label="Cerrar sesión"
+                >
+                  <LogOut className="size-3.5" />
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Usuario no autenticado */
+            <div className="space-y-2">
+              <p className="text-xs text-white/50 text-center mb-3">
+                Ingresá para ver tus pedidos y puntos
+              </p>
+              <Link
+                to="/ingresar"
+                onClick={closeSidebar}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white text-main-blue font-bold text-sm hover:bg-neutral-100 transition-all shadow"
+              >
+                <User className="size-4" />
+                <span>Ingresar a mi cuenta</span>
+              </Link>
+              <Link
+                to="/ingresar"
+                onClick={closeSidebar}
+                state={{ defaultTab: "register" }}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold transition-all"
+              >
+                Crear cuenta y ganar puntos
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </>

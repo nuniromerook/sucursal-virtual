@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
+import { useCart } from "../../context/CartContext";
 
 export default function Product() {
   // Desestructuramos los parámetros definidos en App.jsx (:categoria/:especie/:slug)
@@ -166,23 +167,12 @@ export default function Product() {
     grasas != null ? { label: "Grasas", valor: `${Number(grasas)}g` } : null,
   ].filter(Boolean);
 
+  const { addToCart } = useCart();
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const cantidadFinal = Number(cantidad) || 1;
-    const promoFinal = promos.find(
-      (promo) => Number(promo.cantidad_kg) === cantidadFinal,
-    );
-    const totalFinal = promoFinal
-      ? Number(promoFinal.precio_promocional)
-      : priceNum * cantidadFinal;
-
-    // Placeholder hasta que exista pedidos.controller.js: acá en el futuro
-    // va un POST /pedidos con { catalogo_id, cantidad_kg_solicitada, ... }
-    alert(
-      `${cantidadFinal}${unidad_medida} de ${nombre_producto} agregado al carrito. Total estimado: ${formatPrecio(
-        totalFinal,
-      )} aprox.`,
-    );
+    addToCart(productData, cantidadFinal);
   };
 
   return (
