@@ -11,6 +11,7 @@ const Input = ({
   placeholder,
   value,
   setOnChange,
+  isRequired,
 }) => {
   const { isLoading } = useAppContext();
 
@@ -25,7 +26,7 @@ const Input = ({
             id={id}
             name={inputName}
             type={inputType}
-            required
+            required={isRequired}
             disabled={isLoading}
             autoComplete={autoComplete}
             value={value}

@@ -17,14 +17,31 @@ export default function Home() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const res = await fetch(`${API_URL}/products/home?sucursal_id=1`);
+        // Con el nuevo modelo el precio vive directo en "catalogo" (ya no
+        // hay paquetes/inventario por sucursal), así que un solo GET con
+        // ?activo=true trae todo lo que se puede mostrar en la tienda.
+        // Las tres secciones de la portada se derivan acá abajo.
+        const res = await fetch(`${API_URL}/catalogo?activo=true`);
         if (!res.ok) throw new Error(`Error: ${res.status}`);
 
-        const result = await res.json();
+        const productos = await res.json();
+
+        const destacados = productos.filter((p) => p.destacar);
+
+        // "En oferta" no es una columna booleana, es una comparación:
+        // hay oferta cuando precio_anterior existe y es mayor al precio actual.
+        // OJO: Postgres devuelve columnas numeric como string, hay que
+        // convertir con Number() antes de comparar o compara como texto.
+        const ofertas = productos.filter((p) => {
+          const anterior = Number(p.precio_anterior);
+          const actual = Number(p.precio);
+          return anterior > 0 && anterior > actual;
+        });
+
         setData({
-          destacados: result.destacados || [],
-          ofertas: result.ofertas || [],
-          todos: result.todos || [],
+          destacados,
+          ofertas,
+          todos: productos,
         });
       } catch (error) {
         console.error("Error al cargar la portada:", error);
@@ -51,8 +68,8 @@ export default function Home() {
   return (
     <div className="w-full bg-gray-50/50 min-h-screen">
       {/* Header Mobile */}
-      <div className="flex flex-col lg:hidden">
-        <div className="bg-main-blue pt-4 pb-2 px-4">
+      <div className="flex flex-col lg:hidden pt-5">
+        <div className="flex justify-center sm:justify-start pb-2 sm:px-8">
           <EnvioNavbar />
         </div>
         <div className="py-4 w-11/12 mx-auto">
@@ -65,7 +82,7 @@ export default function Home() {
         <img
           src="/dummy-promo-mobile.jpg"
           alt="Promoción Abastecedora Valette"
-          className="flex lg:hidden w-11/12 mx-auto aspect-12/4 object-cover rounded-xl shadow-sm"
+          className="flex lg:hidden w-11/12 mx-auto aspect-video object-cover rounded-xl shadow-sm"
         />
         <img
           src="/dummy-promo-desktop.jpg"
@@ -76,14 +93,14 @@ export default function Home() {
 
       {/* 1. SECCIÓN DE PRODUCTOS DESTACADOS */}
       {(isLoading || data.destacados.length > 0) && (
-        <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
+        <section className="mx-auto max-w-6xl px-4 py-8">
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
             Productos destacados
           </h2>
           {isLoading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+            <div className="grid grid-cols-2 gap-x-1 gap-y-1 lg:gap-y-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-2">
               {data.destacados.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -94,7 +111,7 @@ export default function Home() {
 
       {/* 2. SECCIÓN DE OFERTAS */}
       {(isLoading || data.ofertas.length > 0) && (
-        <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8 bg-blue-50/40 rounded-2xl my-4">
+        <section className="mx-auto max-w-6xl p-4 bg-blue-50/40 rounded-2xl">
           <div className="flex items-center gap-2 mb-6">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               Ofertas imperdibles
@@ -106,7 +123,7 @@ export default function Home() {
           {isLoading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+            <div className="grid grid-cols-2 gap-x-1 gap-y-1 lg:gap-y-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-2">
               {data.ofertas.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -116,7 +133,7 @@ export default function Home() {
       )}
 
       {/* SECCIÓN DE CATEGORÍAS */}
-      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
+      <section className="mx-auto max-w-6xl p-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight text-gray-900">
             Categorías
@@ -135,7 +152,7 @@ export default function Home() {
                 alt={category.name || category.nameId}
                 className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col justify-end">
                 <span className="text-base sm:text-lg font-bold text-white uppercase tracking-wide group-hover:text-blue-200 transition-colors">
                   {category.nameId || category.name}
@@ -150,14 +167,14 @@ export default function Home() {
       </section>
 
       {/* 3. SECCIÓN DE TODOS LOS PRODUCTOS */}
-      <section className="mx-auto max-w-304 px-4 sm:px-6 lg:px-8 py-8">
+      <section className="mx-auto max-w-6xl p-4">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">
           Todos los productos
         </h2>
         {isLoading ? (
           <SkeletonGrid />
         ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
+          <div className="grid grid-cols-2 gap-x-1 gap-y-1 lg:gap-y-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-2">
             {data.todos.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

@@ -1,27 +1,49 @@
+// frontend-admin/src/pages/ProductEditor.jsx
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
 import BasicDropdown from "../components/ui/BasicDropdown";
 import ButtonLoader from "../components/ui/ButtonLoader";
-import { ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-
 import { API_URL } from "../config/api";
+import { uploadImageToCloudinary } from "../utils/cloudinary"; // Asumiendo el helper de arriba
+
+const EMPTY_FORM = {
+  nombre_producto: "",
+  slug: "",
+  especie: "vacuno",
+  categoria: "cortes",
+  descripcion: "",
+  proteinas: "",
+  calorias: "",
+  grasas: "",
+  imagen_url: "",
+  unidad_medida: "kg",
+  precio: "",
+  precio_anterior: "0",
+  activo: true,
+  destacar: false,
+  gana_puntos: false,
+  puntos: "0",
+};
 
 const ProductEditor = () => {
-  const [formValues, setFormValues] = useState({
-    nombre_producto: "",
-    slug: "",
-    especie: "vacuno",
-    categoria: "cortes",
-    descripcion: "",
-    proteinas: "",
-    calorias: "",
-    grasas: "",
-    imagen_url: "",
-    unidad_medida: "kilogramo",
+  const { slug } = useParams();
+  const isEditMode = Boolean(slug);
+
+  const [formValues, setFormValues] = useState(EMPTY_FORM);
+  const [promos, setPromos] = useState([]);
+  const [newPromo, setNewPromo] = useState({
+    cantidad_kg: "",
+    precio_promocional: "",
   });
+  const [formError, setFormError] = useState(null);
+  const [productId, setProductId] = useState(null);
+  const [isFetchingProduct, setIsFetchingProduct] = useState(isEditMode);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const { isLoading, setIsLoading, navigate, setNavbarTitle } = useAppContext();
 
@@ -42,219 +64,625 @@ const ProductEditor = () => {
   ];
 
   const itemsUnidadMedida = [
-    { value: "kg", label: "Kilogramo" },
-    { value: "unidad", label: "Unidad" },
-    { value: "gancho", label: "Gancho" },
-    { value: "paquete", label: "Paquete" },
-    { value: "caja", label: "Caja" },
-    { value: "cajon", label: "Cajón" },
+    { value: "kg", label: "Kilogramo (kg)" },
+    { value: "u", label: "Unidad (u)" },
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log(formValues);
+  useEffect(() => {
+    if (!isEditMode) {
+      setNavbarTitle("Nuevo producto");
+      setFormValues(EMPTY_FORM);
+      setPromos([]);
+      setProductId(null);
+      return;
+    }
 
-    setIsLoading(true);
+    const fetchProducto = async () => {
+      setIsFetchingProduct(true);
+      setFormError(null);
 
-    const res = await fetch(`${API_URL}/products`, {
-      method: "POST",
-      body: JSON.stringify(formValues),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+      try {
+        const res = await fetch(
+          `${API_URL}/catalogo/${slug}?incluir_promos_inactivas=true`,
+        );
+        const data = await res.json();
 
-    const data = await res.json();
-    console.log(data);
+        if (!res.ok) {
+          setFormError(data.error || "No se pudo cargar el producto.");
+          return;
+        }
 
-    setIsLoading(false);
-    navigate("/catalogo");
-  };
+        setProductId(data.id);
+        setNavbarTitle("Editar producto");
+        setPromos(Array.isArray(data.promos) ? data.promos : []);
+
+        setFormValues({
+          nombre_producto: data.nombre_producto ?? "",
+          slug: data.slug ?? "",
+          especie: data.especie ?? "vacuno",
+          categoria: data.categoria ?? "cortes",
+          descripcion: data.descripcion ?? "",
+          proteinas: data.proteinas != null ? String(data.proteinas) : "",
+          calorias: data.calorias != null ? String(data.calorias) : "",
+          grasas: data.grasas != null ? String(data.grasas) : "",
+          imagen_url: data.imagen_url ?? "",
+          unidad_medida: data.unidad_medida ?? "kg",
+          precio: data.precio != null ? String(data.precio) : "",
+          precio_anterior:
+            data.precio_anterior != null ? String(data.precio_anterior) : "0",
+          activo: Boolean(data.activo),
+          destacar: Boolean(data.destacar),
+          gana_puntos: Boolean(data.gana_puntos),
+          puntos: data.puntos != null ? String(data.puntos) : "0",
+        });
+      } catch (err) {
+        console.error("Error al cargar el producto:", err);
+        setFormError("No se pudo conectar con el servidor.");
+      } finally {
+        setIsFetchingProduct(false);
+      }
+    };
+
+    fetchProducto();
+  }, [slug, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    setFormValues({
-      ...formValues,
+    setFormValues((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
   };
 
-  useEffect(() => {
-    setNavbarTitle("Nuevo producto");
-  }, []);
+  const handleImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setFormError(null);
+
+    try {
+      const imageUrl = await uploadImageToCloudinary(file);
+      setFormValues((prev) => ({ ...prev, imagen_url: imageUrl }));
+    } catch (err) {
+      console.error(err);
+      setFormError(
+        "Error al subir la imagen. Verificá la configuración de Cloudinary.",
+      );
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Agregar tramo de promoción en caliente o diferido
+  const handleAddPromo = async () => {
+    if (!newPromo.cantidad_kg || !newPromo.precio_promocional) return;
+
+    if (isEditMode && productId) {
+      try {
+        const res = await fetch(`${API_URL}/catalogo/${productId}/promos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cantidad_kg: parseFloat(newPromo.cantidad_kg),
+            precio_promocional: parseFloat(newPromo.precio_promocional),
+            activa: true,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al agregar promo");
+
+        setPromos((prev) => [...prev, data]);
+      } catch (err) {
+        setFormError(err.message);
+        return;
+      }
+    } else {
+      // Modo creación: se guardan localmente hasta crear el producto
+      setPromos((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          cantidad_kg: parseFloat(newPromo.cantidad_kg),
+          precio_promocional: parseFloat(newPromo.precio_promocional),
+          activa: true,
+        },
+      ]);
+    }
+
+    setNewPromo({ cantidad_kg: "", precio_promocional: "" });
+  };
+
+  const handleDeletePromo = async (promoId) => {
+    if (isEditMode && productId) {
+      try {
+        const res = await fetch(
+          `${API_URL}/catalogo/${productId}/promos/${promoId}`,
+          {
+            method: "DELETE",
+          },
+        );
+        if (!res.ok) throw new Error("No se pudo eliminar la promoción");
+      } catch (err) {
+        setFormError(err.message);
+        return;
+      }
+    }
+    setPromos((prev) => prev.filter((p) => p.id !== promoId));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setFormError(null);
+
+    const payload = {
+      ...formValues,
+      precio: parseFloat(formValues.precio) || 0,
+      precio_anterior: parseFloat(formValues.precio_anterior) || 0,
+      proteinas:
+        formValues.proteinas === "" ? null : parseFloat(formValues.proteinas),
+      calorias:
+        formValues.calorias === "" ? null : parseInt(formValues.calorias, 10),
+      grasas: formValues.grasas === "" ? null : parseFloat(formValues.grasas),
+      puntos: formValues.gana_puntos ? parseInt(formValues.puntos, 10) || 0 : 0,
+    };
+
+    const url = isEditMode
+      ? `${API_URL}/catalogo/${productId}`
+      : `${API_URL}/catalogo`;
+    const method = isEditMode ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setFormError(data.error || "No se pudo guardar el producto.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Si estábamos creando el producto, creamos los tramos de promo asociados
+      if (!isEditMode && promos.length > 0) {
+        for (const promo of promos) {
+          await fetch(`${API_URL}/catalogo/${data.id}/promos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cantidad_kg: promo.cantidad_kg,
+              precio_promocional: promo.precio_promocional,
+              activa: true,
+            }),
+          });
+        }
+      }
+
+      setIsLoading(false);
+      navigate("/catalogo");
+    } catch (err) {
+      console.error("Error al guardar el producto:", err);
+      setFormError("No se pudo conectar con el servidor.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!productId) return;
+    if (
+      !window.confirm("¿Seguro que querés eliminar este producto del catálogo?")
+    )
+      return;
+
+    setIsDeleting(true);
+    setFormError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/catalogo/${productId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setFormError(data.error || "No se pudo eliminar el producto.");
+        setIsDeleting(false);
+        return;
+      }
+
+      navigate("/catalogo");
+    } catch (err) {
+      console.error("Error al eliminar el producto:", err);
+      setFormError("No se pudo conectar con el servidor.");
+      setIsDeleting(false);
+    }
+  };
+
+  if (isEditMode && isFetchingProduct) {
+    return (
+      <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
+        <p className="text-sm font-medium text-gray-500 animate-pulse">
+          Cargando producto...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Nuevo producto - ID: #1
-        </h1>
+    <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
+      <h1 className="text-2xl font-bold text-gray-900">
+        {isEditMode ? `Editar producto - ID: #${productId}` : "Nuevo producto"}
+      </h1>
 
-        <form
-          id="product-editor-form"
-          className="rounded-lg border border-gray-200 bg-white p-6"
-          onSubmit={handleSubmit}
-        >
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <Input
-                label="Nombre del producto"
-                id="nombre_producto"
-                inputName="nombre_producto"
-                inputType="text"
-                autoComplete="nombre_producto"
-                placeholder="Bife Ancho"
-                value={formValues.nombre_producto}
-                setOnChange={handleChange}
-              />
+      <form
+        id="product-editor-form"
+        className="rounded-lg border border-gray-200 bg-white p-6"
+        onSubmit={handleSubmit}
+      >
+        {formError && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {formError}
+          </div>
+        )}
 
-              <Input
-                label="Slug (URL)"
-                id="slug"
-                inputName="slug"
-                inputType="text"
-                autoComplete="slug"
-                placeholder="bife-ancho"
-                value={formValues.slug}
-                setOnChange={handleChange}
-              />
-
-              <BasicDropdown
-                label="Especie:"
-                id="especie"
-                items={itemsEspecie}
-                value={formValues.especie}
-                setOnChange={handleChange}
-              />
-
-              <BasicDropdown
-                label="Categoría:"
-                id="categoria"
-                items={itemsCategoria}
-                value={formValues.categoria}
-                setOnChange={handleChange}
-              />
-
-              <BasicDropdown
-                label="Unidad de medida:"
-                id="unidad_medida"
-                items={itemsUnidadMedida}
-                value={formValues.unidad_medida}
-                setOnChange={handleChange}
-              />
-            </div>
-
-            <TextArea
-              label="Descripción del producto"
-              id="descripcion"
-              inputName="descripcion"
-              autoComplete="descripcion"
-              placeholder="Agregá una descripción corta"
-              classNames={`col-span-2 ${isLoading && "bg-gray-100"}`}
-              value={formValues.descripcion}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              label="Nombre del producto"
+              id="nombre_producto"
+              inputName="nombre_producto"
+              inputType="text"
+              autoComplete="nombre_producto"
+              placeholder="Bife Ancho"
+              value={formValues.nombre_producto}
               setOnChange={handleChange}
             />
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <Input
-                label="Proteínas (g) (cada 100gr)"
-                id="proteinas"
-                inputName="proteinas"
-                inputType="number"
-                autoComplete="proteinas"
-                placeholder="20"
-                value={formValues.proteinas}
-                setOnChange={handleChange}
-              />
+            <Input
+              label="Slug (URL)"
+              id="slug"
+              inputName="slug"
+              inputType="text"
+              autoComplete="slug"
+              placeholder="bife-ancho"
+              value={formValues.slug}
+              setOnChange={handleChange}
+            />
 
-              <Input
-                label="Calorías (kcal) (cada 100gr)"
-                id="calorias"
-                inputName="calorias"
-                inputType="number"
-                autoComplete="calorias"
-                placeholder="205"
-                value={formValues.calorias}
-                setOnChange={handleChange}
-              />
+            <BasicDropdown
+              label="Especie:"
+              id="especie"
+              items={itemsEspecie}
+              value={formValues.especie}
+              setOnChange={handleChange}
+            />
 
-              <Input
-                label="Grasas (g) (cada 100gr)"
-                id="grasas"
-                inputName="grasas"
-                inputType="number"
-                autoComplete="grasas"
-                placeholder="13"
-                value={formValues.grasas}
-                setOnChange={handleChange}
-              />
-            </div>
+            <BasicDropdown
+              label="Categoría:"
+              id="categoria"
+              items={itemsCategoria}
+              value={formValues.categoria}
+              setOnChange={handleChange}
+            />
+
+            <BasicDropdown
+              label="Unidad de medida:"
+              id="unidad_medida"
+              items={itemsUnidadMedida}
+              value={formValues.unidad_medida}
+              setOnChange={handleChange}
+            />
           </div>
 
-          <label
-            htmlFor="Images"
-            className="flex flex-col items-center rounded-md border border-gray-200 p-4 text-gray-900 sm:p-6 mt-4"
-          >
-            <svg
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75"
-              />
-            </svg>
-
-            <span className="mt-4 font-medium">Subir imágen del producto</span>
-
-            <span className="mt-2 inline-block rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-100">
-              Buscar en la bibloteca
-            </span>
-
-            <input
-              multiple
-              type="file"
-              accept="image/*"
-              id="Images"
-              className="sr-only"
-            />
-          </label>
-
-          <ButtonLoader
-            value="Guardar producto"
-            loadingValue="Guardando el producto..."
-            classNames="w-full bg-emerald-700 transition hover:bg-emerald-600 text-white text-lg mt-6"
-            loaderColor="text-white"
-            buttonType="submit"
-            isLoading={isLoading}
+          <TextArea
+            label="Descripción del producto"
+            id="descripcion"
+            inputName="descripcion"
+            autoComplete="descripcion"
+            placeholder="Agregá una descripción corta"
+            classNames={`col-span-2 ${isLoading ? "bg-gray-100" : ""}`}
+            value={formValues.descripcion}
+            setOnChange={handleChange}
           />
-        </form>
 
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              label="Proteínas (g) (cada 100gr)"
+              id="proteinas"
+              inputName="proteinas"
+              inputType="number"
+              autoComplete="proteinas"
+              placeholder="20"
+              value={formValues.proteinas}
+              setOnChange={handleChange}
+            />
+
+            <Input
+              label="Calorías (kcal) (cada 100gr)"
+              id="calorias"
+              inputName="calorias"
+              inputType="number"
+              autoComplete="calorias"
+              placeholder="205"
+              value={formValues.calorias}
+              setOnChange={handleChange}
+            />
+
+            <Input
+              label="Grasas (g) (cada 100gr)"
+              id="grasas"
+              inputName="grasas"
+              inputType="number"
+              autoComplete="grasas"
+              placeholder="13"
+              value={formValues.grasas}
+              setOnChange={handleChange}
+            />
+          </div>
+        </div>
+
+        {/* Sección de Precios y Tramos por Cantidad */}
+        <div className="mt-6 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+          <h2 className="font-semibold text-gray-900">Precios y Ofertas</h2>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              label={`Precio por ${formValues.unidad_medida} ($)`}
+              id="precio"
+              inputName="precio"
+              inputType="number"
+              autoComplete="off"
+              isRequired={false}
+              placeholder="7800"
+              value={formValues.precio}
+              setOnChange={handleChange}
+            />
+
+            <Input
+              label="Precio anterior ($) — tachado en tienda"
+              id="precio_anterior"
+              inputName="precio_anterior"
+              inputType="number"
+              autoComplete="off"
+              isRequired={false}
+              placeholder="0"
+              value={formValues.precio_anterior}
+              setOnChange={handleChange}
+            />
+          </div>
+
+          {/* Gestión de Promociones por Volumen */}
+          <div className="mt-2 border-t border-gray-100 pt-4">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Promociones por cantidad (ej: Llevar 2 kg por $15.000)
+            </label>
+
+            <div className="flex flex-col md:flex-row items-end gap-3 mb-3">
+              <Input
+                label={`Cantidad (${formValues.unidad_medida})`}
+                id="promo_cantidad"
+                inputName="cantidad_kg"
+                inputType="number"
+                placeholder="2"
+                isRequired={false}
+                value={newPromo.cantidad_kg}
+                setOnChange={(e) =>
+                  setNewPromo({ ...newPromo, cantidad_kg: e.target.value })
+                }
+              />
+
+              <Input
+                label="Precio promocional total ($)"
+                id="promo_precio"
+                inputName="precio_promocional"
+                inputType="number"
+                placeholder="15000"
+                isRequired={false}
+                value={newPromo.precio_promocional}
+                setOnChange={(e) =>
+                  setNewPromo({
+                    ...newPromo,
+                    precio_promocional: e.target.value,
+                  })
+                }
+              />
+
+              <button
+                type="button"
+                onClick={handleAddPromo}
+                className="flex items-center gap-1 rounded-md bg-main-blue text-white px-4 py-2 text-sm font-medium hover:bg-main-blue/90 transition-colors shrink-0"
+              >
+                <Plus className="size-4" /> Agregar Tramo
+              </button>
+            </div>
+
+            {promos.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {promos.map((promo) => (
+                  <div
+                    key={promo.id}
+                    className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800"
+                  >
+                    <span>
+                      {promo.cantidad_kg} {formValues.unidad_medida} x $
+                      {Number(promo.precio_promocional).toLocaleString("es-AR")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePromo(promo.id)}
+                      className="text-emerald-700 hover:text-red-600 transition-colors"
+                      title="Eliminar tramo"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Visibilidad y Puntos */}
+        <div className="mt-4 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+          <h2 className="font-semibold text-gray-900">
+            Visibilidad y promoción
+          </h2>
+
+          <div className="flex flex-col gap-3">
+            <label
+              htmlFor="activo"
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                id="activo"
+                name="activo"
+                checked={formValues.activo}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="size-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600"
+              />
+              <span className="text-sm font-medium text-gray-900">
+                Producto activo (visible en la tienda)
+              </span>
+            </label>
+
+            <label
+              htmlFor="destacar"
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                id="destacar"
+                name="destacar"
+                checked={formValues.destacar}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="size-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600"
+              />
+              <span className="text-sm font-medium text-gray-900">
+                Destacar en la portada
+              </span>
+            </label>
+
+            <label
+              htmlFor="gana_puntos"
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                id="gana_puntos"
+                name="gana_puntos"
+                checked={formValues.gana_puntos}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="size-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-600"
+              />
+              <span className="text-sm font-medium text-gray-900">
+                Este producto suma puntos (Club Valette)
+              </span>
+            </label>
+
+            {formValues.gana_puntos && (
+              <div className="md:w-1/3">
+                <Input
+                  label="Puntos por compra"
+                  id="puntos"
+                  inputName="puntos"
+                  inputType="number"
+                  autoComplete="off"
+                  placeholder="10"
+                  value={formValues.puntos}
+                  setOnChange={handleChange}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Carga de Imagen con Cloudinary */}
+        <div className="mt-4 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+          <h2 className="font-semibold text-gray-900">Imagen del Producto</h2>
+
+          <Input
+            label="URL de la imagen"
+            id="imagen_url"
+            inputName="imagen_url"
+            inputType="text"
+            placeholder="https://res.cloudinary.com/..."
+            value={formValues.imagen_url}
+            setOnChange={handleChange}
+          />
+
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <label
+              htmlFor="Images"
+              className="flex-1 flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 p-4 text-gray-900 cursor-pointer hover:bg-gray-50 transition-colors w-full"
+            >
+              <ImageIcon className="size-6 text-gray-500" />
+              <span className="mt-2 text-sm font-medium text-gray-700">
+                {isUploadingImage
+                  ? "Subiendo a Cloudinary..."
+                  : "Subir archivo local a Cloudinary"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                id="Images"
+                className="sr-only"
+                onChange={handleImageFileChange}
+                disabled={isUploadingImage || isLoading}
+              />
+            </label>
+
+            {formValues.imagen_url && (
+              <div className="relative size-24 shrink-0 rounded-md border border-gray-200 overflow-hidden bg-gray-50">
+                <img
+                  src={formValues.imagen_url}
+                  alt="Vista previa"
+                  className="h-full w-full object-cover object-center"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <ButtonLoader
+          value={isEditMode ? "Guardar cambios" : "Guardar producto"}
+          loadingValue={
+            isEditMode ? "Guardando cambios..." : "Guardando el producto..."
+          }
+          classNames="w-full bg-emerald-700 transition hover:bg-emerald-600 text-white text-lg mt-6"
+          loaderColor="text-white"
+          buttonType="submit"
+          isLoading={isLoading || isUploadingImage}
+        />
+      </form>
+
+      {isEditMode && (
         <div className="rounded-lg border border-red-200 bg-white p-6">
           <h2 className="font-semibold text-gray-900">Ajustes delicados</h2>
-
           <p className="mt-2 text-sm text-gray-600">
             Eliminar el producto eliminará todas sus variaciones y podría
             afectar al stock actual. <br /> Es recomendable desactivar el
             producto.
           </p>
-
           <button
             type="button"
-            className="mt-4 inline-block rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="mt-4 inline-block rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
-            Eliminar producto del catálogo
+            {isDeleting ? "Eliminando..." : "Eliminar producto del catálogo"}
           </button>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

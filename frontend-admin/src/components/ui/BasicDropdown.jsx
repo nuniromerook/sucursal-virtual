@@ -1,13 +1,21 @@
-// BasicDropdown.jsx
+// src/components/ui/BasicDropdown.jsx
 import React, { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 
-const BasicDropdown = ({ label, items, value, id, setOnChange }) => {
+const BasicDropdown = ({
+  label,
+  items,
+  value,
+  id,
+  setOnChange,
+  placeholder = "Seleccionar",
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const { isLoading } = useAppContext();
 
   const selectedLabel =
-    items.find((item) => item.value === value)?.label ?? "Seleccionar";
+    items.find((item) => item.value === value)?.label ?? placeholder;
 
   const handleSelect = (item) => {
     setOnChange({
@@ -17,77 +25,71 @@ const BasicDropdown = ({ label, items, value, id, setOnChange }) => {
   };
 
   return (
-    <>
-      <div className="relative flex flex-col w-full">
-        <div
-          hidden={!isOpen}
-          onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-10"
-        />
+    <div className="relative flex flex-col w-full">
+      {isOpen && (
+        <div onClick={() => setIsOpen(false)} className="fixed inset-0 z-10" />
+      )}
 
+      {label && (
         <label htmlFor={id} className="block text-sm font-medium text-gray-900">
           {label}
         </label>
+      )}
 
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          type="button"
-          disabled={isLoading}
-          className={`flex w-full items-center justify-between mt-2 overflow-hidden rounded-md border border-gray-300 bg-white px-3 py-1.5 ${isLoading ? "disabled:bg-gray-100 cursor-not-allowed" : "cursor-pointer"}`}
-        >
-          <span className="text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900 focus:relative">
-            {selectedLabel}
-          </span>
+      {/* El id va acá, en el control real — antes estaba en el ícono de
+          la flecha, que no es lo que el label debe asociar. */}
+      <button
+        id={id}
+        onClick={() => setIsOpen((prev) => !prev)}
+        type="button"
+        disabled={isLoading}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`flex w-full items-center justify-between ${
+          label ? "mt-2" : ""
+        } rounded-md border border-gray-300 bg-white px-3 py-1.5 text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 ${
+          isLoading
+            ? "cursor-not-allowed bg-gray-100 opacity-70"
+            : "cursor-pointer"
+        }`}
+      >
+        <span className="truncate">{selectedLabel}</span>
 
-          <span
-            id={id}
-            className="text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900 focus:relative"
-            aria-label="Menu"
-          >
-            <svg
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m19.5 8.25-7.5 7.5-7.5-7.5"
-              />
-            </svg>
-          </span>
-        </button>
+        <ChevronDown
+          className={`size-4 shrink-0 text-gray-400 transition-transform duration-150 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
+      {isOpen && (
         <div
-          role="menu"
-          hidden={!isOpen}
-          className="absolute right-0 top-full mt-1 z-10 w-full overflow-hidden rounded border border-gray-300 bg-white shadow-sm space-y-1.5 py-2"
+          role="listbox"
+          className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-md border border-gray-300 bg-white py-1"
         >
-          {items.map((item) => (
-            <button
-              type="button"
-              key={item.value}
-              onClick={() => handleSelect(item)}
-              className="block w-full px-2 font-medium transition-colors group"
-            >
-              <p
-                className={`group-hover:bg-main-blue/20 py-1 rounded px-5 ${
-                  item.value === value
-                    ? "bg-main-blue text-white hover:bg-main-blue"
-                    : "text-black/90 hover:text-black"
+          {items.map((item) => {
+            const isSelected = item.value === value;
+
+            return (
+              <button
+                type="button"
+                key={item.value}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => handleSelect(item)}
+                className={`block w-full px-3 py-1.5 text-left text-sm font-medium transition-colors ${
+                  isSelected
+                    ? "bg-main-blue text-white"
+                    : "text-gray-700 hover:bg-main-blue/30 cursor-pointer"
                 }`}
               >
                 {item.label}
-              </p>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

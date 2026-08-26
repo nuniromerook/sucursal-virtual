@@ -1,45 +1,94 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Catalogo.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 
 import { API_URL } from "../config/api";
 import { useAppContext } from "../context/AppContext";
+import BasicDropdown from "../components/ui/BasicDropdown";
+import ProductCardAdmin from "../components/ProductCardAdmin";
 
-const DUMMY_IMAGE =
-  "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800";
+const QUICK_FILTERS = [
+  { value: "todos", label: "Todos" },
+  { value: "activos", label: "Activos" },
+  { value: "inactivos", label: "Inactivos" },
+  { value: "destacados", label: "Destacados" },
+  { value: "ofertas", label: "En oferta" },
+  { value: "puntos", label: "Ganan puntos" },
+];
 
-// TODO: reemplazar por datos reales de inventario/paquetes por sucursal
-// una vez que el endpoint de stock esté listo. Determinístico por id de
-// producto para que no cambie en cada render.
-const SUCURSALES_DUMMY = ["Luis Guillon"];
+const SORT_OPTIONS = [
+  { value: "recientes", label: "Más recientes" },
+  { value: "nombre_asc", label: "Nombre (A-Z)" },
+  { value: "precio_asc", label: "Precio: menor a mayor" },
+  { value: "precio_desc", label: "Precio: mayor a menor" },
+];
 
-const getStockPorSucursalDummy = (product) => {
-  return SUCURSALES_DUMMY.map((sucursal, index) => {
-    const seed = (product.id || 0) * 7 + index * 13;
-    const stockKg = (seed % 15) + 1;
-    const paquetes = seed % 12;
-    const precioPorKg = 9000 + ((seed * 53) % 15000);
-    const slug = "luis-guillon";
+const matchesQuickFilter = (product, quickFilter) => {
+  switch (quickFilter) {
+    case "activos":
+      return Boolean(product.activo);
+    case "inactivos":
+      return !product.activo;
+    case "destacados":
+      return Boolean(product.destacar);
+    case "ofertas": {
+      const anterior = Number(product.precio_anterior);
+      const actual = Number(product.precio);
+      return anterior > 0 && anterior > actual;
+    }
+    case "puntos":
+      return Boolean(product.gana_puntos) && Number(product.puntos) > 0;
+    default:
+      return true;
+  }
+};
 
-    return { sucursal, stockKg, paquetes, precioPorKg, slug };
-  });
+const sortProducts = (list, sortBy) => {
+  const sorted = [...list];
+
+  switch (sortBy) {
+    case "nombre_asc":
+      sorted.sort((a, b) =>
+        (a.nombre_producto || "").localeCompare(b.nombre_producto || ""),
+      );
+      break;
+    case "precio_asc":
+      sorted.sort((a, b) => Number(a.precio) - Number(b.precio));
+      break;
+    case "precio_desc":
+      sorted.sort((a, b) => Number(b.precio) - Number(a.precio));
+      break;
+    case "recientes":
+    default:
+      sorted.sort(
+        (a, b) => new Date(b.creado_en ?? 0) - new Date(a.creado_en ?? 0),
+      );
+      break;
+  }
+
+  return sorted;
 };
 
 const Catalogo = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [quickFilter, setQuickFilter] = useState("todos");
+  const [sortBy, setSortBy] = useState("recientes");
   const { setNavbarTitle } = useAppContext();
 
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/catalog`);
+      // El panel admin pide todo sin filtrar (activos e inactivos), a
+      // diferencia del ecommerce que pide ?activo=true.
+      const response = await fetch(`${API_URL}/catalogo`);
       const data = await response.json();
 
       setProducts(data);
     } catch (error) {
-      console.error(error);
+      console.error("Error al cargar el catálogo:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,11 +99,27 @@ const Catalogo = () => {
     setNavbarTitle("Catálogo de productos");
   }, []);
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.nombre_producto?.toLowerCase().includes(search.toLowerCase()) ||
-      product.id?.toString().includes(search.toString()),
-  );
+  // Actualiza el producto en memoria cuando ProductCardAdmin togglea
+  // "activo" — evita recargar todo el catálogo por un solo cambio.
+  const handleEstadoActualizado = (updated) => {
+    setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  };
+
+  const visibleProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    const filtered = products.filter((product) => {
+      const matchesSearch =
+        term === "" ||
+        product.nombre_producto?.toLowerCase().includes(term) ||
+        product.descripcion?.toLowerCase().includes(term) ||
+        product.id?.toString().includes(term);
+
+      return matchesSearch && matchesQuickFilter(product, quickFilter);
+    });
+
+    return sortProducts(filtered, sortBy);
+  }, [products, search, quickFilter, sortBy]);
 
   return (
     <div className="flex min-h-dvh flex-col gap-y-4 lg:gap-y-6 p-2 lg:p-4 py-6">
@@ -71,95 +136,63 @@ const Catalogo = () => {
         </Link>
       </div>
 
-      <div className="flex w-full sm:max-w-xs h-10 items-center gap-1 rounded-md border border-neutral-200 bg-white p-0.5">
-        <Search className="size-4 shrink-0 text-gray-400 ml-2" />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar producto..."
-          className="h-full w-full border-none bg-transparent px-2 focus:outline-none focus:ring-0"
-          aria-label="Buscar producto en el catálogo"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+        <div className="flex h-10 w-full sm:max-w-xs items-center gap-1 rounded-md border border-gray-300 bg-white px-2">
+          <Search className="size-4 shrink-0 text-gray-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, descripción o ID..."
+            className="h-full w-full border-none bg-transparent px-1 focus:outline-none focus:ring-0"
+            aria-label="Buscar producto en el catálogo"
+          />
+        </div>
+
+        <div className="w-full sm:w-56">
+          <BasicDropdown
+            id="sortBy"
+            items={SORT_OPTIONS}
+            value={sortBy}
+            setOnChange={(e) => setSortBy(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {QUICK_FILTERS.map((filter) => {
+          const isSelected = filter.value === quickFilter;
+
+          return (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setQuickFilter(filter.value)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                isSelected
+                  ? "border-main-blue bg-main-blue text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
       </div>
 
       {isLoading ? (
         <p className="text-sm text-gray-500">Cargando productos...</p>
-      ) : filteredProducts.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <p className="text-sm text-gray-500">No se encontraron productos.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-x-1 lg:gap-x-2 gap-y-3 sm:gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
-          {filteredProducts.map((product) => {
-            const stockPorSucursal = getStockPorSucursalDummy(product);
-
-            return (
-              <div
-                key={product.id}
-                className="group flex flex-col h-fit overflow-hidden rounded border border-gray-200 bg-white transition-shadow hover:shadow-md"
-              >
-                <Link
-                  to={`/catalogo/editar/${product.slug}`}
-                  className="w-full aspect-square shrink-0 overflow-hidden bg-gray-100"
-                >
-                  <img
-                    src={product.imagen_url || DUMMY_IMAGE}
-                    alt={product.nombre_producto}
-                    className="h-full w-full object-cover object-center"
-                  />
-                </Link>
-
-                <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
-                  <div className="min-w-0">
-                    <Link to={`/catalogo/editar/${product.slug}`}>
-                      <h2 className="text-sm font-semibold text-gray-900 line-clamp-1">
-                        {product.nombre_producto}
-                      </h2>
-
-                      <p className="text-xs text-gray-500 capitalize">
-                        {product.especie} / {product.categoria} ·{" "}
-                        {product.unidad_medida}
-                      </p>
-                    </Link>
-
-                    <div className="overflow-x-auto scrollbar-none mt-2">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="text-left">
-                          <tr className="font-medium text-gray-900 text-[13.5px] whitespace-nowrap">
-                            <th className="py-1">Sucursal</th>
-                            <th className="px-2">Stock</th>
-                            <th className="px-2">Paquetes</th>
-                            <th className="px-2">Precio /kg</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 text-sm">
-                          {stockPorSucursal.map((s) => (
-                            <tr
-                              key={s.sucursal}
-                              className="text-gray-600 whitespace-nowrap"
-                            >
-                              <td className="py-1 text-neutral-900">
-                                <Link
-                                  key={s.sucursal}
-                                  to={`/sucursal/${s.slug}`}
-                                >
-                                  {s.sucursal}
-                                </Link>
-                              </td>
-                              <td className="px-2">{s.stockKg} kg</td>
-                              <td className="px-2">{s.paquetes} paq.</td>
-                              <td className="px-2">
-                                $ {s.precioPorKg.toLocaleString("es-AR")}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-5">
+          {visibleProducts.map((product) => (
+            <ProductCardAdmin
+              key={product.id}
+              product={product}
+              onEstadoActualizado={handleEstadoActualizado}
+            />
+          ))}
         </div>
       )}
     </div>

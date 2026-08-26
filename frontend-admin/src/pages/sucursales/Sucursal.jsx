@@ -16,7 +16,7 @@ const NavLinkTab = ({ to, text, end }) => {
           `whitespace-nowrap py-2 px-4 rounded-t font-medium transition-colors hover:cursor-pointer ${
             isActive
               ? "bg-white text-neutral-800 border-x border-t border-neutral-300"
-              : "text-neutral-700 border-b border-b-neutral-300"
+              : "text-neutral-700 border-b border-b-neutral-300 hover:bg-neutral-200 rounded-b-none"
           }`
         }
       >
@@ -79,7 +79,7 @@ const Sucursal = () => {
 
             <NavLinkTab to="stock" text="Stock" end={false} />
 
-            <NavLinkTab to="empleados" text="Empleados" end={true} />
+            <NavLinkTab to="equipo" text="Equipo" end={true} />
 
             <NavLinkTab to="ajustes" text="Ajustes" end={true} />
             <div className="flex w-full border-b border-b-neutral-300" />

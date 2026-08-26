@@ -22,7 +22,7 @@ function App() {
           <Route path="/ingresar" element={<Auth />} />
 
           <Route path="/catalogo" element={<Catalogo />} />
-          <Route path="/catalogo/editar/:id" element={<ProductEditor />} />
+          <Route path="/catalogo/editar/:slug" element={<ProductEditor />} />
           <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
 
           {/* Cambiado :id a :slug para que coincida con useParams() en los componentes */}
@@ -35,7 +35,7 @@ function App() {
               element={<GestionPaquetes />}
             />
             <Route path="ajustes" element={<Informacion />} />
-            <Route path="empleados" element={<Empleados />} />
+            <Route path="equipo" element={<Empleados />} />
           </Route>
 
           <Route path="/sucursales/nueva" element={<SucursalEditor />} />
