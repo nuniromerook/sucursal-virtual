@@ -59,7 +59,7 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="group relative flex flex-col border border-neutral-200/50 p-2 bg-white hover:border-neutral-200 transition-all duration-200">
+    <div className="group relative flex flex-col border border-neutral-200/50 p-2 bg-white hover:border-neutral-200 transition-all duration-200 z-0">
       <div className="relative aspect-square w-full overflow-hidden rounded-md bg-gray-200">
         <img
           alt={imageAlt}
