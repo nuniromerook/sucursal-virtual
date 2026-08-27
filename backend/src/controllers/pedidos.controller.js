@@ -134,11 +134,45 @@ const createPedido = async (req, res) => {
 
     await dbClient.query("COMMIT");
 
+    // 4. Acreditar puntos al cliente autenticado por los productos del pedido
+    //    Regla: 1 vez los puntos del producto (campo fijo, sin multiplicar por kg)
+    try {
+      const puntosRes = await pool.query(
+        `SELECT COALESCE(SUM(c.puntos), 0) AS total_puntos
+         FROM pedido_items pi
+         JOIN catalogo c ON c.id = pi.catalogo_id
+         WHERE pi.pedido_id = $1 AND c.gana_puntos = true AND c.puntos > 0`,
+        [pedidoCreado.id]
+      );
+      const puntosGanados = Number(puntosRes.rows[0].total_puntos);
+
+      if (puntosGanados > 0 && clienteId) {
+        await pool.query(
+          `UPDATE clientes SET puntos_acumulados = puntos_acumulados + $1 WHERE id = $2`,
+          [puntosGanados, clienteId]
+        );
+        await pool.query(
+          `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion, pedido_id)
+           VALUES ($1, 'compra', $2, $3, $4)`,
+          [
+            clienteId,
+            puntosGanados,
+            `Puntos ganados por el pedido #${pedidoCreado.id}`,
+            pedidoCreado.id,
+          ]
+        );
+      }
+    } catch (puntosError) {
+      // No crítico: el pedido se creó bien, solo falló la acreditación de puntos
+      console.warn("No se pudieron acreditar puntos al pedido:", puntosError.message);
+    }
+
     res.status(201).json({
       success: true,
       message: "Pedido creado correctamente",
       pedido: pedidoCreado,
     });
+
   } catch (error) {
     await dbClient.query("ROLLBACK");
     console.error("Error al crear pedido:", error);

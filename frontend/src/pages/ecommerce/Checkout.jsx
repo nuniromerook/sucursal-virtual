@@ -41,6 +41,12 @@ export default function Checkout() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const inputLabel = "block text-sm font-semibold text-neutral-700 mb-1";
+  const inputClassnames =
+    "w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-base focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue";
+  const selectClassnames =
+    "w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-base bg-white focus:outline-none focus:ring-2 focus:ring-main-blue/30";
+
   // Paso 1: Datos del Comprador (Pre-cargados si el usuario está logueado)
   const [cliente, setCliente] = useState({
     nombre: user?.nombre || "",
@@ -274,7 +280,7 @@ export default function Checkout() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className={inputLabel}>
                     Nombre y Apellido <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -283,12 +289,12 @@ export default function Checkout() {
                     placeholder="Ej. Juan Pérez"
                     value={cliente.nombre}
                     onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                    className={inputClassnames}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className={inputLabel}>
                     WhatsApp / Teléfono <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -297,15 +303,15 @@ export default function Checkout() {
                     placeholder="Ej. 11 2345-6789"
                     value={cliente.telefono}
                     onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                    className={inputClassnames}
                   />
-                  <p className="text-[11px] text-neutral-400 mt-1">
+                  <p className="text-xs text-neutral-400 mt-1">
                     Te escribiremos para confirmar cuando el corte esté pesado.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className={inputLabel}>
                     Email (Opcional)
                   </label>
                   <input
@@ -313,12 +319,12 @@ export default function Checkout() {
                     placeholder="juan@email.com"
                     value={cliente.email}
                     onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                    className={inputClassnames}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  <label className={inputLabel}>
                     Usuario / Redes (Opcional)
                   </label>
                   <input
@@ -326,7 +332,7 @@ export default function Checkout() {
                     placeholder="@usuario_instagram"
                     value={cliente.usuario}
                     onChange={(e) => setCliente({ ...cliente, usuario: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                    className={inputClassnames}
                   />
                 </div>
               </div>
@@ -463,7 +469,7 @@ export default function Checkout() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label className={inputLabel}>
                         Calle y Número <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -474,12 +480,12 @@ export default function Checkout() {
                         onChange={(e) =>
                           setDireccionForm({ ...direccionForm, calleNumero: e.target.value })
                         }
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                        className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label className={inputLabel}>
                         Piso / Depto
                       </label>
                       <input
@@ -489,12 +495,12 @@ export default function Checkout() {
                         onChange={(e) =>
                           setDireccionForm({ ...direccionForm, pisoDepto: e.target.value })
                         }
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                        className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label className={inputLabel}>
                         Localidad / Barrio
                       </label>
                       <input
@@ -504,12 +510,12 @@ export default function Checkout() {
                         onChange={(e) =>
                           setDireccionForm({ ...direccionForm, localidad: e.target.value })
                         }
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                        className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label className={inputLabel}>
                         Partido / Ciudad
                       </label>
                       <input
@@ -519,12 +525,12 @@ export default function Checkout() {
                         onChange={(e) =>
                           setDireccionForm({ ...direccionForm, partido: e.target.value })
                         }
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                        className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label className={inputLabel}>
                         Provincia
                       </label>
                       <input
@@ -534,13 +540,13 @@ export default function Checkout() {
                         onChange={(e) =>
                           setDireccionForm({ ...direccionForm, provincia: e.target.value })
                         }
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                        className={inputClassnames}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    <label className={inputLabel}>
                       Aclaraciones de entrega (Opcional)
                     </label>
                     <input
@@ -550,25 +556,25 @@ export default function Checkout() {
                       onChange={(e) =>
                         setDireccionForm({ ...direccionForm, notas: e.target.value })
                       }
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
+                      className={inputClassnames}
                     />
                   </div>
 
                   {direccionForm.calleNumero && (
-                    <div className="p-2.5 bg-neutral-100 rounded-lg text-xs text-neutral-600">
+                    <div className="p-2.5 bg-neutral-100 rounded-lg text-sm text-neutral-600">
                       <span className="font-semibold text-neutral-800">Dirección normalizada:</span>{" "}
                       {direccionFormalCompleta}
                     </div>
                   )}
 
                   <div className="pt-2">
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    <label className={inputLabel}>
                       Sucursal Valette que preparará tu envío:
                     </label>
                     <select
                       value={sucursalId}
                       onChange={(e) => setSucursalId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main-blue/30"
+                      className={selectClassnames}
                     >
                       {sucursales.map((s) => (
                         <option key={s.id} value={s.id}>

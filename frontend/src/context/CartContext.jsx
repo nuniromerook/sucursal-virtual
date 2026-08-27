@@ -1,12 +1,22 @@
 // frontend/src/context/CartContext.jsx
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import { API_URL } from "../config/api";
 
 export const CartContext = createContext();
 
 const CART_STORAGE_KEY = "valette_cart";
 
 /**
- * Calcula el total regular, total con promociones y ahorro para un item dado su cantidad y promos activas.
+ * Calcula el total regular, total con promociones y ahorro para un item
+ * dado su cantidad y promos activas (lógica escalonada por volumen).
  */
 export const calculateItemPrice = (item) => {
   const qty = Number(item.cantidad_kg) || 0;
@@ -15,13 +25,7 @@ export const calculateItemPrice = (item) => {
   const promos = Array.isArray(item.promos) ? item.promos : [];
 
   if (qty <= 0 || unitPrice <= 0) {
-    return {
-      total: 0,
-      regularTotal: 0,
-      ahorro: 0,
-      hasPromo: false,
-      appliedPromo: null,
-    };
+    return { total: 0, regularTotal: 0, ahorro: 0, hasPromo: false, appliedPromo: null };
   }
 
   // 1. Coincidencia exacta con un tramo promocional
@@ -31,16 +35,10 @@ export const calculateItemPrice = (item) => {
   if (exactPromo) {
     const promoTotal = Number(exactPromo.precio_promocional);
     const ahorro = Math.max(0, regularTotal - promoTotal);
-    return {
-      total: promoTotal,
-      regularTotal,
-      ahorro,
-      hasPromo: ahorro > 0,
-      appliedPromo: exactPromo,
-    };
+    return { total: promoTotal, regularTotal, ahorro, hasPromo: ahorro > 0, appliedPromo: exactPromo };
   }
 
-  // 2. Combinación / tramos descendentes para cantidades mayores
+  // 2. Combinación de tramos descendentes para cantidades mayores
   const sortedPromos = [...promos]
     .filter((p) => p.activa !== false && Number(p.cantidad_kg) > 0)
     .sort((a, b) => Number(b.cantidad_kg) - Number(a.cantidad_kg));
@@ -52,7 +50,6 @@ export const calculateItemPrice = (item) => {
   for (const promo of sortedPromos) {
     const promoKg = Number(promo.cantidad_kg);
     const promoPrice = Number(promo.precio_promocional);
-
     if (remainingQty >= promoKg) {
       const paquetes = Math.floor(remainingQty / promoKg);
       computedTotal += paquetes * promoPrice;
@@ -62,19 +59,10 @@ export const calculateItemPrice = (item) => {
   }
 
   // El sobrante que no llega a promo se cobra a precio regular
-  if (remainingQty > 0) {
-    computedTotal += remainingQty * unitPrice;
-  }
+  if (remainingQty > 0) computedTotal += remainingQty * unitPrice;
 
   const ahorro = Math.max(0, regularTotal - computedTotal);
-
-  return {
-    total: computedTotal,
-    regularTotal,
-    ahorro,
-    hasPromo: ahorro > 0,
-    appliedPromo: promoApplied,
-  };
+  return { total: computedTotal, regularTotal, ahorro, hasPromo: ahorro > 0, appliedPromo: promoApplied };
 };
 
 export function CartContextProvider({ children }) {
@@ -82,15 +70,24 @@ export function CartContextProvider({ children }) {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Error reading cart from localStorage:", e);
+    } catch {
       return [];
     }
   });
 
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartAlerts, setCartAlerts] = useState([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Sincronizar en localStorage cada vez que cambie cartItems
+  // Referencia al token actual para no incluir AuthContext como dependencia circular
+  const tokenRef = useRef(null);
+
+  // Exponer un setter de token que AuthContext invocará
+  const setAuthToken = useCallback((token) => {
+    tokenRef.current = token;
+  }, []);
+
+  // Persistir en localStorage cada vez que cambie cartItems
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
@@ -103,9 +100,99 @@ export function CartContextProvider({ children }) {
   const closeCart = () => setIsCartOpen(false);
   const toggleCart = () => setIsCartOpen((prev) => !prev);
 
+  // ─── Sincronización con DB ─────────────────────────────────────────────
+
   /**
-   * Agrega un producto o incrementa su cantidad si ya existe
+   * Sube el carrito al backend y actualiza el estado local con el resultado
+   * validado (precio fresco, productos activos, promos vigentes).
+   * Se llama automáticamente al detectar login en AuthContext.
    */
+  const sincronizarCarrito = useCallback(
+    async (token, itemsToSync) => {
+      if (!token) return;
+      const items = itemsToSync ?? cartItems;
+
+      setIsSyncing(true);
+      try {
+        const res = await fetch(`${API_URL}/carritos/sincronizar`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ items }),
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        // Reemplazar el carrito local con el validado por el backend
+        if (Array.isArray(data.items)) {
+          setCartItems(data.items);
+        }
+
+        // Mostrar alertas de cambios detectados
+        if (Array.isArray(data.alerts) && data.alerts.length > 0) {
+          setCartAlerts(data.alerts);
+          setIsCartOpen(true); // Abrir el drawer para que el usuario vea las alertas
+        }
+      } catch (error) {
+        console.error("Error al sincronizar carrito con DB:", error);
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [cartItems]
+  );
+
+  /**
+   * Persiste un cambio de cantidad en background (fire-and-forget).
+   * No bloquea la UI.
+   */
+  const persistItemChange = useCallback((catalogoId, cantidad_kg) => {
+    const token = tokenRef.current;
+    if (!token) return;
+
+    fetch(`${API_URL}/carritos/mi-carrito/item/${catalogoId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ cantidad_kg }),
+    }).catch(() => {
+      // Silencioso: el estado local ya fue actualizado
+    });
+  }, []);
+
+  /**
+   * Limpia el carrito en DB (al cerrar sesión o hacer clearCart estando logueado).
+   */
+  const clearCarritoDB = useCallback(() => {
+    const token = tokenRef.current;
+    if (!token) return;
+
+    fetch(`${API_URL}/carritos/mi-carrito`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  }, []);
+
+  /**
+   * Actualización manual del carrito desde la DB.
+   * Trae precios y promos frescos sin reemplazar el carrito local
+   * (usa sincronizarCarrito para que el backend valide y unifique).
+   */
+  const refetchCarrito = useCallback(async () => {
+    const token = tokenRef.current;
+    if (!token) return;
+    await sincronizarCarrito(token);
+  }, [sincronizarCarrito]);
+
+
+  // ─── Operaciones de carrito ────────────────────────────────────────────
+
   const addToCart = (product, cantidadKg = 1) => {
     const qtyToAdd = Number(cantidadKg) > 0 ? Number(cantidadKg) : 1;
 
@@ -114,107 +201,109 @@ export function CartContextProvider({ children }) {
 
       if (existingIndex > -1) {
         const updated = [...prevItems];
-        const currentQty = Number(updated[existingIndex].cantidad_kg) || 0;
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          ...product,
-          cantidad_kg: currentQty + qtyToAdd,
-        };
+        const newQty = (Number(updated[existingIndex].cantidad_kg) || 0) + qtyToAdd;
+        updated[existingIndex] = { ...updated[existingIndex], ...product, cantidad_kg: newQty };
+        // Persistir en background
+        persistItemChange(product.id, newQty);
         return updated;
       }
 
-      return [
-        ...prevItems,
-        {
-          id: product.id,
-          nombre_producto: product.nombre_producto,
-          slug: product.slug,
-          descripcion: product.descripcion,
-          especie: product.especie,
-          categoria: product.categoria,
-          imagen_url: product.imagen_url,
-          unidad_medida: product.unidad_medida || "kg",
-          precio: Number(product.precio) || 0,
-          precio_anterior: Number(product.precio_anterior) || 0,
-          promos: Array.isArray(product.promos) ? product.promos : [],
-          gana_puntos: Boolean(product.gana_puntos),
-          puntos: Number(product.puntos) || 0,
-          cantidad_kg: qtyToAdd,
-        },
-      ];
+      const newItem = {
+        id: product.id,
+        nombre_producto: product.nombre_producto,
+        slug: product.slug,
+        descripcion: product.descripcion,
+        especie: product.especie,
+        categoria: product.categoria,
+        imagen_url: product.imagen_url,
+        unidad_medida: product.unidad_medida || "kg",
+        precio: Number(product.precio) || 0,
+        precio_anterior: Number(product.precio_anterior) || 0,
+        promos: Array.isArray(product.promos) ? product.promos : [],
+        gana_puntos: Boolean(product.gana_puntos),
+        puntos: Number(product.puntos) || 0,
+        cantidad_kg: qtyToAdd,
+      };
+      persistItemChange(product.id, qtyToAdd);
+      return [...prevItems, newItem];
     });
 
     setIsCartOpen(true);
   };
 
-  /**
-   * Actualiza la cantidad de kg de un producto
-   */
   const updateQuantity = (productId, newQuantity) => {
     const qty = Number(newQuantity);
     if (qty <= 0) {
       removeFromCart(productId);
       return;
     }
-
     setCartItems((prevItems) =>
       prevItems.map((item) =>
         item.id === productId ? { ...item, cantidad_kg: qty } : item
       )
     );
+    persistItemChange(productId, qty);
   };
 
-  /**
-   * Incrementa en 1 unidad/kg
-   */
   const incrementQuantity = (productId) => {
     setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId
-          ? { ...item, cantidad_kg: (Number(item.cantidad_kg) || 0) + 1 }
-          : item
-      )
+      prevItems.map((item) => {
+        if (item.id === productId) {
+          const newQty = (Number(item.cantidad_kg) || 0) + 1;
+          persistItemChange(productId, newQty);
+          return { ...item, cantidad_kg: newQty };
+        }
+        return item;
+      })
     );
   };
 
-  /**
-   * Decrementa en 1 unidad/kg (o elimina si llega a 0)
-   */
   const decrementQuantity = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems
+    setCartItems((prevItems) => {
+      const updated = prevItems
         .map((item) => {
           if (item.id === productId) {
             const newQty = (Number(item.cantidad_kg) || 0) - 1;
-            return newQty > 0 ? { ...item, cantidad_kg: newQty } : null;
+            if (newQty <= 0) {
+              persistItemChange(productId, 0);
+              return null;
+            }
+            persistItemChange(productId, newQty);
+            return { ...item, cantidad_kg: newQty };
           }
           return item;
         })
-        .filter(Boolean)
-    );
+        .filter(Boolean);
+      return updated;
+    });
   };
 
-  /**
-   * Elimina un producto del carrito
-   */
   const removeFromCart = (productId) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+    persistItemChange(productId, 0);
   };
 
-  /**
-   * Vacía el carrito por completo
-   */
   const clearCart = () => {
     setCartItems([]);
+    clearCarritoDB();
   };
 
-  // Cálculos totales
+  // ─── Alertas ───────────────────────────────────────────────────────────
+
+  const dismissAlert = (idx) => {
+    setCartAlerts((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const clearAlerts = () => setCartAlerts([]);
+
+  // ─── Totales ───────────────────────────────────────────────────────────
+
   const summary = useMemo(() => {
     let subtotal = 0;
     let totalEstimado = 0;
     let totalAhorro = 0;
     let totalKg = 0;
-    let totalItems = cartItems.length;
+    const totalItems = cartItems.length;
     let totalPuntos = 0;
 
     for (const item of cartItems) {
@@ -225,34 +314,41 @@ export function CartContextProvider({ children }) {
       totalKg += Number(item.cantidad_kg) || 0;
 
       if (item.gana_puntos && item.puntos > 0) {
-        totalPuntos += Number(item.puntos) * (Number(item.cantidad_kg) || 1);
+        totalPuntos += Number(item.puntos);
       }
     }
 
-    return {
-      subtotal,
-      totalEstimado,
-      totalAhorro,
-      totalKg,
-      totalItems,
-      totalPuntos,
-    };
+    return { subtotal, totalEstimado, totalAhorro, totalKg, totalItems, totalPuntos };
   }, [cartItems]);
 
   return (
     <CartContext.Provider
       value={{
+        // Estado
         cartItems,
         isCartOpen,
+        isSyncing,
+        cartAlerts,
+        // Acciones de UI
         openCart,
         closeCart,
         toggleCart,
+        // Acciones de carrito
         addToCart,
         updateQuantity,
         incrementQuantity,
         decrementQuantity,
         removeFromCart,
         clearCart,
+        // Alertas
+        dismissAlert,
+        clearAlerts,
+        // Sincronización (llamada desde AuthContext)
+        sincronizarCarrito,
+        setAuthToken,
+        clearCarritoDB,
+        refetchCarrito,
+        // Totales
         ...summary,
       }}
     >

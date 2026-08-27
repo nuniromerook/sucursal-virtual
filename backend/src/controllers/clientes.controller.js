@@ -6,12 +6,30 @@ const {
   generateToken,
 } = require("../utils/auth");
 
+const crypto = require("crypto");
+
+/**
+ * Genera un código de referido de 5 dígitos único (10000-99999)
+ */
+async function generarReferralCode(dbClient) {
+  for (let i = 0; i < 20; i++) {
+    const code = String(Math.floor(10000 + Math.random() * 90000));
+    const existe = await dbClient.query(
+      `SELECT id FROM clientes WHERE referral_code = $1 LIMIT 1`,
+      [code]
+    );
+    if (existe.rows.length === 0) return code;
+  }
+  // Fallback: timestamp en base36 truncado a 5 dígitos
+  return String(Date.now()).slice(-5);
+}
+
 /**
  * POST /clientes/registro
  * Registro tradicional con email y contraseña
  */
 const registroCliente = async (req, res) => {
-  const { nombre, email, password, telefono, usuario } = req.body;
+  const { nombre, email, password, telefono, usuario, codigo_referido } = req.body;
 
   if (!nombre || !email || !password) {
     return res.status(400).json({
@@ -22,65 +40,171 @@ const registroCliente = async (req, res) => {
   const emailClean = email.trim().toLowerCase();
   const usuarioClean = usuario ? usuario.trim().replace(/^@/, "").toLowerCase() : null;
   const telefonoClean = telefono ? telefono.trim() : "";
+  const codigoRefClean = codigo_referido ? codigo_referido.trim().toUpperCase() : null;
 
+  const dbClient = await pool.connect();
   try {
+    await dbClient.query("BEGIN");
+
     // 1. Verificar si ya existe por email o usuario
-    const existente = await pool.query(
+    const existente = await dbClient.query(
       `SELECT id, email, usuario FROM clientes WHERE email = $1 OR (usuario IS NOT NULL AND usuario = $2) LIMIT 1`,
       [emailClean, usuarioClean || ""]
     );
 
     if (existente.rows.length > 0) {
       const match = existente.rows[0];
+      await dbClient.query("ROLLBACK");
       if (match.email === emailClean) {
         return res.status(400).json({ error: "El correo electrónico ya se encuentra registrado." });
       }
-      if (usuarioClean && match.usuario === usuarioClean) {
-        return res.status(400).json({ error: "El nombre de usuario ya está en uso." });
+      return res.status(400).json({ error: "El nombre de usuario ya está en uso." });
+    }
+
+    // 2. Validar código de referido (si se proporcionó)
+    let referidorId = null;
+    if (codigoRefClean) {
+      // Verificar si la columna referral_code existe
+      const colCheck = await dbClient.query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = 'clientes' AND column_name = 'referral_code' LIMIT 1`
+      );
+
+      if (colCheck.rows.length > 0) {
+        const referidorRes = await dbClient.query(
+          `SELECT id, nombre, usuario FROM clientes WHERE referral_code = $1 LIMIT 1`,
+          [codigoRefClean]
+        );
+        if (referidorRes.rows.length === 0) {
+          await dbClient.query("ROLLBACK");
+          return res.status(400).json({ error: "El código de referido no es válido." });
+        }
+        referidorId = referidorRes.rows[0].id;
       }
     }
 
     const hashedPassword = hashPassword(password);
     const perfilCompleto = Boolean(usuarioClean && telefonoClean);
-    const puntosIniciales = perfilCompleto ? 50 : 0;
+    const puntosIniciales = (perfilCompleto ? 50 : 0) + (referidorId ? 50 : 0);
 
-    // 2. Insertar cliente
-    const result = await pool.query(
-      `INSERT INTO clientes (
-         nombre, email, password, telefono, usuario, puntos_acumulados, perfil_completo
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, nombre, email, telefono, usuario, puntos_acumulados, perfil_completo, creado_en`,
-      [
-        nombre.trim(),
-        emailClean,
-        hashedPassword,
-        telefonoClean,
-        usuarioClean,
-        puntosIniciales,
-        perfilCompleto,
-      ]
+    // 3. Verificar si las columnas referral_code y referido_por existen
+    const colsCheck = await dbClient.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_name = 'clientes' AND column_name IN ('referral_code', 'referido_por')`
     );
+    const colsExistentes = new Set(colsCheck.rows.map((r) => r.column_name));
+    const tieneReferralCols = colsExistentes.has("referral_code") && colsExistentes.has("referido_por");
 
-    const nuevoCliente = result.rows[0];
+    // 4. Insertar cliente (con o sin columnas de referral según el estado de la DB)
+    let nuevoCliente;
+    if (tieneReferralCols) {
+      const nuevoReferralCode = await generarReferralCode(dbClient);
+
+      // Protección anti-auto-referido
+      if (referidorId !== null) {
+        // No hay ID del nuevo cliente aún, pero podemos verificar el email del referidor
+        const referidorEmailCheck = await dbClient.query(
+          `SELECT email FROM clientes WHERE id = $1 LIMIT 1`,
+          [referidorId]
+        );
+        if (referidorEmailCheck.rows.length > 0 && referidorEmailCheck.rows[0].email === emailClean) {
+          await dbClient.query("ROLLBACK");
+          return res.status(400).json({ error: "No podés usar tu propio código de referido." });
+        }
+      }
+
+      const result = await dbClient.query(
+        `INSERT INTO clientes (
+           nombre, email, password, telefono, usuario,
+           puntos_acumulados, perfil_completo,
+           referral_code, referido_por
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, nombre, email, telefono, usuario,
+                   puntos_acumulados, perfil_completo,
+                   referral_code, creado_en`,
+        [
+          nombre.trim(), emailClean, hashedPassword,
+          telefonoClean, usuarioClean,
+          puntosIniciales, perfilCompleto,
+          nuevoReferralCode, referidorId,
+        ]
+      );
+      nuevoCliente = result.rows[0];
+    } else {
+      // Columnas no migradas aún — inserción sin referral
+      console.warn("⚠ Columnas referral_code/referido_por no encontradas en clientes. Ejecutá el SQL de migración.");
+      const result = await dbClient.query(
+        `INSERT INTO clientes (nombre, email, password, telefono, usuario, puntos_acumulados, perfil_completo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, nombre, email, telefono, usuario, puntos_acumulados, perfil_completo, creado_en`,
+        [nombre.trim(), emailClean, hashedPassword, telefonoClean, usuarioClean, puntosIniciales, perfilCompleto]
+      );
+      nuevoCliente = result.rows[0];
+      referidorId = null; // no podemos procesar referido sin la columna
+    }
+
+    // 5. Verificar si puntos_historial existe antes de insertar
+    const historialCheck = await dbClient.query(
+      `SELECT to_regclass('puntos_historial') AS existe`
+    );
+    const tieneHistorial = historialCheck.rows[0]?.existe !== null;
+
+    if (tieneHistorial) {
+      if (perfilCompleto) {
+        await dbClient.query(
+          `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+           VALUES ($1, 'bienvenida', 50, 'Bono por completar el perfil al registrarse')`,
+          [nuevoCliente.id]
+        );
+      }
+
+      if (referidorId) {
+        await dbClient.query(
+          `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+           VALUES ($1, 'referido_recibido', 50, $2)`,
+          [nuevoCliente.id, `Bonus por usar el código de referido: ${codigoRefClean}`]
+        );
+        await dbClient.query(
+          `UPDATE clientes SET puntos_acumulados = puntos_acumulados + 100 WHERE id = $1`,
+          [referidorId]
+        );
+        await dbClient.query(
+          `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+           VALUES ($1, 'referido_dado', 100, $2)`,
+          [referidorId, `Tu referido @${usuarioClean || emailClean} se registró con tu código`]
+        );
+      }
+    } else {
+      console.warn("⚠ Tabla puntos_historial no encontrada. Ejecutá el SQL de migración.");
+    }
+
+    await dbClient.query("COMMIT");
+
     const token = generateToken({
       id: nuevoCliente.id,
       email: nuevoCliente.email,
       nombre: nuevoCliente.nombre,
     });
 
-    res.status(201).json({
-      success: true,
-      message: perfilCompleto
-        ? "¡Registro exitoso! Ganaste 50 puntos de bienvenida."
-        : "¡Registro exitoso!",
-      token,
-      user: nuevoCliente,
-    });
+    let message = "¡Registro exitoso!";
+    if (perfilCompleto && referidorId) message = "¡Registro exitoso! Ganaste 100 puntos de bienvenida.";
+    else if (perfilCompleto) message = "¡Registro exitoso! Ganaste 50 puntos de bienvenida.";
+    else if (referidorId) message = "¡Registro exitoso! Ganaste 50 puntos por usar el código de referido.";
+
+    res.status(201).json({ success: true, message, token, user: nuevoCliente });
   } catch (error) {
-    console.error("Error al registrar cliente:", error);
-    res.status(500).json({ error: "Error interno al procesar el registro." });
+    await dbClient.query("ROLLBACK").catch(() => {});
+    console.error("╔══ ERROR registroCliente ══════════════════════════");
+    console.error("║ message:", error.message);
+    console.error("║ code   :", error.code);
+    console.error("║ detail :", error.detail);
+    console.error("╚════════════════════════════════════════════════════");
+    res.status(500).json({ error: "Error interno al procesar el registro.", detalle: error.message });
+  } finally {
+    dbClient.release();
   }
 };
+
 
 /**
  * POST /clientes/login
@@ -99,7 +223,7 @@ const loginCliente = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, nombre, email, password, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url
+      `SELECT id, nombre, email, password, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code
        FROM clientes
        WHERE email = $1 OR usuario = $1 OR telefono = $1
        LIMIT 1`,
@@ -121,6 +245,13 @@ const loginCliente = async (req, res) => {
     const passwordValido = verifyPassword(password, cliente.password);
     if (!passwordValido) {
       return res.status(401).json({ error: "Credenciales incorrectas." });
+    }
+
+    // Si por alguna razón histórica no tiene referral_code, se lo generamos
+    if (!cliente.referral_code) {
+      const code = await generarReferralCode(pool);
+      await pool.query(`UPDATE clientes SET referral_code = $1 WHERE id = $2`, [code, cliente.id]);
+      cliente.referral_code = code;
     }
 
     const token = generateToken({
@@ -158,7 +289,7 @@ const googleAuth = async (req, res) => {
 
   try {
     let clienteRes = await pool.query(
-      `SELECT id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url
+      `SELECT id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code
        FROM clientes
        WHERE (google_id IS NOT NULL AND google_id = $1) OR email = $2
        LIMIT 1`,
@@ -169,23 +300,31 @@ const googleAuth = async (req, res) => {
 
     if (clienteRes.rows.length > 0) {
       cliente = clienteRes.rows[0];
-      // Actualizar google_id y avatar si no los tenía
+      let nuevoCode = cliente.referral_code;
+      if (!nuevoCode) {
+        nuevoCode = await generarReferralCode(pool);
+      }
+
+      // Actualizar google_id, avatar y referral_code si no los tenía
       await pool.query(
         `UPDATE clientes 
          SET google_id = COALESCE(google_id, $1),
              avatar_url = COALESCE(avatar_url, $2),
+             referral_code = COALESCE(referral_code, $3),
              actualizado_en = NOW()
-         WHERE id = $3`,
-        [google_id || null, avatar_url || null, cliente.id]
+         WHERE id = $4`,
+        [google_id || null, avatar_url || null, nuevoCode, cliente.id]
       );
+      cliente.referral_code = nuevoCode;
     } else {
-      // Alta rápida nuevo usuario Google
+      // Alta rápida nuevo usuario Google con referral_code de 5 dígitos
+      const code = await generarReferralCode(pool);
       const insertRes = await pool.query(
         `INSERT INTO clientes (
-           nombre, email, google_id, avatar_url, telefono, puntos_acumulados, perfil_completo
-         ) VALUES ($1, $2, $3, $4, '', 0, false)
-         RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url`,
-        [nombre || "Usuario Valette", emailClean, google_id || null, avatar_url || null]
+           nombre, email, google_id, avatar_url, telefono, puntos_acumulados, perfil_completo, referral_code
+         ) VALUES ($1, $2, $3, $4, '', 0, false, $5)
+         RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code`,
+        [nombre || "Usuario Valette", emailClean, google_id || null, avatar_url || null, code]
       );
       cliente = insertRes.rows[0];
     }
@@ -217,9 +356,13 @@ const getPerfil = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, creado_en
-       FROM clientes
-       WHERE id = $1`,
+      `SELECT
+         c.id, c.nombre, c.email, c.telefono, c.usuario,
+         c.direccion_default, c.puntos_acumulados, c.perfil_completo,
+         c.avatar_url, c.creado_en, c.referral_code,
+         (SELECT COUNT(*) FROM clientes r WHERE r.referido_por = c.id) AS referidos_count
+       FROM clientes c
+       WHERE c.id = $1`,
       [clienteId]
     );
 
@@ -227,7 +370,10 @@ const getPerfil = async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado." });
     }
 
-    res.json(result.rows[0]);
+    const perfil = result.rows[0];
+    perfil.referidos_count = Number(perfil.referidos_count);
+
+    res.json(perfil);
   } catch (error) {
     console.error("Error al obtener perfil:", error);
     res.status(500).json({ error: "Error al obtener datos del perfil." });
@@ -378,6 +524,71 @@ const getHistorialPedidos = async (req, res) => {
   }
 };
 
+/**
+ * GET /clientes/puntos/historial
+ * Devuelve los últimos 30 movimientos de puntos del cliente autenticado
+ */
+const getHistorialPuntos = async (req, res) => {
+  const clienteId = req.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT
+         ph.id,
+         ph.tipo,
+         ph.puntos,
+         ph.descripcion,
+         ph.pedido_id,
+         ph.creado_en
+       FROM puntos_historial ph
+       WHERE ph.cliente_id = $1
+       ORDER BY ph.creado_en DESC
+       LIMIT 30`,
+      [clienteId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener historial de puntos:", error);
+    res.status(500).json({ error: "Error al consultar el historial de puntos." });
+  }
+};
+
+/**
+ * POST /clientes/referido/validar
+ * Endpoint público: valida si un código de referido existe y devuelve el nombre del referidor
+ */
+const validarCodigoReferido = async (req, res) => {
+  const { codigo } = req.body;
+
+  if (!codigo || codigo.trim().length < 3) {
+    return res.status(400).json({ valido: false, error: "Código inválido." });
+  }
+
+  const codigoClean = codigo.trim().toUpperCase();
+
+  try {
+    const result = await pool.query(
+      `SELECT id, nombre, usuario FROM clientes WHERE referral_code = $1 LIMIT 1`,
+      [codigoClean]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ valido: false });
+    }
+
+    const referidor = result.rows[0];
+    res.json({
+      valido: true,
+      nombre: referidor.nombre,
+      usuario: referidor.usuario,
+    });
+  } catch (error) {
+    console.error("Error al validar código de referido:", error);
+    res.status(500).json({ valido: false, error: "Error al validar el código." });
+  }
+};
+
 module.exports = {
   registroCliente,
   loginCliente,
@@ -385,4 +596,6 @@ module.exports = {
   getPerfil,
   updatePerfil,
   getHistorialPedidos,
+  getHistorialPuntos,
+  validarCodigoReferido,
 };

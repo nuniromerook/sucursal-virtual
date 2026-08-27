@@ -1,5 +1,5 @@
 // frontend/src/pages/ecommerce/Auth.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Mail,
@@ -11,8 +11,14 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
+  Gift,
+  ChevronDown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
+import { API_URL } from "../../config/api";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -20,6 +26,7 @@ export default function Auth() {
   const from = location.state?.from?.pathname || "/";
 
   const { login, register, loginWithGoogle, isLoading } = useAuth();
+  const toast = useToast();
 
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [errorMsg, setErrorMsg] = useState("");
@@ -40,16 +47,58 @@ export default function Auth() {
     usuario: "",
   });
 
+  // Código de referido
+  const [showReferral, setShowReferral] = useState(false);
+  const [codigoReferido, setCodigoReferido] = useState("");
+  const [referralStatus, setReferralStatus] = useState(null); // null | { valido, nombre, usuario }
+  const [checkingReferral, setCheckingReferral] = useState(false);
+  const referralTimerRef = useRef(null);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordRegister, setShowPasswordRegister] = useState(false);
+  const iconClassnames = "size-5 text-neutral-400 absolute inset-y-0 my-auto";
+  const inputClassnames =
+    "w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue";
+  const inputLabel = "block text-sm font-semibold text-neutral-700 mb-1";
+
+  // Validar código de referido con debounce
+  useEffect(() => {
+    if (!codigoReferido || codigoReferido.length < 3) {
+      setReferralStatus(null);
+      return;
+    }
+    clearTimeout(referralTimerRef.current);
+    setCheckingReferral(true);
+    referralTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/clientes/referido/validar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo: codigoReferido }),
+        });
+        const data = await res.json();
+        setReferralStatus(data);
+      } catch {
+        setReferralStatus(null);
+      } finally {
+        setCheckingReferral(false);
+      }
+    }, 600);
+    return () => clearTimeout(referralTimerRef.current);
+  }, [codigoReferido]);
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
 
     try {
-      await login(loginData.identificador, loginData.password);
+      const res = await login(loginData.identificador, loginData.password);
+      toast.success(`¡Bienvenido de nuevo${res.user?.nombre ? `, ${res.user.nombre}` : ""}!`);
       navigate(from, { replace: true });
     } catch (err) {
       setErrorMsg(err.message || "Error al iniciar sesión.");
+      toast.error(err.message || "Error al iniciar sesión.");
     }
   };
 
@@ -59,13 +108,20 @@ export default function Auth() {
     setSuccessMsg("");
 
     try {
-      const res = await register(regData);
+      const cleanRef = codigoReferido.trim();
+      const payload = {
+        ...regData,
+        ...(cleanRef ? { codigo_referido: cleanRef } : {}),
+      };
+      const res = await register(payload);
       setSuccessMsg(res.message || "¡Cuenta creada exitosamente!");
+      toast.success(res.message || "¡Cuenta creada exitosamente!");
       setTimeout(() => {
         navigate("/perfil", { replace: true });
       }, 1000);
     } catch (err) {
       setErrorMsg(err.message || "Error al registrar cuenta.");
+      toast.error(err.message || "Error al registrar cuenta.");
     }
   };
 
@@ -78,7 +134,8 @@ export default function Auth() {
         google_id: `g_${Date.now()}`,
         email: "usuario.valette@gmail.com",
         nombre: "Cliente Valette",
-        avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
+        avatar_url:
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
       };
 
       const res = await loginWithGoogle(googleMock);
@@ -93,21 +150,21 @@ export default function Auth() {
   };
 
   return (
-    <div className="w-full min-h-[85vh] bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-neutral-200 shadow-sm">
+    <div className="w-full min-h-[85vh] bg-neutral-50 flex items-center justify-center py-2 px-4 sm:px-6 bg-white">
+      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8">
         {/* Logo y Encabezado */}
         <div className="text-center mb-6">
           <Link to="/" className="inline-block mb-3">
             <img
               src="/favicon.svg"
               alt="Abastecedora Valette"
-              className="size-16 mx-auto"
+              className="size-40 mx-auto"
             />
           </Link>
           <h1 className="text-2xl font-extrabold text-neutral-900">
-            {mode === "login" ? "Bienvenido de nuevo" : "Crear tu cuenta"}
+            {mode === "login" ? "Hola de nuevo!" : "Creá tu cuenta"}
           </h1>
-          <p className="text-xs text-neutral-500 mt-1">
+          <p className="text-sm text-neutral-500 mt-1">
             {mode === "login"
               ? "Ingresá a tu cuenta para gestionar pedidos y sumar puntos"
               : "Registrate en Abastecedora Valette y sumá puntos con tus compras"}
@@ -115,7 +172,7 @@ export default function Auth() {
         </div>
 
         {/* Pestañas Login / Registro */}
-        <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-xl mb-6 text-xs font-bold">
+        <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-xl mb-6 font-bold">
           <button
             type="button"
             onClick={() => {
@@ -161,12 +218,277 @@ export default function Auth() {
           </div>
         )}
 
+        {/* Formulario LOGIN */}
+        {mode === "login" ? (
+          <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+            <div>
+              <label className={inputLabel}>
+                Correo electrónico o @Usuario
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="juan@email.com o @usuario"
+                  value={loginData.identificador}
+                  onChange={(e) =>
+                    setLoginData({
+                      ...loginData,
+                      identificador: e.target.value,
+                    })
+                  }
+                  className={inputClassnames}
+                />
+                <Mail className={`${iconClassnames} left-3`} />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className={inputLabel}>Contraseña</label>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert(
+                      "Para restablecer tu clave contactanos por WhatsApp.",
+                    );
+                  }}
+                  className="text-sm text-main-blue hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={loginData.password}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, password: e.target.value })
+                  }
+                  className={`${inputClassnames} pr-10`}
+                />
+                <Lock className={`${iconClassnames} left-3`} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 inset-y-0 my-auto"
+                >
+                  {showPassword ? (
+                    <EyeOff className={`${iconClassnames} right-3`} />
+                  ) : (
+                    <Eye className={`${iconClassnames} right-3`} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-2 py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <span>{isLoading ? "Iniciando..." : "Ingresar"}</span>
+              <ArrowRight className="size-3.5" />
+            </button>
+          </form>
+        ) : (
+          /* Formulario REGISTRO */
+          <form onSubmit={handleRegisterSubmit} className="space-y-3">
+            <div>
+              <label className={inputLabel}>
+                Nombre y Apellido <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Juan Pérez"
+                  value={regData.nombre}
+                  onChange={(e) =>
+                    setRegData({ ...regData, nombre: e.target.value })
+                  }
+                  className={`${inputClassnames}`}
+                />
+                <User className={`${iconClassnames} left-3`} />
+              </div>
+            </div>
+
+            <div>
+              <label className={inputLabel}>
+                Correo Electrónico <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  placeholder="juan@email.com"
+                  value={regData.email}
+                  onChange={(e) =>
+                    setRegData({ ...regData, email: e.target.value })
+                  }
+                  className={`${inputClassnames}`}
+                />
+                <Mail className={`${iconClassnames} left-3`} />
+              </div>
+            </div>
+
+            <div>
+              <label className={inputLabel}>
+                Contraseña <span className="text-red-500">* </span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Mínimo 6 caracteres"
+                  value={regData.password}
+                  onChange={(e) =>
+                    setRegData({ ...regData, password: e.target.value })
+                  }
+                  className={`${inputClassnames} pr-10`}
+                />
+                <Lock className={`${iconClassnames} left-3`} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 inset-y-0 my-auto"
+                >
+                  {showPassword ? (
+                    <EyeOff className={`${iconClassnames} right-3`} />
+                  ) : (
+                    <Eye className={`${iconClassnames} right-3`} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={inputLabel}>WhatsApp / Tel.</label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    placeholder="11 2345-6789"
+                    value={regData.telefono}
+                    onChange={(e) =>
+                      setRegData({ ...regData, telefono: e.target.value })
+                    }
+                    className={`${inputClassnames}`}
+                  />
+                  <Phone className={`${iconClassnames} left-3`} />
+                </div>
+              </div>
+
+              <div>
+                <label className={inputLabel}>@Usuario (Redes)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="juan_valette"
+                    value={regData.usuario}
+                    onChange={(e) =>
+                      setRegData({ ...regData, usuario: e.target.value })
+                    }
+                    className={`${inputClassnames}`}
+                  />
+                  <AtSign className={`${iconClassnames} left-3`} />
+                </div>
+              </div>
+            </div>
+
+            {/* Banner de recompensa */}
+            <div className="p-2.5 bg-amber-50 border border-amber-200/70 rounded-lg flex items-center gap-2 text-sm text-amber-900">
+              <Sparkles className="size-4 text-amber-600 shrink-0" />
+              <span>
+                Completá tu <strong>WhatsApp y @Usuario</strong> para ganar{" "}
+                <strong>+50 puntos</strong> de regalo.
+              </span>
+            </div>
+
+            {/* Campo código de referido (colapsable) */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowReferral(!showReferral)}
+                className="flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-main-blue transition-colors cursor-pointer"
+              >
+                <Gift className="size-4" />
+                <span>¿Tenés un código de referido? (opcional)</span>
+                <ChevronDown
+                  className={`size-4 transition-transform ${showReferral ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {showReferral && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    maxLength={10}
+                    placeholder="Ej. 12345"
+                    value={codigoReferido}
+                    onChange={(e) =>
+                      setCodigoReferido(e.target.value.toUpperCase())
+                    }
+                    className="w-full px-3.5 py-2 rounded-lg border border-neutral-300 font-mono uppercase focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue tracking-widest"
+                  />
+                  {checkingReferral && (
+                    <p className="text-[11px] text-neutral-400 mt-1 animate-pulse">
+                      Verificando código...
+                    </p>
+                  )}
+                  {!checkingReferral && referralStatus?.valido && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
+                      <CheckCircle2 className="size-3.5" />
+                      <span>
+                        Código de{" "}
+                        {referralStatus.usuario
+                          ? `@${referralStatus.usuario}`
+                          : referralStatus.nombre}{" "}
+                        aplicado — Vas a ganar +50 puntos
+                      </span>
+                    </div>
+                  )}
+                  {!checkingReferral &&
+                    codigoReferido.length >= 3 &&
+                    referralStatus &&
+                    !referralStatus.valido && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
+                        <AlertCircle className="size-4" />
+                        <span>Código no encontrado</span>
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-2 py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <span>{isLoading ? "Creando cuenta..." : "Crear mi Cuenta"}</span>
+              <ArrowRight className="size-3.5" />
+            </button>
+          </form>
+        )}
+
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-px bg-neutral-200" />
+          <span className="text-xs font-medium text-neutral-400">
+            Otras alternativas
+          </span>
+          <div className="flex-1 h-px bg-neutral-200" />
+        </div>
+
         {/* Botón Google */}
         <button
           type="button"
           onClick={handleGoogleAuth}
           disabled={isLoading}
-          className="w-full py-2.5 px-4 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 font-semibold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs mb-5 cursor-pointer disabled:opacity-60"
+          className="w-full py-2.5 px-4 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 font-semibold flex items-center justify-center gap-2.5 transition-all shadow-2xs mb-5 cursor-pointer disabled:opacity-60"
         >
           <svg className="size-4" viewBox="0 0 24 24">
             <path
@@ -188,181 +510,6 @@ export default function Auth() {
           </svg>
           <span>Continuar con Google</span>
         </button>
-
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-neutral-200" />
-          <span className="text-[11px] font-medium text-neutral-400">o con email</span>
-          <div className="flex-1 h-px bg-neutral-200" />
-        </div>
-
-        {/* Formulario LOGIN */}
-        {mode === "login" ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Correo electrónico o @Usuario
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="juan@email.com o @usuario"
-                  value={loginData.identificador}
-                  onChange={(e) =>
-                    setLoginData({ ...loginData, identificador: e.target.value })
-                  }
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                />
-                <Mail className="size-4 text-neutral-400 absolute left-3 top-3" />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-semibold text-neutral-700">
-                  Contraseña
-                </label>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert("Para restablecer tu clave contactanos por WhatsApp.");
-                  }}
-                  className="text-[11px] text-main-blue hover:underline"
-                >
-                  ¿Olvidaste tu clave?
-                </a>
-              </div>
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={loginData.password}
-                  onChange={(e) =>
-                    setLoginData({ ...loginData, password: e.target.value })
-                  }
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                />
-                <Lock className="size-4 text-neutral-400 absolute left-3 top-3" />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold text-xs shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <span>{isLoading ? "Iniciando..." : "Ingresar"}</span>
-              <ArrowRight className="size-3.5" />
-            </button>
-          </form>
-        ) : (
-          /* Formulario REGISTRO */
-          <form onSubmit={handleRegisterSubmit} className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Nombre y Apellido <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Juan Pérez"
-                  value={regData.nombre}
-                  onChange={(e) => setRegData({ ...regData, nombre: e.target.value })}
-                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                />
-                <User className="size-4 text-neutral-400 absolute left-3 top-2.5" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Correo Electrónico <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  required
-                  placeholder="juan@email.com"
-                  value={regData.email}
-                  onChange={(e) => setRegData({ ...regData, email: e.target.value })}
-                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                />
-                <Mail className="size-4 text-neutral-400 absolute left-3 top-2.5" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Contraseña <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  placeholder="Mínimo 6 caracteres"
-                  value={regData.password}
-                  onChange={(e) => setRegData({ ...regData, password: e.target.value })}
-                  className="w-full pl-9 pr-3.5 py-2 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                />
-                <Lock className="size-4 text-neutral-400 absolute left-3 top-2.5" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                  WhatsApp / Tel.
-                </label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    placeholder="11 2345-6789"
-                    value={regData.telefono}
-                    onChange={(e) => setRegData({ ...regData, telefono: e.target.value })}
-                    className="w-full pl-8 pr-2 py-2 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                  />
-                  <Phone className="size-3.5 text-neutral-400 absolute left-2.5 top-2.5" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                  @Usuario (Redes)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="juan_valette"
-                    value={regData.usuario}
-                    onChange={(e) => setRegData({ ...regData, usuario: e.target.value })}
-                    className="w-full pl-8 pr-2 py-2 rounded-lg border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue"
-                  />
-                  <AtSign className="size-3.5 text-neutral-400 absolute left-2.5 top-2.5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Banner de recompensa */}
-            <div className="p-2.5 bg-amber-50 border border-amber-200/70 rounded-lg flex items-center gap-2 text-[11px] text-amber-900">
-              <Sparkles className="size-4 text-amber-600 shrink-0" />
-              <span>
-                Completá tu <strong>WhatsApp y @Usuario</strong> para ganar <strong>+50 puntos</strong> de regalo.
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold text-xs shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <span>{isLoading ? "Creando cuenta..." : "Crear mi Cuenta"}</span>
-              <ArrowRight className="size-3.5" />
-            </button>
-          </form>
-        )}
       </div>
     </div>
   );

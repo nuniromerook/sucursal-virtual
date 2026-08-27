@@ -25,13 +25,13 @@ const Navbar = () => {
     <header className="flex sticky top-0 left-0 w-full bg-main-blue z-10">
       <div className="flex w-full items-center max-w-6xl h-14 lg:h-26 gap-6 lg:mx-auto pr-6 pl-4 lg:px-0">
         {/*Logo*/}
-        <div className="hidden lg:block size-25 aspect-square">
+        <Link to="/" className="hidden lg:block size-25 aspect-square">
           <img
             src="/favicon.svg"
             alt="Abastecedora Valette"
             className="aspect-square"
           />
-        </div>
+        </Link>
         {/*Menu hamburguesa mobile*/}
         <div className="flex lg:hidden size-10 aspect-square">
           <button

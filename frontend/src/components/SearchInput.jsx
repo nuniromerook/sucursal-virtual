@@ -11,7 +11,7 @@ const SearchInput = () => {
       <input
         type="text"
         placeholder="Qué queres comer hoy?"
-        className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 px-2"
+        className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 px-2 text-base"
         aria-label="Campo para buscar productos"
       />
       <button

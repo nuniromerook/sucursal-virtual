@@ -6,6 +6,7 @@ const catalogoRoutes = require("./routes/catalogo.routes");
 const sucursalRoutes = require("./routes/sucursales.routes");
 const pedidosRoutes = require("./routes/pedidos.routes");
 const clientesRoutes = require("./routes/clientes.routes");
+const carritosRoutes = require("./routes/carritos.routes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(catalogoRoutes);
 app.use(sucursalRoutes);
 app.use(pedidosRoutes);
 app.use(clientesRoutes);
+app.use(carritosRoutes);
 
 app.get("/", (req, res) => {
   res.send("Sucursal Virtual running!");

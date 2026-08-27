@@ -167,12 +167,13 @@ export default function Product() {
     grasas != null ? { label: "Grasas", valor: `${Number(grasas)}g` } : null,
   ].filter(Boolean);
 
-  const { addToCart } = useCart();
+  const { addToCart, openCart } = useCart();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const cantidadFinal = Number(cantidad) || 1;
     addToCart(productData, cantidadFinal);
+    openCart();
   };
 
   return (

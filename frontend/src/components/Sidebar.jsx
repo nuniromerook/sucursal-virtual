@@ -69,19 +69,19 @@ const Sidebar = () => {
         }`}
       >
         {/* Header del panel */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/10">
+        <div className="flex justify-between px-5 pt-5 pb-4 border-b border-white/10">
           <Link to="/" onClick={closeSidebar}>
             <img
               src="/favicon.svg"
               alt="Abastecedora Valette"
-              className="h-12 w-auto drop-shadow"
+              className="h-30 w-auto drop-shadow"
             />
           </Link>
           <button
             type="button"
             onClick={closeSidebar}
             aria-label="Cerrar menú"
-            className="size-8 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="size-8 flex items-center justify-center rounded-lg text-white/60 hover:text-white bg-white/10 transition-colors cursor-pointer"
           >
             <X className="size-5" />
           </button>

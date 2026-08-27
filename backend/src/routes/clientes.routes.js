@@ -7,19 +7,27 @@ const {
   getPerfil,
   updatePerfil,
   getHistorialPedidos,
+  getHistorialPuntos,
+  validarCodigoReferido,
 } = require("../controllers/clientes.controller");
 const { requireAuth } = require("../utils/auth");
 
 const router = Router();
 
-// Rutas públicas
+// ─── Rutas públicas ─────────────────────────────
 router.post("/clientes/registro", registroCliente);
 router.post("/clientes/login", loginCliente);
 router.post("/clientes/google", googleAuth);
 
-// Rutas protegidas (Requieren Token JWT)
+// Validar código de referido (público, se llama desde el form de registro)
+router.post("/clientes/referido/validar", validarCodigoReferido);
+
+// ─── Rutas protegidas (requieren JWT) ───────────
 router.get("/clientes/perfil", requireAuth, getPerfil);
 router.put("/clientes/perfil", requireAuth, updatePerfil);
 router.get("/clientes/pedidos", requireAuth, getHistorialPedidos);
+
+// Historial de movimientos de puntos
+router.get("/clientes/puntos/historial", requireAuth, getHistorialPuntos);
 
 module.exports = router;

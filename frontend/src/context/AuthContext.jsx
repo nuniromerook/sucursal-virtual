@@ -112,13 +112,13 @@ export function AuthContextProvider({ children }) {
   /**
    * Registro tradicional de cliente
    */
-  const register = async ({ nombre, email, password, telefono, usuario }) => {
+  const register = async (userData) => {
     setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/clientes/registro`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, email, password, telefono, usuario }),
+        body: JSON.stringify(userData),
       });
 
       const data = await res.json();

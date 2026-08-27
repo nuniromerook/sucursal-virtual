@@ -50,7 +50,7 @@ const ProductCard = ({ product }) => {
   // por cantidad_kg ascendente — acá no hace falta filtrar ni ordenar.
   const promos = Array.isArray(product.promos) ? product.promos : [];
 
-  const { addToCart } = useCart();
+  const { addToCart, openCart } = useCart();
   const [isFavorite, setIsFavorite] = useState(Boolean(product.isFavorite));
 
   const handleToggleFavorite = (e) => {
@@ -63,91 +63,97 @@ const ProductCard = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product, 1);
+    openCart();
   };
 
   return (
     <div className="group relative flex flex-col border border-neutral-200/50 p-2 bg-white hover:border-neutral-200 transition-all duration-200 z-0">
-      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-gray-200">
-        <img
-          alt={imageAlt}
-          src={imageSrc}
-          className="h-full w-full object-cover object-center aspect-square transition-opacity group-hover:opacity-90"
-        />
-
-        {hasDiscount && (
-          <span className="absolute top-2 left-2 rounded bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white z-10">
-            SUPER PROMO
-          </span>
-        )}
-
-        <button
-          type="button"
-          onClick={handleToggleFavorite}
-          aria-label={
-            isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
-          }
-          aria-pressed={isFavorite}
-          className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white"
-        >
-          <Heart
-            className={`size-4 ${
-              isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
-            }`}
+      <div className="flex flex-col h-full justify-between">
+        <div className="relative aspect-square w-full overflow-hidden rounded-md bg-gray-200">
+          <img
+            alt={imageAlt}
+            src={imageSrc}
+            className="h-full w-full object-cover object-center aspect-square transition-opacity group-hover:opacity-90"
           />
-        </button>
-      </div>
 
-      <div className="mt-3 flex flex-col gap-1">
-        <h3 className="text-sm font-semibold text-gray-800">
-          <Link to={`${categoriaSlug}/${especieSlug}/${productSlug}`}>
-            <span aria-hidden="true" className="absolute inset-0" />
-            {name}
-          </Link>
-        </h3>
-
-        {hasDiscount && (
-          <div className="flex items-center gap-2">
-            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700">
-              {discountPercent}% OFF
+          {hasDiscount && (
+            <span className="absolute top-2 left-2 rounded bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white z-10">
+              SUPER PROMO
             </span>
-            <span className="text-xs text-gray-400 line-through">
-              {formatPrecio(previousPrice)}
-            </span>
-          </div>
-        )}
+          )}
 
-        {/* Tramos de promo por cantidad (ej: "2kg x $1.234"). Es un concepto
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            aria-label={
+              isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+            }
+            aria-pressed={isFavorite}
+            className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white"
+          >
+            <Heart
+              className={`size-4 ${
+                isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-1">
+          <h3 className="text-sm font-semibold text-gray-800">
+            <Link to={`${categoriaSlug}/${especieSlug}/${productSlug}`}>
+              <span aria-hidden="true" className="absolute inset-0" />
+              {name}
+            </Link>
+          </h3>
+
+          {hasDiscount && (
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                {discountPercent}% OFF
+              </span>
+              <span className="text-xs text-gray-400 line-through">
+                {formatPrecio(previousPrice)}
+              </span>
+            </div>
+          )}
+
+          {/* Tramos de promo por cantidad (ej: "2kg x $1.234"). Es un concepto
             distinto a la oferta de arriba (esa compara precio_anterior vs
             precio; esto es un precio especial al llevar cierta cantidad),
             por eso usa su propio color y puede coexistir con la oferta. */}
-        {promos.length > 0 && (
-          <div className="flex flex-col">
-            {promos.map((promo) => (
-              <p key={promo.id} className="text-sm font-bold text-emerald-700">
-                {Number(promo.cantidad_kg)}
-                {unidadMedida} x{" "}
-                {formatPrecio(Number(promo.precio_promocional))}
-              </p>
-            ))}
-          </div>
-        )}
+          {promos.length > 0 && (
+            <div className="flex flex-col">
+              {promos.map((promo) => (
+                <p
+                  key={promo.id}
+                  className="text-sm font-bold text-emerald-700"
+                >
+                  {Number(promo.cantidad_kg)}
+                  {unidadMedida} x{" "}
+                  {formatPrecio(Number(promo.precio_promocional))}
+                </p>
+              ))}
+            </div>
+          )}
 
-        <p
-          className={
-            promos.length > 0
-              ? "text-xs text-gray-500"
-              : "text-base font-bold text-gray-900"
-          }
-        >
-          {formatPrecio(price)} /{unidadMedida}
-        </p>
+          <p
+            className={
+              promos.length > 0
+                ? "text-xs text-gray-500"
+                : "text-base font-bold text-gray-900"
+            }
+          >
+            {formatPrecio(price)} /{unidadMedida}
+          </p>
 
-        {earnsPoints && (
-          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-            <Sparkles className="size-3 text-amber-600" />
-            Ganá {points} puntos
-          </span>
-        )}
+          {earnsPoints && (
+            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+              <Sparkles className="size-3 text-amber-600" />
+              Ganá {points} puntos
+            </span>
+          )}
+        </div>
 
         <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center justify-between z-10 relative">
           <button
