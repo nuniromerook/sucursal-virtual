@@ -96,16 +96,39 @@ export default function Inicio() {
 
   const estadoBadge = (estado) => {
     const map = {
-      solicitado: { label: "Solicitado", bg: "bg-amber-50 text-amber-800 border-amber-200" },
-      en_corte: { label: "En Corte", bg: "bg-blue-50 text-blue-800 border-blue-200" },
-      pesado: { label: "Esperando Aprobación", bg: "bg-purple-50 text-purple-800 border-purple-200" },
-      listo: { label: "Listo", bg: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-      en_camino: { label: "En Camino", bg: "bg-orange-50 text-orange-800 border-orange-200" },
-      entregado: { label: "Entregado", bg: "bg-neutral-100 text-neutral-600 border-neutral-200" },
+      solicitado: {
+        label: "Solicitado",
+        bg: "bg-amber-50 text-amber-800 border-amber-200",
+      },
+      en_corte: {
+        label: "En Corte",
+        bg: "bg-blue-50 text-blue-800 border-blue-200",
+      },
+      pesado: {
+        label: "Esperando Aprobación",
+        bg: "bg-purple-50 text-purple-800 border-purple-200",
+      },
+      listo: {
+        label: "Listo",
+        bg: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      },
+      en_camino: {
+        label: "En Camino",
+        bg: "bg-orange-50 text-orange-800 border-orange-200",
+      },
+      entregado: {
+        label: "Entregado",
+        bg: "bg-neutral-100 text-neutral-600 border-neutral-200",
+      },
     };
-    const conf = map[estado] || { label: estado, bg: "bg-neutral-100 text-neutral-600 border-neutral-200" };
+    const conf = map[estado] || {
+      label: estado,
+      bg: "bg-neutral-100 text-neutral-600 border-neutral-200",
+    };
     return (
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${conf.bg}`}>
+      <span
+        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${conf.bg}`}
+      >
         {conf.label}
       </span>
     );
@@ -113,9 +136,8 @@ export default function Inicio() {
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
-
       {/* ─── 1. Header Ejecutivo & Accesos Rápidos ─── */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
+      <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -128,7 +150,8 @@ export default function Inicio() {
               Torre de Control — Abastecedora Valette
             </h1>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Resumen ejecutivo consolidado de todas las sucursales, tienda online y analítica de público.
+              Resumen ejecutivo consolidado de todas las sucursales, tienda
+              online y analítica de público.
             </p>
           </div>
 
@@ -150,7 +173,9 @@ export default function Inicio() {
               title="Refrescar métricas"
               className="p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-700 cursor-pointer transition-colors"
             >
-              <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`size-4 ${isLoading ? "animate-spin" : ""}`}
+              />
             </button>
 
             <a
@@ -169,9 +194,11 @@ export default function Inicio() {
       {/* ─── 2. KPIs Consolidados Globales ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Facturación Consolidada */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-lg border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Facturación Total</span>
+            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              Facturación Total
+            </span>
             <div className="size-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
               <DollarSign className="size-5" />
             </div>
@@ -188,30 +215,41 @@ export default function Inicio() {
         </div>
 
         {/* Volumen Total en Kg */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-lg border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Volumen Despachado</span>
+            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              Volumen Despachado
+            </span>
             <div className="size-9 rounded-xl bg-blue-50 text-main-blue flex items-center justify-center font-bold">
               <ScaleIcon className="size-5" />
             </div>
           </div>
           <div className="mt-3">
             <h3 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight">
-              {dashboardData?.volumen_kg?.total || 0} <span className="text-lg font-bold text-neutral-500">kg</span>
+              {dashboardData?.volumen_kg?.total || 0}{" "}
+              <span className="text-lg font-bold text-neutral-500">kg</span>
             </h3>
             {/* Mini desglose de especies */}
             <div className="flex items-center gap-2 mt-2 text-[10px] font-bold text-neutral-600">
-              <span className="text-red-700">🥩 {dashboardData?.volumen_kg?.vacuno || 0}k</span>
-              <span className="text-rose-700">🐷 {dashboardData?.volumen_kg?.cerdo || 0}k</span>
-              <span className="text-amber-700">🍗 {dashboardData?.volumen_kg?.pollo || 0}k</span>
+              <span className="text-red-700">
+                🥩 {dashboardData?.volumen_kg?.vacuno || 0}k
+              </span>
+              <span className="text-rose-700">
+                🐷 {dashboardData?.volumen_kg?.cerdo || 0}k
+              </span>
+              <span className="text-amber-700">
+                🍗 {dashboardData?.volumen_kg?.pollo || 0}k
+              </span>
             </div>
           </div>
         </div>
 
         {/* Total de Pedidos */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-lg border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Pedidos Globales</span>
+            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              Pedidos Globales
+            </span>
             <div className="size-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
               <ShoppingBag className="size-5" />
             </div>
@@ -232,9 +270,11 @@ export default function Inicio() {
         </div>
 
         {/* Ticket Promedio */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-lg border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Ticket Promedio</span>
+            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              Ticket Promedio
+            </span>
             <div className="size-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold">
               <TrendingUp className="size-5" />
             </div>
@@ -251,12 +291,13 @@ export default function Inicio() {
       </div>
 
       {/* ─── 3. Tablero de Red de Sucursales ─── */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
+      <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <Store className="size-5 text-main-blue" />
             <h2 className="text-base font-black text-neutral-900 tracking-tight">
-              Red de Sucursales en Operación ({dashboardData?.sucursales?.length || 0})
+              Red de Sucursales en Operación (
+              {dashboardData?.sucursales?.length || 0})
             </h2>
           </div>
           <span className="text-xs font-bold text-neutral-400">
@@ -268,7 +309,7 @@ export default function Inicio() {
           {dashboardData?.sucursales?.map((suc) => (
             <div
               key={suc.id}
-              onClick={() => navigate(`/sucursales/${suc.slug || suc.id}`)}
+              onClick={() => navigate(`/sucursal/${suc.slug || suc.id}`)}
               className="group p-5 rounded-xl border border-neutral-200 hover:border-main-blue/50 hover:shadow-md transition-all cursor-pointer bg-neutral-50/50 hover:bg-white flex flex-col justify-between"
             >
               <div>
@@ -277,7 +318,9 @@ export default function Inicio() {
                     <h3 className="font-bold text-base text-neutral-900 group-hover:text-main-blue transition-colors">
                       {suc.nombre}
                     </h3>
-                    <p className="text-xs text-neutral-500">{suc.direccion} · {suc.ciudad}</p>
+                    <p className="text-xs text-neutral-500">
+                      {suc.direccion} · {suc.ciudad}
+                    </p>
                   </div>
                   {suc.pedidos_pendientes > 0 ? (
                     <span className="text-[11px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-full animate-pulse shadow-2xs">
@@ -292,12 +335,18 @@ export default function Inicio() {
 
                 <div className="space-y-1.5 bg-white p-3 rounded-lg border border-neutral-100 text-xs mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-neutral-500">Facturación {rango}:</span>
-                    <span className="font-black text-neutral-900">{formatMoney(suc.facturacion_hoy)}</span>
+                    <span className="text-neutral-500">
+                      Facturación {rango}:
+                    </span>
+                    <span className="font-black text-neutral-900">
+                      {formatMoney(suc.facturacion_hoy)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-500">Equipo activo:</span>
-                    <span className="font-bold text-neutral-700">{suc.empleados_activos} personas</span>
+                    <span className="font-bold text-neutral-700">
+                      {suc.empleados_activos} personas
+                    </span>
                   </div>
                 </div>
               </div>
@@ -313,9 +362,8 @@ export default function Inicio() {
 
       {/* ─── 4. Sección de Analítica de Tráfico & Media Kit Publicitario ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         {/* Columna Izquierda: Tráfico & Dispositivos */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
@@ -325,7 +373,8 @@ export default function Inicio() {
                     Analítica de Tráfico & Audiencia
                   </h2>
                   <p className="text-xs text-neutral-500">
-                    Medición de ingresos al ecommerce para pauta y espacios publicitarios.
+                    Medición de ingresos al ecommerce para pauta y espacios
+                    publicitarios.
                   </p>
                 </div>
               </div>
@@ -337,7 +386,9 @@ export default function Inicio() {
             {/* Tarjetas de Visitas y Audiencia */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
-                <span className="text-xs font-bold text-neutral-500">Total Vistas de Página (Page Views)</span>
+                <span className="text-xs font-bold text-neutral-500">
+                  Total Vistas de Página (Page Views)
+                </span>
                 <div className="flex items-baseline gap-2 mt-1">
                   <h3 className="text-2xl font-black text-neutral-900">
                     {analyticsData?.total_visitas || 0}
@@ -351,18 +402,30 @@ export default function Inicio() {
               {/* % Móvil vs Escritorio */}
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
                 <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1.5">
-                  <span className="flex items-center gap-1"><Smartphone className="size-3.5 text-main-blue" /> Móvil {analyticsData?.dispositivos?.porcentaje_mobile || 0}%</span>
-                  <span className="flex items-center gap-1"><Monitor className="size-3.5 text-neutral-600" /> PC {100 - (analyticsData?.dispositivos?.porcentaje_mobile || 0)}%</span>
+                  <span className="flex items-center gap-1">
+                    <Smartphone className="size-3.5 text-main-blue" /> Móvil{" "}
+                    {analyticsData?.dispositivos?.porcentaje_mobile || 0}%
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Monitor className="size-3.5 text-neutral-600" /> PC{" "}
+                    {100 -
+                      (analyticsData?.dispositivos?.porcentaje_mobile || 0)}
+                    %
+                  </span>
                 </div>
                 {/* Barra de proporción */}
                 <div className="w-full h-2.5 bg-neutral-200 rounded-full overflow-hidden flex">
                   <div
                     className="bg-main-blue h-full"
-                    style={{ width: `${analyticsData?.dispositivos?.porcentaje_mobile || 0}%` }}
+                    style={{
+                      width: `${analyticsData?.dispositivos?.porcentaje_mobile || 0}%`,
+                    }}
                   />
                   <div
                     className="bg-neutral-700 h-full"
-                    style={{ width: `${100 - (analyticsData?.dispositivos?.porcentaje_mobile || 0)}%` }}
+                    style={{
+                      width: `${100 - (analyticsData?.dispositivos?.porcentaje_mobile || 0)}%`,
+                    }}
                   />
                 </div>
               </div>
@@ -375,8 +438,13 @@ export default function Inicio() {
               </h4>
               <div className="space-y-1.5">
                 {analyticsData?.paginas_top?.map((pag, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                    <span className="font-semibold text-neutral-800 truncate">{pag.ruta}</span>
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-neutral-50 border border-neutral-100"
+                  >
+                    <span className="font-semibold text-neutral-800 truncate">
+                      {pag.ruta}
+                    </span>
                     <span className="font-black text-neutral-900 bg-neutral-200/70 px-2 py-0.5 rounded text-[11px]">
                       {pag.visitas} visitas
                     </span>
@@ -393,27 +461,41 @@ export default function Inicio() {
                 <MousePointerClick className="size-4 text-purple-700" />
                 Rendimiento de Banners Publicitarios (Carrusel Home)
               </span>
-              <span className="font-black text-purple-700">CTR {analyticsData?.publicidad?.ctr || "0%"}</span>
+              <span className="font-black text-purple-700">
+                CTR {analyticsData?.publicidad?.ctr || "0%"}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="bg-white p-2 rounded-lg border border-neutral-100">
-                <span className="text-[10px] text-neutral-400 block">Impresiones</span>
-                <span className="font-black text-neutral-900">{analyticsData?.publicidad?.impresiones || 0}</span>
+                <span className="text-[10px] text-neutral-400 block">
+                  Impresiones
+                </span>
+                <span className="font-black text-neutral-900">
+                  {analyticsData?.publicidad?.impresiones || 0}
+                </span>
               </div>
               <div className="bg-white p-2 rounded-lg border border-neutral-100">
-                <span className="text-[10px] text-neutral-400 block">Clics Reales</span>
-                <span className="font-black text-neutral-900">{analyticsData?.publicidad?.clics || 0}</span>
+                <span className="text-[10px] text-neutral-400 block">
+                  Clics Reales
+                </span>
+                <span className="font-black text-neutral-900">
+                  {analyticsData?.publicidad?.clics || 0}
+                </span>
               </div>
               <div className="bg-white p-2 rounded-lg border border-neutral-100">
-                <span className="text-[10px] text-neutral-400 block">Efectividad</span>
-                <span className="font-black text-emerald-600">{analyticsData?.publicidad?.ctr || "0%"}</span>
+                <span className="text-[10px] text-neutral-400 block">
+                  Efectividad
+                </span>
+                <span className="font-black text-emerald-600">
+                  {analyticsData?.publicidad?.ctr || "0%"}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Columna Derecha: Top Favoritos ⭐ & Ganadores */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Star className="size-5 text-amber-500 fill-amber-400" />
@@ -421,7 +503,9 @@ export default function Inicio() {
                 <h3 className="font-black text-base text-neutral-900">
                   Cortes Más Deseados ⭐
                 </h3>
-                <p className="text-xs text-neutral-500">Guardados en favoritos por los clientes</p>
+                <p className="text-xs text-neutral-500">
+                  Guardados en favoritos por los clientes
+                </p>
               </div>
             </div>
 
@@ -437,9 +521,14 @@ export default function Inicio() {
                     className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-100 bg-neutral-50 hover:bg-neutral-100/80 transition-colors"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-black text-xs text-neutral-400 w-4">#{idx + 1}</span>
+                      <span className="font-black text-xs text-neutral-400 w-4">
+                        #{idx + 1}
+                      </span>
                       <img
-                        src={fav.imagen_url || "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=100"}
+                        src={
+                          fav.imagen_url ||
+                          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=100"
+                        }
                         alt={fav.nombre_producto}
                         className="size-9 rounded-lg object-cover border border-neutral-200 shrink-0"
                       />
@@ -447,7 +536,9 @@ export default function Inicio() {
                         <p className="text-xs font-bold text-neutral-900 truncate">
                           {fav.nombre_producto}
                         </p>
-                        <p className="text-[10px] text-neutral-400 capitalize">{fav.especie}</p>
+                        <p className="text-[10px] text-neutral-400 capitalize">
+                          {fav.especie}
+                        </p>
                       </div>
                     </div>
                     <span className="flex items-center gap-1 text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
@@ -468,18 +559,21 @@ export default function Inicio() {
             <div className="space-y-1.5 text-xs">
               {dashboardData?.cortes_ganadores?.map((c, i) => (
                 <div key={i} className="flex items-center justify-between py-1">
-                  <span className="font-semibold text-neutral-800 truncate">{c.nombre_producto}</span>
-                  <span className="font-black text-neutral-900">{c.total_kg_vendidos} kg</span>
+                  <span className="font-semibold text-neutral-800 truncate">
+                    {c.nombre_producto}
+                  </span>
+                  <span className="font-black text-neutral-900">
+                    {c.total_kg_vendidos} kg
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-
       </div>
 
       {/* ─── 5. Live Feed de Últimas Órdenes de la Cadena ─── */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
+      <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Radio className="size-5 text-emerald-600 animate-pulse" />
@@ -487,7 +581,9 @@ export default function Inicio() {
               Últimas Comandas Entrantes (En Vivo)
             </h3>
           </div>
-          <span className="text-xs text-neutral-400">Actualizado al instante vía Socket.io</span>
+          <span className="text-xs text-neutral-400">
+            Actualizado al instante vía Socket.io
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -505,17 +601,32 @@ export default function Inicio() {
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {dashboardData?.ultimos_pedidos?.map((ped) => (
-                <tr key={ped.id} className="hover:bg-neutral-50 transition-colors">
+                <tr
+                  key={ped.id}
+                  className="hover:bg-neutral-50 transition-colors"
+                >
                   <td className="py-3 font-black text-main-blue">#{ped.id}</td>
-                  <td className="py-3 font-bold text-neutral-900">{ped.cliente_nombre}</td>
-                  <td className="py-3 text-neutral-600">{ped.sucursal_nombre}</td>
-                  <td className="py-3 font-black text-neutral-900">{formatMoney(ped.monto)}</td>
-                  <td className="py-3 text-neutral-500 capitalize">{ped.tipo_entrega.replace("_", " ")}</td>
+                  <td className="py-3 font-bold text-neutral-900">
+                    {ped.cliente_nombre}
+                  </td>
+                  <td className="py-3 text-neutral-600">
+                    {ped.sucursal_nombre}
+                  </td>
+                  <td className="py-3 font-black text-neutral-900">
+                    {formatMoney(ped.monto)}
+                  </td>
+                  <td className="py-3 text-neutral-500 capitalize">
+                    {ped.tipo_entrega.replace("_", " ")}
+                  </td>
                   <td className="py-3">{estadoBadge(ped.estado)}</td>
                   <td className="py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => navigate(`/sucursales/${ped.sucursal_slug || 1}/pedidos`)}
+                      onClick={() =>
+                        navigate(
+                          `/sucursales/${ped.sucursal_slug || 1}/pedidos`,
+                        )
+                      }
                       className="px-2.5 py-1 rounded bg-neutral-100 hover:bg-main-blue hover:text-white font-bold text-[11px] transition-colors cursor-pointer"
                     >
                       Ver Comanda
@@ -527,7 +638,6 @@ export default function Inicio() {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
