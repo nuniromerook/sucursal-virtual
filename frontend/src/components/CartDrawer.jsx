@@ -68,21 +68,27 @@ export default function CartDrawer() {
     };
   }, [isCartOpen]);
 
-  if (!isCartOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop oscuro */}
+    <div
+      className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${
+        isCartOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+      }`}
+    >
+      {/* Backdrop oscuro con fade transition */}
       <div
         aria-hidden="true"
         onClick={closeCart}
-        className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+        className={`fixed inset-0 bg-neutral-900/60 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
+          isCartOpen ? "opacity-100" : "opacity-0"
+        }`}
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
-          className="w-full max-w-xs bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 animate-in slide-in-from-right"
+          className={`w-full max-w-xs bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
+            isCartOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4 bg-neutral-50/70">

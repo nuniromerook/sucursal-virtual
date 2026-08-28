@@ -1,5 +1,6 @@
 // backend/src/controllers/catalogo.controller.js
 const pool = require("../db");
+const { emitirCambioCatalogo } = require("../socket");
 
 // Subconsulta reutilizada: arma el array de promos activas de un producto
 // como jsonb, para no tener que hacer un segundo fetch desde el frontend.
@@ -21,13 +22,8 @@ const PROMOS_ACTIVAS_SUBQUERY = `
 `;
 
 // GET /catalogo
-// Listado completo. Filtros opcionales por query string:
-//   ?activo=true    -> solo productos visibles en la tienda
-//   ?destacar=true  -> solo productos destacados
-// El ecommerce va a pedir con filtros; el panel admin generalmente pide
-// todo sin filtrar, para poder gestionar incluso lo que está inactivo.
 const getCatalogo = async (req, res) => {
-  const { activo, destacar } = req.query;
+  const { activo, destacar, categoria, especie, q } = req.query;
 
   const condiciones = [];
   const valores = [];
@@ -40,6 +36,21 @@ const getCatalogo = async (req, res) => {
   if (destacar !== undefined) {
     valores.push(destacar === "true");
     condiciones.push(`c.destacar = $${valores.length}`);
+  }
+
+  if (categoria) {
+    valores.push(`%${categoria.trim().toLowerCase()}%`);
+    condiciones.push(`LOWER(c.categoria) LIKE $${valores.length}`);
+  }
+
+  if (especie) {
+    valores.push(`%${especie.trim().toLowerCase()}%`);
+    condiciones.push(`LOWER(c.especie) LIKE $${valores.length}`);
+  }
+
+  if (q) {
+    valores.push(`%${q.trim().toLowerCase()}%`);
+    condiciones.push(`(LOWER(c.nombre_producto) LIKE $${valores.length} OR LOWER(COALESCE(c.descripcion, '')) LIKE $${valores.length})`);
   }
 
   const whereClause = condiciones.length
@@ -63,9 +74,6 @@ const getCatalogo = async (req, res) => {
 };
 
 // GET /catalogo/:id
-// Acepta id numérico o slug. Por default solo trae promos activas; el panel
-// admin puede pedir también las inactivas con ?incluir_promos_inactivas=true
-// para poder gestionarlas (reactivar, editar) desde ProductEditor.
 const getCatalogoItem = async (req, res) => {
   const { id } = req.params;
   const incluirInactivas = req.query.incluir_promos_inactivas === "true";
@@ -166,6 +174,7 @@ const createCatalogoItem = async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
+    emitirCambioCatalogo({ tipo: "create", producto: result.rows[0] });
   } catch (error) {
     if (error.code === "23505") {
       return res
@@ -248,6 +257,7 @@ const updateCatalogoItem = async (req, res) => {
     }
 
     res.json(result.rows[0]);
+    emitirCambioCatalogo({ tipo: "update", producto: result.rows[0] });
   } catch (error) {
     if (error.code === "23505") {
       return res
@@ -261,7 +271,6 @@ const updateCatalogoItem = async (req, res) => {
 };
 
 // PATCH /catalogo/:id/estado
-// Atajo liviano para togglear "activo" sin reenviar el formulario completo.
 const toggleActivoCatalogoItem = async (req, res) => {
   const { id } = req.params;
   const { activo } = req.body;
@@ -283,6 +292,7 @@ const toggleActivoCatalogoItem = async (req, res) => {
     }
 
     res.json(result.rows[0]);
+    emitirCambioCatalogo({ tipo: "toggle_activo", producto: result.rows[0] });
   } catch (error) {
     console.error("Error al cambiar el estado del producto:", error.message);
     res.status(500).json({ error: "Error al cambiar el estado del producto" });
@@ -304,9 +314,8 @@ const deleteCatalogoItem = async (req, res) => {
     }
 
     res.json({ message: "Producto eliminado correctamente" });
+    emitirCambioCatalogo({ tipo: "delete", id });
   } catch (error) {
-    // 23503 = violación de foreign key: hay stock_sucursal o pedido_items
-    // apuntando a este producto. No lo dejamos caer, sugerimos desactivar.
     if (error.code === "23503") {
       return res.status(409).json({
         error:
@@ -320,9 +329,8 @@ const deleteCatalogoItem = async (req, res) => {
 };
 
 // POST /catalogo/:id/promos
-// Crea un tramo de promo por cantidad para un producto (ej: 2kg x $1.234).
 const createPromo = async (req, res) => {
-  const { id } = req.params; // catalogo_id
+  const { id } = req.params;
   const { cantidad_kg, precio_promocional, activa } = req.body;
 
   if (!cantidad_kg || !precio_promocional) {
@@ -340,15 +348,14 @@ const createPromo = async (req, res) => {
     );
 
     res.status(201).json(result.rows[0]);
+    emitirCambioCatalogo({ tipo: "promo", productoId: id });
   } catch (error) {
-    // 23505 = ya existe una promo para esa cantidad_kg en este producto
     if (error.code === "23505") {
       return res.status(409).json({
         error: "Ya existe una promo para esa cantidad en este producto",
       });
     }
 
-    // 23503 = el catalogo_id no corresponde a ningún producto
     if (error.code === "23503") {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
@@ -366,10 +373,12 @@ const updatePromo = async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE catalogo_promos
-       SET cantidad_kg = $1, precio_promocional = $2, activa = $3
+       SET cantidad_kg = COALESCE($1, cantidad_kg),
+           precio_promocional = COALESCE($2, precio_promocional),
+           activa = COALESCE($3, activa)
        WHERE id = $4 AND catalogo_id = $5
        RETURNING *`,
-      [cantidad_kg, precio_promocional, activa ?? true, promoId, id],
+      [cantidad_kg, precio_promocional, activa, promoId, id],
     );
 
     if (result.rows.length === 0) {
@@ -377,6 +386,7 @@ const updatePromo = async (req, res) => {
     }
 
     res.json(result.rows[0]);
+    emitirCambioCatalogo({ tipo: "promo", productoId: id });
   } catch (error) {
     if (error.code === "23505") {
       return res.status(409).json({
@@ -404,9 +414,69 @@ const deletePromo = async (req, res) => {
     }
 
     res.json({ message: "Promo eliminada correctamente" });
+    emitirCambioCatalogo({ tipo: "promo", productoId: id });
   } catch (error) {
     console.error("Error al eliminar la promo:", error.message);
     res.status(500).json({ error: "Error al eliminar la promo" });
+  }
+};
+
+// POST /catalogo/:id/favorito
+const toggleFavorito = async (req, res) => {
+  const { id } = req.params;
+  const { cliente_id } = req.body;
+
+  if (!cliente_id) {
+    return res.status(400).json({ error: "cliente_id es requerido para guardar en la cuenta" });
+  }
+
+  try {
+    const existe = await pool.query(
+      `SELECT id FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
+      [cliente_id, id]
+    );
+
+    if (existe.rows.length > 0) {
+      await pool.query(
+        `DELETE FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
+        [cliente_id, id]
+      );
+      return res.json({ isFavorite: false, message: "Eliminado de favoritos" });
+    } else {
+      await pool.query(
+        `INSERT INTO cliente_favoritos (cliente_id, catalogo_id) VALUES ($1, $2)`,
+        [cliente_id, id]
+      );
+      return res.json({ isFavorite: true, message: "Guardado en favoritos" });
+    }
+  } catch (error) {
+    console.error("Error al alternar favorito:", error.message);
+    res.status(500).json({ error: "Error al actualizar favorito" });
+  }
+};
+
+// GET /catalogo/favoritos/ranking
+const getFavoritosRanking = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+         c.id,
+         c.nombre_producto,
+         c.especie,
+         c.precio,
+         c.imagen_url,
+         COUNT(f.id) AS total_favoritos
+       FROM catalogo c
+       JOIN cliente_favoritos f ON c.id = f.catalogo_id
+       GROUP BY c.id, c.nombre_producto, c.especie, c.precio, c.imagen_url
+       ORDER BY total_favoritos DESC
+       LIMIT 6`
+    );
+
+    res.json(result.rows.map((r) => ({ ...r, total_favoritos: Number(r.total_favoritos) })));
+  } catch (error) {
+    console.error("Error al obtener ranking de favoritos:", error.message);
+    res.status(500).json({ error: "Error al obtener ranking de favoritos" });
   }
 };
 
@@ -420,4 +490,6 @@ module.exports = {
   createPromo,
   updatePromo,
   deletePromo,
+  toggleFavorito,
+  getFavoritosRanking,
 };

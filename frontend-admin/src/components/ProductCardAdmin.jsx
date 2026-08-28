@@ -67,7 +67,7 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
   return (
     <Link
       to={`/catalogo/editar/${product.slug}`}
-      className={`group flex flex-col h-fit overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:border-main-blue/50 ${
+      className={`group flex flex-col h-full overflow-hidden rounded-md border border-gray-200 bg-white transition-all hover:border-main-blue/50 ${
         isActivo ? "" : "opacity-60"
       }`}
     >

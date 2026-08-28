@@ -1,7 +1,6 @@
-// frontend-admin/src/pages/ProductEditor.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, UploadCloud, Loader2, X } from "lucide-react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
 import BasicDropdown from "../components/ui/BasicDropdown";
@@ -134,9 +133,15 @@ const ProductEditor = () => {
     }));
   };
 
-  const handleImageFileChange = async (e) => {
-    const file = e.target.files?.[0];
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processImageFile = async (file) => {
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("El archivo debe ser una imagen válida (PNG, JPG, WEBP).");
+      return;
+    }
 
     setIsUploadingImage(true);
     setFormError(null);
@@ -152,6 +157,31 @@ const ProductEditor = () => {
     } finally {
       setIsUploadingImage(false);
     }
+  };
+
+  const handleImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) await processImageFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processImageFile(file);
   };
 
   // Agregar tramo de promoción en caliente o diferido
@@ -605,12 +635,23 @@ const ProductEditor = () => {
           </div>
         </div>
 
-        {/* Carga de Imagen con Cloudinary */}
+        {/* Carga de Imagen con Cloudinary (Drag & Drop + Explorador) */}
         <div className="mt-4 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900">Imagen del Producto</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Imagen del Producto</h2>
+            {formValues.imagen_url && (
+              <button
+                type="button"
+                onClick={() => setFormValues((prev) => ({ ...prev, imagen_url: "" }))}
+                className="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <X className="size-3.5" /> Quitar imagen
+              </button>
+            )}
+          </div>
 
           <Input
-            label="URL de la imagen"
+            label="URL directa de la imagen (opcional)"
             id="imagen_url"
             inputName="imagen_url"
             inputType="text"
@@ -619,17 +660,47 @@ const ProductEditor = () => {
             setOnChange={handleChange}
           />
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch gap-4">
             <label
               htmlFor="Images"
-              className="flex-1 flex flex-col items-center justify-center rounded-md border border-dashed border-gray-300 p-4 text-gray-900 cursor-pointer hover:bg-gray-50 transition-colors w-full"
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex-1 flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-all cursor-pointer select-none ${
+                isDragging
+                  ? "border-main-blue bg-blue-50/70 ring-4 ring-main-blue/15 scale-[1.01]"
+                  : "border-gray-300 hover:border-main-blue/60 hover:bg-gray-50/80 bg-white"
+              } ${isUploadingImage || isLoading ? "pointer-events-none opacity-60" : ""}`}
             >
-              <ImageIcon className="size-6 text-gray-500" />
-              <span className="mt-2 text-sm font-medium text-gray-700">
-                {isUploadingImage
-                  ? "Subiendo a Cloudinary..."
-                  : "Subir archivo local a Cloudinary"}
-              </span>
+              {isUploadingImage ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="size-8 text-main-blue animate-spin" />
+                  <span className="text-sm font-bold text-neutral-800">
+                    Subiendo imagen a Cloudinary...
+                  </span>
+                  <span className="text-xs text-neutral-400">
+                    Por favor esperá unos segundos
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className={`size-12 rounded-xl flex items-center justify-center transition-colors ${
+                    isDragging ? "bg-main-blue text-white" : "bg-neutral-100 text-neutral-600"
+                  }`}>
+                    <UploadCloud className="size-6" />
+                  </div>
+                  <span className="mt-1 text-sm font-bold text-neutral-800">
+                    {isDragging
+                      ? "¡Soltá la imagen acá!"
+                      : "Arrastrá y soltá una imagen acá, o hacé clic para explorar"}
+                  </span>
+                  <span className="text-xs text-neutral-400">
+                    Formatos soportados: PNG, JPG, WEBP (hasta 10MB)
+                  </span>
+                </div>
+              )}
+
               <input
                 type="file"
                 accept="image/*"
@@ -641,12 +712,17 @@ const ProductEditor = () => {
             </label>
 
             {formValues.imagen_url && (
-              <div className="relative size-24 shrink-0 rounded-md border border-gray-200 overflow-hidden bg-gray-50">
+              <div className="relative size-32 sm:size-36 shrink-0 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-2xs group">
                 <img
                   src={formValues.imagen_url}
                   alt="Vista previa"
                   className="h-full w-full object-cover object-center"
                 />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-[11px] font-bold text-white bg-black/60 px-2 py-1 rounded-md">
+                    Imagen activa
+                  </span>
+                </div>
               </div>
             )}
           </div>

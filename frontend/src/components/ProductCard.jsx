@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Sparkles, ShoppingBag, Plus } from "lucide-react";
+import { Star, Sparkles, ShoppingBag, Plus } from "lucide-react";
 import { formatPrecio } from "../utils/formatters";
 import { useCart } from "../context/CartContext";
 
@@ -51,12 +51,49 @@ const ProductCard = ({ product }) => {
   const promos = Array.isArray(product.promos) ? product.promos : [];
 
   const { addToCart, openCart } = useCart();
-  const [isFavorite, setIsFavorite] = useState(Boolean(product.isFavorite));
+  const [isFavorite, setIsFavorite] = useState(() => {
+    try {
+      const favs = JSON.parse(localStorage.getItem("valette_favoritos") || "[]");
+      return favs.includes(product.id);
+    } catch {
+      return false;
+    }
+  });
 
   const handleToggleFavorite = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite((prev) => !prev);
+    setIsFavorite((prev) => {
+      const next = !prev;
+      try {
+        let favs = JSON.parse(localStorage.getItem("valette_favoritos") || "[]");
+        if (next) {
+          if (!favs.includes(product.id)) favs.push(product.id);
+        } else {
+          favs = favs.filter((id) => id !== product.id);
+        }
+        localStorage.setItem("valette_favoritos", JSON.stringify(favs));
+
+        // Sincronizar con backend si hay cliente logueado
+        const clienteStorage = localStorage.getItem("valette_cliente");
+        let clienteId = null;
+        if (clienteStorage) {
+          try {
+            clienteId = JSON.parse(clienteStorage).id;
+          } catch {}
+        }
+        if (clienteId) {
+          fetch(`${API_URL}/catalogo/${product.id}/favorito`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cliente_id: clienteId }),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error("Error al guardar favorito:", err);
+      }
+      return next;
+    });
   };
 
   const handleQuickAdd = (e) => {
@@ -91,9 +128,9 @@ const ProductCard = ({ product }) => {
             aria-pressed={isFavorite}
             className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-colors hover:bg-white"
           >
-            <Heart
+            <Star
               className={`size-4 ${
-                isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+                isFavorite ? "fill-amber-400 text-amber-400" : "text-gray-600"
               }`}
             />
           </button>
@@ -101,7 +138,7 @@ const ProductCard = ({ product }) => {
 
         <div className="mt-3 flex flex-col gap-1">
           <h3 className="text-sm font-semibold text-gray-800">
-            <Link to={`${categoriaSlug}/${especieSlug}/${productSlug}`}>
+            <Link to={`/${especieSlug}/${productSlug}`}>
               <span aria-hidden="true" className="absolute inset-0" />
               {name}
             </Link>

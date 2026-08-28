@@ -56,7 +56,7 @@ const Sidebar = () => {
       {sidebarOpen && (
         <div
           aria-hidden="true"
-          onClick={closeSidebar}
+          onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 z-30 bg-neutral-900/60 backdrop-blur-xs lg:hidden"
         />
       )}
@@ -64,7 +64,7 @@ const Sidebar = () => {
       {/* Panel lateral */}
       <div
         id="ecom-sidebar"
-        className={`fixed inset-y-0 start-0 z-40 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
+        className={`fixed inset-y-0 inset-s-0 z-40 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -99,7 +99,7 @@ const Sidebar = () => {
           <button
             type="button"
             onClick={() => {
-              closeSidebar();
+              setSidebarOpen(false);
               openCart();
             }}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
@@ -123,7 +123,7 @@ const Sidebar = () => {
           {categories.map((cat) => (
             <NavLink
               key={cat.nameId}
-              to={`/categoria/${cat.nameId}`}
+              to={`/${cat.nameId}`}
               onClick={closeSidebar}
               className={linkClass}
             >

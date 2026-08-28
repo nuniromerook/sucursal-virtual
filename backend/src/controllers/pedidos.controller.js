@@ -1,6 +1,7 @@
 // backend/src/controllers/pedidos.controller.js
 const pool = require("../db");
 const { estimateShipping } = require("../services/pedidosya.service");
+const { emitirNuevoPedido, emitirActualizacionPedido } = require("../socket");
 
 /**
  * POST /pedidos
@@ -167,10 +168,16 @@ const createPedido = async (req, res) => {
       console.warn("No se pudieron acreditar puntos al pedido:", puntosError.message);
     }
 
+    // 4. Obtener pedido enriquecido para emisión en tiempo real
+    const pedidoCompleto = await obtenerPedidoEnriquecido(pool, pedidoCreado.id);
+
+    // Emitir nuevo pedido en tiempo real a la sucursal y a los cortadores
+    emitirNuevoPedido(Number(sucursal_id), pedidoCompleto);
+
     res.status(201).json({
       success: true,
       message: "Pedido creado correctamente",
-      pedido: pedidoCreado,
+      pedido: pedidoCompleto,
     });
 
   } catch (error) {
@@ -186,6 +193,56 @@ const createPedido = async (req, res) => {
 };
 
 /**
+ * Función auxiliar para obtener un pedido enriquecido con cliente, sucursal e items
+ */
+const obtenerPedidoEnriquecido = async (db, pedidoId) => {
+  const pedidoRes = await db.query(
+    `SELECT 
+       p.*,
+       p.estado_local AS estado,
+       p.monto_total_final AS monto_final_real,
+       c.nombre AS cliente_nombre,
+       c.telefono AS cliente_telefono,
+       c.email AS cliente_email,
+       s.nombre AS sucursal_nombre,
+       s.direccion AS sucursal_direccion,
+       s.ciudad AS sucursal_ciudad,
+       s.telefono AS sucursal_telefono,
+       s.horario_atencion AS sucursal_horario,
+       e.nombre AS cortador_nombre,
+       e.apodo AS cortador_apodo
+     FROM pedidos p
+     JOIN clientes c ON p.cliente_id = c.id
+     JOIN sucursales s ON p.sucursal_id = s.id
+     LEFT JOIN empleados e ON p.cortador_id = e.id
+     WHERE p.id = $1`,
+    [pedidoId]
+  );
+
+  if (pedidoRes.rows.length === 0) return null;
+  const pedido = pedidoRes.rows[0];
+
+  const itemsRes = await db.query(
+    `SELECT 
+       pi.*,
+       pi.cantidad_kg_solicitada AS cantidad_kg,
+       pi.precio_por_kg_congelado AS precio_al_agregar,
+       cat.nombre_producto,
+       cat.imagen_url,
+       cat.unidad_medida,
+       cat.especie,
+       cat.categoria
+     FROM pedido_items pi
+     JOIN catalogo cat ON pi.catalogo_id = cat.id
+     WHERE pi.pedido_id = $1`,
+    [pedidoId]
+  );
+
+  pedido.items = itemsRes.rows;
+  return pedido;
+};
+
+/**
  * GET /pedidos/:id
  * Obtiene el detalle completo del pedido con sucursal, cliente e items
  */
@@ -193,50 +250,62 @@ const getPedidoById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const pedidoRes = await pool.query(
-      `SELECT 
-         p.*,
-         c.nombre AS cliente_nombre,
-         c.telefono AS cliente_telefono,
-         c.email AS cliente_email,
-         s.nombre AS sucursal_nombre,
-         s.direccion AS sucursal_direccion,
-         s.ciudad AS sucursal_ciudad,
-         s.telefono AS sucursal_telefono,
-         s.horario_atencion AS sucursal_horario
-       FROM pedidos p
-       JOIN clientes c ON p.cliente_id = c.id
-       JOIN sucursales s ON p.sucursal_id = s.id
-       WHERE p.id = $1`,
-      [id]
-    );
+    const pedido = await obtenerPedidoEnriquecido(pool, id);
 
-    if (pedidoRes.rows.length === 0) {
+    if (!pedido) {
       return res.status(404).json({ error: "Pedido no encontrado." });
     }
-
-    const pedido = pedidoRes.rows[0];
-
-    const itemsRes = await pool.query(
-      `SELECT 
-         pi.*,
-         cat.nombre_producto,
-         cat.imagen_url,
-         cat.unidad_medida,
-         cat.especie,
-         cat.categoria
-       FROM pedido_items pi
-       JOIN catalogo cat ON pi.catalogo_id = cat.id
-       WHERE pi.pedido_id = $1`,
-      [id]
-    );
-
-    pedido.items = itemsRes.rows;
 
     res.json(pedido);
   } catch (error) {
     console.error("Error al obtener pedido:", error.message);
     res.status(500).json({ error: "Error al obtener el pedido." });
+  }
+};
+
+/**
+ * PUT /pedidos/:id/estado
+ * Actualiza el estado operativo del pedido y emite aviso al cliente y a la sucursal
+ * Estados: solicitado | en_corte | pesado | listo | en_camino | entregado | cancelado
+ */
+const actualizarEstadoPedido = async (req, res) => {
+  const { id } = req.params;
+  const { estado, monto_final_real, notas, cortador_id } = req.body;
+
+  try {
+    const updateRes = await pool.query(
+      `UPDATE pedidos
+       SET estado_local = COALESCE($1, estado_local),
+           monto_total_final = COALESCE($2, monto_total_final),
+           notas = COALESCE($3, notas),
+           cortador_id = COALESCE($4, cortador_id),
+           actualizado_en = NOW()
+       WHERE id = $5
+       RETURNING *`,
+      [estado, monto_final_real, notas, cortador_id ? Number(cortador_id) : null, id]
+    );
+
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ error: "Pedido no encontrado." });
+    }
+
+    const pedidoActualizado = await obtenerPedidoEnriquecido(pool, id);
+
+    // Emitir en tiempo real a la sala del cliente y de la sucursal
+    emitirActualizacionPedido(
+      pedidoActualizado.cliente_id,
+      pedidoActualizado.sucursal_id,
+      pedidoActualizado
+    );
+
+    res.json({
+      success: true,
+      message: `Estado de pedido actualizado a '${estado}'`,
+      pedido: pedidoActualizado,
+    });
+  } catch (error) {
+    console.error("Error al actualizar estado del pedido:", error.message);
+    res.status(500).json({ error: "Error al actualizar estado del pedido." });
   }
 };
 
@@ -286,5 +355,6 @@ const cotizarEnvio = async (req, res) => {
 module.exports = {
   createPedido,
   getPedidoById,
+  actualizarEstadoPedido,
   cotizarEnvio,
 };

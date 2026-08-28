@@ -13,10 +13,12 @@ import {
 import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
+import { useSocket } from "../../context/SocketContext";
 
 export default function Product() {
   // Desestructuramos los parámetros definidos en App.jsx (:categoria/:especie/:slug)
   const { categoria, especie, slug } = useParams();
+  const { catalogoVersion } = useSocket();
 
   const [productData, setProductData] = useState(null);
   const [cantidad, setCantidad] = useState(1);
@@ -28,15 +30,11 @@ export default function Product() {
       setIsLoading(true);
       setError(false);
       try {
-        // El precio ahora vive directo en "catalogo", ya no hace falta
-        // sucursal_id: es el mismo precio en todos lados. El endpoint ya
-        // trae embebidas las promos activas del producto.
         const res = await fetch(`${API_URL}/catalogo/${slug}`);
         if (!res.ok) throw new Error("Producto no encontrado");
 
         const data = await res.json();
         setProductData(data);
-        setCantidad(1);
       } catch (err) {
         console.error("Error cargando detalle del producto:", err);
         setError(true);
@@ -46,7 +44,7 @@ export default function Product() {
     };
 
     if (slug) fetchProducto();
-  }, [slug]);
+  }, [slug, catalogoVersion]);
 
   const handleDecrement = () => {
     setCantidad((prev) => Math.max(1, Number(prev) - 1));
@@ -129,8 +127,8 @@ export default function Product() {
     { id: 1, name: "Inicio", href: "/" },
     {
       id: 2,
-      name: formatBreadcrumb(especie) || "Especie",
-      href: `/${especie || "general"}`,
+      name: formatBreadcrumb(categoriaProducto) || "Categoría",
+      href: `/${categoriaProducto?.toLowerCase()}`,
     },
   ];
 

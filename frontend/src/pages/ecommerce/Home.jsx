@@ -1,12 +1,15 @@
-// frontend/src/pages/ecommerce/Home.jsx
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import EnvioNavbar from "../../components/EnvioNavbar";
 import SearchInput from "../../components/SearchInput";
 import { categories } from "../../assets/assets.js";
 import ProductCard from "../../components/ProductCard.jsx";
+import BannerCarousel from "../../components/BannerCarousel.jsx";
 import { API_URL } from "../../config/api.js";
+import { useSocket } from "../../context/SocketContext";
 
 export default function Home() {
+  const { catalogoVersion } = useSocket();
   const [data, setData] = useState({
     destacados: [],
     ofertas: [],
@@ -17,10 +20,6 @@ export default function Home() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        // Con el nuevo modelo el precio vive directo en "catalogo" (ya no
-        // hay paquetes/inventario por sucursal), así que un solo GET con
-        // ?activo=true trae todo lo que se puede mostrar en la tienda.
-        // Las tres secciones de la portada se derivan acá abajo.
         const res = await fetch(`${API_URL}/catalogo?activo=true`);
         if (!res.ok) throw new Error(`Error: ${res.status}`);
 
@@ -28,10 +27,6 @@ export default function Home() {
 
         const destacados = productos.filter((p) => p.destacar);
 
-        // "En oferta" no es una columna booleana, es una comparación:
-        // hay oferta cuando precio_anterior existe y es mayor al precio actual.
-        // OJO: Postgres devuelve columnas numeric como string, hay que
-        // convertir con Number() antes de comparar o compara como texto.
         const ofertas = productos.filter((p) => {
           const anterior = Number(p.precio_anterior);
           const actual = Number(p.precio);
@@ -51,7 +46,7 @@ export default function Home() {
     };
 
     fetchHomeData();
-  }, []);
+  }, [catalogoVersion]);
 
   const SkeletonGrid = () => (
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-6">
@@ -77,18 +72,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Banners Promocionales */}
-      <div className="w-full">
-        <img
-          src="/dummy-promo-mobile.jpg"
-          alt="Promoción Abastecedora Valette"
-          className="flex lg:hidden w-11/12 mx-auto aspect-video object-cover rounded-xl shadow-sm"
-        />
-        <img
-          src="/dummy-promo-desktop.jpg"
-          alt="Promoción Abastecedora Valette"
-          className="hidden lg:flex w-full h-95 object-cover object-center"
-        />
+      {/* Carrusel Publicitario Responsivo */}
+      <div className="w-full max-w-7xl mx-auto px-4 pt-4 sm:pt-6">
+        <BannerCarousel />
       </div>
 
       {/* 1. SECCIÓN DE PRODUCTOS DESTACADOS */}
@@ -138,13 +124,16 @@ export default function Home() {
           <h2 className="text-2xl font-bold tracking-tight text-gray-900">
             Categorías
           </h2>
+          <Link to={"/productos"} className="text-main-blue">
+            Ver todas
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 lg:gap-6">
           {categories.map((category, index) => (
-            <a
+            <Link
               key={index}
-              href={`/categoria/${category.nameId?.toLowerCase() || ""}`}
+              to={`/${category.nameId?.toLowerCase() || ""}`}
               className="group relative flex aspect-4/3 sm:aspect-video w-full overflow-hidden rounded-md bg-gray-100 shadow-sm transition-all hover:shadow-md"
             >
               <img
@@ -161,7 +150,7 @@ export default function Home() {
                   Ver productos →
                 </span>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </section>

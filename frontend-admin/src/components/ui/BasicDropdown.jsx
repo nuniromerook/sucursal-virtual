@@ -5,11 +5,13 @@ import { useAppContext } from "../../context/AppContext";
 
 const BasicDropdown = ({
   label,
-  items,
+  items = [],
   value,
   id,
   setOnChange,
+  onChange,
   placeholder = "Seleccionar",
+  buttonClassName = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { isLoading } = useAppContext();
@@ -18,9 +20,14 @@ const BasicDropdown = ({
     items.find((item) => item.value === value)?.label ?? placeholder;
 
   const handleSelect = (item) => {
-    setOnChange({
-      target: { name: id, value: item.value, type: "text" },
-    });
+    if (typeof setOnChange === "function") {
+      setOnChange({
+        target: { name: id || "", value: item.value, type: "text" },
+      });
+    }
+    if (typeof onChange === "function") {
+      onChange(item.value);
+    }
     setIsOpen(false);
   };
 
@@ -51,7 +58,7 @@ const BasicDropdown = ({
           isLoading
             ? "cursor-not-allowed bg-gray-100 opacity-70"
             : "cursor-pointer"
-        }`}
+        } ${buttonClassName}`}
       >
         <span className="truncate">{selectedLabel}</span>
 
