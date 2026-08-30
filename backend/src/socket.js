@@ -9,10 +9,15 @@ let io = null;
  * cortadores y clientes individuales.
  */
 const initSocket = (httpServer) => {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : ["*"];
+
   io = new Server(httpServer, {
     cors: {
-      origin: "*", // En producción se puede restringir al dominio de la VPS
+      origin: allowedOrigins.includes("*") ? "*" : allowedOrigins,
       methods: ["GET", "POST", "PUT", "DELETE"],
+      credentials: true,
     },
     pingTimeout: 60000,
     pingInterval: 25000,

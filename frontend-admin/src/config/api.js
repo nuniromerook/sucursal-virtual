@@ -3,4 +3,4 @@
 // el panel — así funciona igual en localhost, en la IP del wifi, o en
 // cualquier otra red, sin tocar código.
 export const API_URL =
-  import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3000`;
+  import.meta.env.API_URL || `https://valette-backend.onrender.com`;

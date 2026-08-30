@@ -18,10 +18,28 @@ const notificacionesRoutes = require("./routes/notificaciones.routes");
 const app = express();
 const httpServer = http.createServer(app);
 
+// CORS: En desarrollo permite todo, en producción usa ALLOWED_ORIGINS
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : ["*"];
+
+app.use(
+  cors({
+    origin: allowedOrigins.includes("*") ? "*" : (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS bloqueado: ${origin}`));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
 // Inicializar Socket.io sobre el servidor HTTP
 initSocket(httpServer);
-
-app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(catalogoRoutes);
