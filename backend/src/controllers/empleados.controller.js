@@ -145,10 +145,10 @@ const loginEmpleado = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ error: "Debe ingresar su correo y contraseña." });
+    return res.status(400).json({ error: "Debe ingresar su correo/usuario y contraseña." });
   }
 
-  const cleanEmail = email.trim().toLowerCase();
+  const cleanIdent = email.trim().toLowerCase();
 
   try {
     const result = await pool.query(
@@ -156,9 +156,11 @@ const loginEmpleado = async (req, res) => {
               s.nombre AS sucursal_nombre, s.slug AS sucursal_slug
        FROM empleados e
        LEFT JOIN sucursales s ON s.id = e.sucursal_id
-       WHERE LOWER(e.email) = $1
+       WHERE LOWER(TRIM(COALESCE(e.email, ''))) = $1
+          OR LOWER(TRIM(COALESCE(e.nombre, ''))) = $1
+          OR LOWER(TRIM(COALESCE(e.apodo, ''))) = $1
        LIMIT 1`,
-      [cleanEmail]
+      [cleanIdent]
     );
 
     if (result.rows.length === 0) {
@@ -176,7 +178,12 @@ const loginEmpleado = async (req, res) => {
     }
 
     const { verifyPassword, generateToken } = require("../utils/auth");
-    const valid = verifyPassword(password, emp.password);
+    let valid = verifyPassword(password, emp.password);
+
+    // Fallback si la contraseña fue insertada como texto plano directamente en la base
+    if (!valid && emp.password === password) {
+      valid = true;
+    }
 
     if (!valid) {
       return res.status(401).json({ error: "Credenciales de acceso incorrectas." });

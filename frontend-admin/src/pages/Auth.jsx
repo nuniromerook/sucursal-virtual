@@ -4,11 +4,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Input from "../components/ui/Input";
 import ButtonLoader from "../components/ui/ButtonLoader";
-import { ShieldCheck, AlertCircle, KeyRound, Sparkles } from "lucide-react";
+import { AlertCircle, Lock } from "lucide-react";
 
 export default function Auth() {
-  const [email, setEmail] = useState("admin@valette.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -39,12 +39,6 @@ export default function Auth() {
     }
   };
 
-  const fillAdminCredentials = () => {
-    setEmail("admin@valette.com");
-    setPassword("admin123");
-    setErrorMessage(null);
-  };
-
   return (
     <div className="flex min-h-screen flex-col justify-center bg-neutral-50 px-4 py-12 sm:px-6 lg:px-8 select-none">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -72,12 +66,12 @@ export default function Auth() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Correo electrónico"
+              label="Correo electrónico o Usuario"
               id="email"
               inputName="email"
-              inputType="email"
-              autoComplete="email"
-              placeholder="admin@valette.com"
+              inputType="text"
+              autoComplete="username"
+              placeholder="tu-email@valette.com"
               isRequired={true}
               value={email}
               setOnChange={(e) => setEmail(e.target.value)}
@@ -114,27 +108,6 @@ export default function Auth() {
               />
             </div>
           </form>
-
-          {/* Tarjeta de credenciales rápidas de demostración */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 text-xs text-amber-900 space-y-2">
-            <div className="flex items-center gap-1.5 font-black text-amber-800">
-              <ShieldCheck className="size-4 text-amber-600" />
-              <span>Acceso Administrador por Defecto</span>
-            </div>
-            <p className="text-[11px] text-amber-700 leading-relaxed">
-              Usuario: <strong className="font-mono">admin@valette.com</strong>
-              <br />
-              Contraseña: <strong className="font-mono">admin123</strong>
-            </p>
-            <button
-              type="button"
-              onClick={fillAdminCredentials}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-main-blue hover:underline cursor-pointer"
-            >
-              <Sparkles className="size-3" />
-              <span>Completar automáticamente</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
