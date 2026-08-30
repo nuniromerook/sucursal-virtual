@@ -14,12 +14,14 @@ import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
+import FormattedDescription from "../../components/FormattedDescription";
 import NotFound from "../NotFound";
 
 export default function Product() {
   // Desestructuramos los parámetros definidos en App.jsx (:categoria/:especie/:slug)
   const { categoria, especie, slug } = useParams();
   const { catalogoVersion } = useSocket();
+  const { addToCart, openCart } = useCart();
 
   const [productData, setProductData] = useState(null);
   const [cantidad, setCantidad] = useState(1);
@@ -160,8 +162,6 @@ export default function Product() {
       : null,
     grasas != null ? { label: "Grasas", valor: `${Number(grasas)}g` } : null,
   ].filter(Boolean);
-
-  const { addToCart, openCart } = useCart();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -352,22 +352,22 @@ export default function Product() {
           </div>
         </div>
 
-        {/* Descripción */}
+        {/* Descripción del producto con formato enriquecido */}
         {descripcion && (
-          <div className="pt-10 border-t border-gray-100 mt-6">
-            <h3 className="text-sm font-bold text-gray-900 mb-2">
-              Descripción
+          <div className="pt-8 border-t border-neutral-100 mt-6">
+            <h3 className="text-sm uppercase tracking-wider font-extrabold text-neutral-900 mb-3 flex items-center gap-2">
+              Detalle y Preparación
             </h3>
-            <p className="text-base text-gray-700 leading-relaxed">
-              {descripcion}
-            </p>
+            <div className="rounded-2xl bg-neutral-50/60 border border-neutral-200/70 p-4 sm:p-6 shadow-2xs">
+              <FormattedDescription content={descripcion} />
+            </div>
           </div>
         )}
 
         {/* Información nutricional */}
         {nutricion.length > 0 && (
-          <div className="pb-10">
-            <h3 className="flex items-center gap-1 text-sm font-bold text-gray-900 mb-3">
+          <div className="py-10">
+            <h3 className="text-sm uppercase tracking-wider font-extrabold text-neutral-900 mb-3 flex items-center gap-2">
               Información nutricional
               <span
                 className="font-normal text-gray-400"

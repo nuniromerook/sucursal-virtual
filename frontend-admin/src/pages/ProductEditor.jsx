@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Plus, Trash2, Image as ImageIcon, UploadCloud, Loader2, X } from "lucide-react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
+import RichTextEditor from "../components/ui/RichTextEditor";
 import BasicDropdown from "../components/ui/BasicDropdown";
 import ButtonLoader from "../components/ui/ButtonLoader";
 import { useAppContext } from "../context/AppContext";
@@ -427,15 +428,11 @@ const ProductEditor = () => {
             />
           </div>
 
-          <TextArea
-            label="Descripción del producto"
-            id="descripcion"
-            inputName="descripcion"
-            autoComplete="descripcion"
-            placeholder="Agregá una descripción corta"
-            classNames={`col-span-2 ${isLoading ? "bg-gray-100" : ""}`}
+          <RichTextEditor
+            label="Descripción del producto y preparación"
             value={formValues.descripcion}
-            setOnChange={handleChange}
+            onChange={handleChange}
+            disabled={isLoading}
           />
 
           <div className="flex flex-col md:flex-row gap-4">
