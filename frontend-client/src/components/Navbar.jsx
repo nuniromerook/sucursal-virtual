@@ -9,17 +9,20 @@ import {
   Sparkles,
   LogOut,
   Package,
+  Star,
 } from "lucide-react";
 import EnvioNavbar from "@/components/EnvioNavbar";
 import { useAppContext } from "../context/AppContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { useFavorites } from "../context/FavoritesContext";
 
 const Navbar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
   const { openCart, totalItems } = useCart();
   const { openNotifications, unreadCount } = useNotifications();
+  const { favoritesCount } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -66,6 +69,25 @@ const Navbar = () => {
                   </p>
                 )}
               </button>
+              {/* Favoritos */}
+              <Link
+                to="/favoritos"
+                aria-label="Mis Favoritos"
+                className="relative mt-2 cursor-pointer hover:opacity-90 transition-opacity hidden sm:block"
+              >
+                <Star
+                  className={`size-6 stroke-1 ${
+                    favoritesCount > 0 ? "fill-amber-400 text-amber-400" : "text-white"
+                  }`}
+                />
+                {favoritesCount > 0 && (
+                  <p className="flex size-5 lg:size-5.5 items-center justify-center absolute -top-2 lg:-top-3 -right-2 lg:-right-3 bg-amber-500 rounded-full text-xs font-bold p-1 text-white animate-in zoom-in-50">
+                    {favoritesCount}
+                  </p>
+                )}
+              </Link>
+
+              {/* Notificaciones */}
               <button
                 type="button"
                 aria-label="Notificaciones"
@@ -135,6 +157,14 @@ const Navbar = () => {
                       >
                         <User className="size-4" />
                         <span>Mi Perfil</span>
+                      </Link>
+
+                      <Link
+                        to="/favoritos"
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium hover:bg-neutral-50 text-neutral-700 hover:text-amber-600 transition-colors"
+                      >
+                        <Star className="size-4 fill-amber-400 text-amber-400" />
+                        <span>Mis Favoritos ({favoritesCount})</span>
                       </Link>
 
                       <Link

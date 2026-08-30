@@ -150,7 +150,7 @@ export default function Profile() {
                 className="flex items-baseline gap-1.5 cursor-pointer text-left group"
               >
                 <span className="font-black text-base text-amber-600 flex items-center gap-1">
-                  <Star className="size-3.5 fill-amber-500 text-amber-500" />
+                  <Sparkles className="size-3.5 text-amber-500" />
                   {puntos}
                 </span>
                 <span className="text-neutral-500 font-medium group-hover:text-amber-700 transition-colors">
@@ -158,10 +158,17 @@ export default function Profile() {
                 </span>
               </button>
 
-              <div className="hidden sm:flex items-baseline gap-1.5">
-                <span className="font-bold text-neutral-700">Miembro</span>
-                <span className="text-neutral-400">Activo</span>
-              </div>
+              <Link
+                to="/favoritos"
+                className="flex items-baseline gap-1.5 cursor-pointer text-left group"
+              >
+                <span className="font-black text-base text-amber-500 flex items-center gap-1">
+                  <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                </span>
+                <span className="text-neutral-500 font-medium group-hover:text-amber-600 transition-colors">
+                  Mis Favoritos
+                </span>
+              </Link>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { NavLink, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
 import {
   Home,
   Tag,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   ChevronRight,
   Truck,
+  Star,
   X,
 } from "lucide-react";
 
@@ -31,6 +33,7 @@ const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems, openCart } = useCart();
+  const { favoritesCount } = useFavorites();
 
   const closeSidebar = () => {
     window.scroll({ top: 0, left: 0, behavior: "smooth" });
@@ -139,6 +142,18 @@ const Sidebar = () => {
             </p>
           </div>
 
+          {/* Mis Favoritos */}
+          <NavLink to="/favoritos" onClick={closeSidebar} className={linkClass}>
+            <Star className="size-5 shrink-0 fill-amber-400 text-amber-400" />
+            <span>Mis Favoritos</span>
+            {favoritesCount > 0 && (
+              <span className="ml-auto bg-amber-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5 min-w-5 text-center shadow-2xs">
+                {favoritesCount}
+              </span>
+            )}
+          </NavLink>
+
+          {/* Ofertas */}
           <NavLink to="/ofertas" onClick={closeSidebar} className={linkClass}>
             <Tag className="size-5 shrink-0" />
             <span>Ofertas</span>

@@ -9,8 +9,9 @@ import {
   ShoppingCart,
   Flame,
 } from "lucide-react";
-import { useCart } from "../context/CartContext";
 import { formatPrecio } from "../utils/formatters";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { API_URL } from "../config/api";
 
 const DUMMY_IMAGE =
@@ -18,6 +19,7 @@ const DUMMY_IMAGE =
 
 const ProductCard = ({ product }) => {
   const { addToCart, openCart } = useCart();
+  const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
   const name = product.nombre_producto;
   const price = Number(product.precio);
@@ -40,53 +42,12 @@ const ProductCard = ({ product }) => {
     ? Math.round(100 - (price / previousPrice) * 100)
     : 0;
 
-  const [isFavorite, setIsFavorite] = useState(() => {
-    try {
-      const favs = JSON.parse(
-        localStorage.getItem("valette_favoritos") || "[]",
-      );
-      return favs.includes(product.id);
-    } catch {
-      return false;
-    }
-  });
+  const isFavorite = checkIsFavorite(product.id);
 
   const handleToggleFavorite = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite((prev) => {
-      const next = !prev;
-      try {
-        let favs = JSON.parse(
-          localStorage.getItem("valette_favoritos") || "[]",
-        );
-        if (next) {
-          if (!favs.includes(product.id)) favs.push(product.id);
-        } else {
-          favs = favs.filter((id) => id !== product.id);
-        }
-        localStorage.setItem("valette_favoritos", JSON.stringify(favs));
-
-        // Sincronizar con backend si hay cliente logueado
-        const clienteStorage = localStorage.getItem("valette_cliente");
-        let clienteId = null;
-        if (clienteStorage) {
-          try {
-            clienteId = JSON.parse(clienteStorage).id;
-          } catch {}
-        }
-        if (clienteId) {
-          fetch(`${API_URL}/catalogo/${product.id}/favorito`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cliente_id: clienteId }),
-          }).catch(() => {});
-        }
-      } catch (err) {
-        console.error("Error al guardar favorito:", err);
-      }
-      return next;
-    });
+    toggleFavorite(product.id);
   };
 
   const handleQuickAdd = (e) => {

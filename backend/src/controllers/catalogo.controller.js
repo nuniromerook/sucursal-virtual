@@ -59,7 +59,9 @@ const getCatalogo = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT c.*, ${PROMOS_ACTIVAS_SUBQUERY}
+      `SELECT c.*, 
+              ${PROMOS_ACTIVAS_SUBQUERY},
+              COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos
        FROM catalogo c
        ${whereClause}
        ORDER BY c.nombre_producto`,
@@ -480,6 +482,53 @@ const getFavoritosRanking = async (req, res) => {
   }
 };
 
+// GET /catalogo/favoritos/cliente/:clienteId
+const getFavoritosCliente = async (req, res) => {
+  const { clienteId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT catalogo_id FROM cliente_favoritos WHERE cliente_id = $1`,
+      [clienteId]
+    );
+    const ids = result.rows.map((r) => r.catalogo_id);
+    res.json({ favoritos: ids });
+  } catch (error) {
+    console.error("Error al obtener favoritos del cliente:", error.message);
+    res.status(500).json({ error: "Error al obtener favoritos" });
+  }
+};
+
+// POST /catalogo/favoritos/sincronizar
+const sincronizarFavoritos = async (req, res) => {
+  const { cliente_id, ids = [] } = req.body;
+  if (!cliente_id) {
+    return res.status(400).json({ error: "cliente_id es requerido" });
+  }
+
+  try {
+    if (Array.isArray(ids) && ids.length > 0) {
+      for (const catId of ids) {
+        await pool.query(
+          `INSERT INTO cliente_favoritos (cliente_id, catalogo_id) 
+           VALUES ($1, $2) 
+           ON CONFLICT (cliente_id, catalogo_id) DO NOTHING`,
+          [cliente_id, catId]
+        );
+      }
+    }
+
+    const result = await pool.query(
+      `SELECT catalogo_id FROM cliente_favoritos WHERE cliente_id = $1`,
+      [cliente_id]
+    );
+    const favs = result.rows.map((r) => r.catalogo_id);
+    res.json({ success: true, favoritos: favs });
+  } catch (error) {
+    console.error("Error al sincronizar favoritos:", error.message);
+    res.status(500).json({ error: "Error al sincronizar favoritos" });
+  }
+};
+
 module.exports = {
   getCatalogo,
   getCatalogoItem,
@@ -492,4 +541,6 @@ module.exports = {
   deletePromo,
   toggleFavorito,
   getFavoritosRanking,
+  getFavoritosCliente,
+  sincronizarFavoritos,
 };

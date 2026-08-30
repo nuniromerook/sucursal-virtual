@@ -1,4 +1,3 @@
-// frontend/src/pages/ecommerce/CategoryPage.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -7,12 +6,14 @@ import {
   Package,
   Tag,
   Flame,
+  Star,
   ArrowRight,
 } from "lucide-react";
 import { API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
 import BasicDropdown from "../../components/ui/BasicDropdown";
 import { useSocket } from "../../context/SocketContext";
+import { useFavorites } from "../../context/FavoritesContext";
 import NotFound from "../NotFound";
 
 /**
@@ -76,6 +77,13 @@ const CATEGORY_META = {
     emoji: "🔥",
     badge: "Ofertas",
   },
+  favoritos: {
+    title: "Tus Favoritos",
+    subtitle:
+      "Todos los cortes y productos que guardaste con estrella para tenerlos siempre a mano y pedir más rápido.",
+    emoji: "⭐",
+    badge: "Favoritos",
+  },
 };
 
 const ORDEN_ITEMS = [
@@ -88,6 +96,7 @@ const ORDEN_ITEMS = [
 export default function CategoryPage() {
   const { categoria } = useParams();
   const { catalogoVersion } = useSocket();
+  const { favoriteIds, favoritesCount, cleanInvalidFavorites } = useFavorites();
 
   // Estados de datos
   const [productos, setProductos] = useState([]);
@@ -98,6 +107,7 @@ export default function CategoryPage() {
   const [filtroOfertas, setFiltroOfertas] = useState(false);
   const [filtroPuntos, setFiltroPuntos] = useState(false);
   const [filtroCombos, setFiltroCombos] = useState(false);
+  const [filtroFavoritos, setFiltroFavoritos] = useState(false);
   const [orden, setOrden] = useState("relevancia");
 
   // Identificador de la sección actual
@@ -120,7 +130,11 @@ export default function CategoryPage() {
         const res = await fetch(`${API_URL}/catalogo?activo=true`);
         if (!res.ok) throw new Error("Error al consultar productos");
         const data = await res.json();
-        setProductos(Array.isArray(data) ? data : []);
+        const validList = Array.isArray(data) ? data : [];
+        setProductos(validList);
+        if (validList.length > 0) {
+          cleanInvalidFavorites(validList.map((p) => p.id));
+        }
       } catch (err) {
         console.error("Error al cargar productos de categoría:", err);
         setError(true);
@@ -130,7 +144,7 @@ export default function CategoryPage() {
     };
 
     fetchProductos();
-  }, [categoria, catalogoVersion]);
+  }, [categoria, catalogoVersion, cleanInvalidFavorites]);
 
   // 1. Filtrar los productos que pertenecen a esta categoría
   const categoryProducts = useMemo(() => {
@@ -178,6 +192,9 @@ export default function CategoryPage() {
         const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
         return hasDiscount || hasPromos || hasDescuentoPorcentaje || prod.en_oferta === true;
       }
+      if (target === "favoritos") {
+        return favoriteIds.includes(prod.id);
+      }
       if (target === "combos") {
         return (
           prodCategoria.includes("combo") ||
@@ -190,11 +207,15 @@ export default function CategoryPage() {
 
       return prodCategoria === target || prodEspecie === target;
     });
-  }, [productos, currentKey]);
+  }, [productos, currentKey, favoriteIds]);
 
-  // 2. Aplicar micro-filtros (Ofertas, Puntos, Combos) sobre los productos de esta categoría
+  // 2. Aplicar micro-filtros (Ofertas, Puntos, Combos, Favoritos) sobre los productos de esta categoría
   const filteredProducts = useMemo(() => {
     let result = categoryProducts.filter((prod) => {
+      if (filtroFavoritos) {
+        if (!favoriteIds.includes(prod.id)) return false;
+      }
+
       if (filtroOfertas) {
         const anterior = Number(prod.precio_anterior);
         const actual = Number(prod.precio);
@@ -230,7 +251,7 @@ export default function CategoryPage() {
     }
 
     return result;
-  }, [categoryProducts, filtroOfertas, filtroPuntos, filtroCombos, orden]);
+  }, [categoryProducts, filtroOfertas, filtroPuntos, filtroCombos, filtroFavoritos, favoriteIds, orden]);
 
   // Conteo exacto dentro de la categoría
   const totalOfertas = useMemo(
@@ -248,6 +269,11 @@ export default function CategoryPage() {
       categoryProducts.filter((p) => p.gana_puntos && Number(p.puntos) > 0)
         .length,
     [categoryProducts],
+  );
+
+  const totalFavoritosCount = useMemo(
+    () => categoryProducts.filter((p) => favoriteIds.includes(p.id)).length,
+    [categoryProducts, favoriteIds],
   );
 
   // Si la categoría no existe en los metadatos y no tiene productos cargados
@@ -329,15 +355,31 @@ export default function CategoryPage() {
                 setFiltroOfertas(false);
                 setFiltroPuntos(false);
                 setFiltroCombos(false);
+                setFiltroFavoritos(false);
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                !filtroOfertas && !filtroPuntos && !filtroCombos
+                !filtroOfertas && !filtroPuntos && !filtroCombos && !filtroFavoritos
                   ? "bg-main-blue text-white shadow-2xs"
                   : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
             >
               Todos ({categoryProducts.length})
             </button>
+
+            {totalFavoritosCount > 0 && currentKey !== "favoritos" && (
+              <button
+                type="button"
+                onClick={() => setFiltroFavoritos(!filtroFavoritos)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                  filtroFavoritos
+                    ? "bg-amber-500 text-white shadow-2xs"
+                    : "bg-amber-50 text-amber-800 border border-amber-200/60 hover:bg-amber-100"
+                }`}
+              >
+                <Star className={`size-3 ${filtroFavoritos ? "fill-white text-white" : "fill-amber-400 text-amber-400"}`} />
+                <span>Favoritos ({totalFavoritosCount})</span>
+              </button>
+            )}
 
             {totalOfertas > 0 && (
               <button
@@ -413,27 +455,41 @@ export default function CategoryPage() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="bg-white rounded-xl p-10 text-center border border-neutral-200/80 shadow-2xs max-w-lg mx-auto">
-            <div className="size-12 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-3 text-neutral-400">
-              <Package className="size-6 stroke-1" />
+            <div className="size-14 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-500 shadow-2xs">
+              <Star className="size-7 fill-amber-400 text-amber-400" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-neutral-900">
-              No encontramos cortes con los filtros seleccionados
+              {currentKey === "favoritos" || filtroFavoritos
+                ? "Aún no guardaste productos como favoritos"
+                : "No encontramos cortes con los filtros seleccionados"}
             </h3>
             <p className="text-xs text-neutral-500 mt-1 mb-4">
-              Probá limpiando los filtros para ver todos los productos de{" "}
-              {meta.title.toLowerCase()}.
+              {currentKey === "favoritos" || filtroFavoritos
+                ? "Hacé clic en la estrella ⭐ de cualquier producto para tenerlo siempre a mano acá."
+                : `Probá limpiando los filtros para ver todos los productos de ${meta.title.toLowerCase()}.`}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFiltroOfertas(false);
-                setFiltroPuntos(false);
-                setFiltroCombos(false);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
-            >
-              <span>Ver todos los de {meta.title}</span>
-            </button>
+            {currentKey === "favoritos" ? (
+              <Link
+                to="/productos"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
+              >
+                <span>Explorar todo el catálogo</span>
+                <ArrowRight className="size-3.5" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroOfertas(false);
+                  setFiltroPuntos(false);
+                  setFiltroCombos(false);
+                  setFiltroFavoritos(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
+              >
+                <span>Ver todos los de {meta.title}</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-x-1.5 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

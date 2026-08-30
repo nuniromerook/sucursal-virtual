@@ -14,6 +14,7 @@ import SucursalEditor from "./pages/sucursales/SucursalEditor";
 import GestionPaquetes from "./pages/sucursales/sucursal-data/GestionPaquetes";
 
 import NotificacionesSucursal from "./pages/sucursales/sucursal-data/NotificacionesSucursal";
+import BannersSucursal from "./pages/sucursales/sucursal-data/BannersSucursal";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route index element={<Overview />} />
             <Route path="pedidos" element={<PedidosSucursal />} />
             <Route path="notificaciones" element={<NotificacionesSucursal />} />
+            <Route path="banners" element={<BannersSucursal />} />
             {/* Ruta relativa para el gestor de paquetes de un producto específico */}
             <Route
               path="stock/:catalogoProducto/paquetes"

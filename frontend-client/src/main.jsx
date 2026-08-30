@@ -9,6 +9,7 @@ import { CartContextProvider } from "./context/CartContext.jsx";
 import { ToastContextProvider } from "./context/ToastContext.jsx";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
 import { NotificationContextProvider } from "./context/NotificationContext.jsx";
+import { FavoritesContextProvider } from "./context/FavoritesContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useCart } from "./context/CartContext.jsx";
 
@@ -50,16 +51,18 @@ createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <AppContextProvider>
         <AuthContextProvider>
-          <SocketContextProvider>
-            <ToastContextProvider>
-              <NotificationContextProvider>
-                <CartContextProvider>
-                  <CartSyncBridge />
-                  <App />
-                </CartContextProvider>
-              </NotificationContextProvider>
-            </ToastContextProvider>
-          </SocketContextProvider>
+          <FavoritesContextProvider>
+            <SocketContextProvider>
+              <ToastContextProvider>
+                <NotificationContextProvider>
+                  <CartContextProvider>
+                    <CartSyncBridge />
+                    <App />
+                  </CartContextProvider>
+                </NotificationContextProvider>
+              </ToastContextProvider>
+            </SocketContextProvider>
+          </FavoritesContextProvider>
         </AuthContextProvider>
       </AppContextProvider>
     </BrowserRouter>

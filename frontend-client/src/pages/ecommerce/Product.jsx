@@ -9,11 +9,13 @@ import {
   Plus,
   ShoppingBag,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
+import { useFavorites } from "../../context/FavoritesContext";
 import FormattedDescription from "../../components/FormattedDescription";
 import NotFound from "../NotFound";
 
@@ -22,6 +24,7 @@ export default function Product() {
   const { categoria, especie, slug } = useParams();
   const { catalogoVersion } = useSocket();
   const { addToCart, openCart } = useCart();
+  const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
   const [productData, setProductData] = useState(null);
   const [cantidad, setCantidad] = useState(1);
@@ -212,10 +215,25 @@ export default function Product() {
 
           <div className="flex flex-col lg:col-span-2">
             <div className="flex flex-col">
-              {/* Nombre y Precio */}
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                {nombre_producto}
-              </h1>
+              {/* Nombre, Favorito y Precio */}
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                  {nombre_producto}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(productData.id)}
+                  className={`p-2.5 rounded-full border transition-all cursor-pointer shadow-2xs shrink-0 ${
+                    checkIsFavorite(productData.id)
+                      ? "bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100"
+                      : "bg-white border-neutral-200 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                  title={checkIsFavorite(productData.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                  aria-label="Favorito"
+                >
+                  <Star className={`size-5 transition-transform active:scale-125 ${checkIsFavorite(productData.id) ? "fill-amber-400 text-amber-400" : ""}`} />
+                </button>
+              </div>
 
               <div className="flex items-baseline gap-3 mt-2">
                 <p className="text-3xl font-bold tracking-tight text-gray-900">

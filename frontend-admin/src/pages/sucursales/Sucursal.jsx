@@ -4,7 +4,7 @@ import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useSocket } from "../../context/SocketContext";
 import { API_URL } from "../../config/api";
-import { Info, Bell, Users, Settings, Megaphone } from "lucide-react";
+import { Info, Bell, Users, Settings, Megaphone, Layers } from "lucide-react";
 
 const NavLinkTab = ({ to, text, icon: Icon, badge, end }) => {
   return (
@@ -124,6 +124,13 @@ const Sucursal = () => {
           to="notificaciones"
           text="Notificaciones"
           icon={Megaphone}
+          end={true}
+        />
+
+        <NavLinkTab
+          to="banners"
+          text="Banners & Publicidad"
+          icon={Layers}
           end={true}
         />
 

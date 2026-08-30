@@ -83,6 +83,12 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
               Destacado
             </span>
           )}
+          {Number(product.total_favoritos) > 0 && (
+            <span className="flex w-fit items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold text-amber-900 bg-amber-100/90 border border-amber-300 shadow-2xs">
+              <Star className="size-3 fill-amber-500 text-amber-600" />
+              {product.total_favoritos} favs
+            </span>
+          )}
           {tienePromo && (
             <span className="flex w-fit items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold text-white bg-emerald-600 shadow-2xs">
               <Tag className="size-3" />

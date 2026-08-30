@@ -13,6 +13,7 @@ const QUICK_FILTERS = [
   { value: "activos", label: "Activos" },
   { value: "inactivos", label: "Inactivos" },
   { value: "destacados", label: "Destacados" },
+  { value: "favoritos", label: "⭐ Con favoritos" },
   { value: "ofertas", label: "En oferta" },
   { value: "puntos", label: "Ganan puntos" },
 ];
@@ -28,6 +29,7 @@ const CATEGORY_FILTERS = [
 
 const SORT_OPTIONS = [
   { value: "recientes", label: "Más recientes" },
+  { value: "favoritos_desc", label: "⭐ Más favoritos de clientes" },
   { value: "nombre_asc", label: "Nombre (A-Z)" },
   { value: "precio_asc", label: "Precio: menor a mayor" },
   { value: "precio_desc", label: "Precio: mayor a menor" },
@@ -41,6 +43,8 @@ const matchesQuickFilter = (product, quickFilter) => {
       return !product.activo;
     case "destacados":
       return Boolean(product.destacar);
+    case "favoritos":
+      return Number(product.total_favoritos || 0) > 0;
     case "ofertas": {
       const anterior = Number(product.precio_anterior);
       const actual = Number(product.precio);
@@ -57,6 +61,9 @@ const sortProducts = (list, sortBy) => {
   const sorted = [...list];
 
   switch (sortBy) {
+    case "favoritos_desc":
+      sorted.sort((a, b) => Number(b.total_favoritos || 0) - Number(a.total_favoritos || 0));
+      break;
     case "nombre_asc":
       sorted.sort((a, b) =>
         (a.nombre_producto || "").localeCompare(b.nombre_producto || ""),
@@ -91,9 +98,31 @@ const Catalogo = () => {
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/catalogo`);
-      const data = await response.json();
-      setProducts(Array.isArray(data) ? data : []);
+      const [catRes, favRankingRes] = await Promise.all([
+        fetch(`${API_URL}/catalogo`),
+        fetch(`${API_URL}/catalogo/favoritos/ranking`).catch(() => null),
+      ]);
+
+      const data = await catRes.json();
+      const favMap = {};
+      if (favRankingRes && favRankingRes.ok) {
+        const favList = await favRankingRes.json();
+        if (Array.isArray(favList)) {
+          favList.forEach((f) => {
+            favMap[f.id] = Number(f.total_favoritos) || 0;
+          });
+        }
+      }
+
+      const items = (Array.isArray(data) ? data : []).map((p) => ({
+        ...p,
+        total_favoritos:
+          p.total_favoritos !== undefined && p.total_favoritos !== null
+            ? Number(p.total_favoritos)
+            : favMap[p.id] || 0,
+      }));
+
+      setProducts(items);
     } catch (error) {
       console.error("Error al cargar el catálogo:", error);
     } finally {
