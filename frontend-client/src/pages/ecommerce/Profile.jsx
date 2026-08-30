@@ -1,13 +1,7 @@
 // frontend-client/src/pages/ecommerce/Profile.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  User,
-  Sparkles,
-  Package,
-  Star,
-  ShieldCheck,
-} from "lucide-react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { User, Sparkles, Package, Star, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL } from "../../config/api";
 
@@ -78,15 +72,15 @@ export default function Profile() {
 
   const puntos = Number(user.puntos_acumulados) || 0;
   const perfilIncompleto = !user.perfil_completo;
-  const nombreLimpio = user.nombre ? user.nombre.replace(/\s*\(@[^)]+\)/g, "").trim() : "Cliente Valette";
+  const nombreLimpio = user.nombre
+    ? user.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
+    : "Cliente Valette";
 
   return (
     <div className="w-full min-h-screen pb-14">
-      
       {/* ─── 1. Header Minimalista & Estratégico (Estilo Perfil Profesional) ─── */}
       <div className="bg-white border-b border-neutral-200/80 py-6 sm:py-8 px-4">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-7">
-          
           {/* Avatar con foto o iniciales */}
           <div className="relative size-18 sm:size-22 rounded-full bg-main-blue text-white font-black text-xl sm:text-2xl flex items-center justify-center shadow-2xs shrink-0 overflow-hidden ring-4 ring-main-blue/10 border-2 border-white">
             {user.avatar_url ? (
@@ -175,7 +169,6 @@ export default function Profile() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-5">
-        
         {/* ─── Banner de Gamificación para completar perfil ─── */}
         {perfilIncompleto && (
           <div className="mb-5 p-4 rounded-lg bg-blue-50 border border-blue-200 text-neutral-900 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -185,10 +178,12 @@ export default function Profile() {
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-bold text-neutral-900 leading-snug">
-                  ¡Completá tu @Usuario y WhatsApp para ganar +50 puntos de regalo!
+                  ¡Completá tu @Usuario y WhatsApp para ganar +50 puntos de
+                  regalo!
                 </h3>
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  Recibí avisos de corte, confirmación de pesaje y promociones exclusivas.
+                  Recibí avisos de corte, confirmación de pesaje y promociones
+                  exclusivas.
                 </p>
               </div>
             </div>
@@ -266,7 +261,6 @@ export default function Profile() {
 
           {activeTab === "puntos" && <PuntosTab />}
         </div>
-
       </div>
     </div>
   );

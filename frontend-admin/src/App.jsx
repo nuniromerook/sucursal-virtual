@@ -15,40 +15,50 @@ import GestionPaquetes from "./pages/sucursales/sucursal-data/GestionPaquetes";
 
 import NotificacionesSucursal from "./pages/sucursales/sucursal-data/NotificacionesSucursal";
 import BannersSucursal from "./pages/sucursales/sucursal-data/BannersSucursal";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<Inicio />} />
-          <Route path="/ingresar" element={<Auth />} />
+    <Routes>
+      {/* Ruta pública de login */}
+      <Route path="/ingresar" element={<Auth />} />
 
-          <Route path="/catalogo" element={<Catalogo />} />
-          <Route path="/catalogo/editar/:slug" element={<ProductEditor />} />
-          <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
+      {/* Rutas protegidas del panel de administración */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Inicio />} />
 
-          {/* Cambiado :id a :slug para que coincida con useParams() en los componentes */}
-          <Route path="/sucursal/:slug" element={<Sucursal />}>
-            <Route index element={<Overview />} />
-            <Route path="pedidos" element={<PedidosSucursal />} />
-            <Route path="notificaciones" element={<NotificacionesSucursal />} />
-            <Route path="banners" element={<BannersSucursal />} />
-            {/* Ruta relativa para el gestor de paquetes de un producto específico */}
-            <Route
-              path="stock/:catalogoProducto/paquetes"
-              element={<GestionPaquetes />}
-            />
-            <Route path="ajustes" element={<Informacion />} />
-            <Route path="equipo" element={<Empleados />} />
-          </Route>
+        <Route path="/catalogo" element={<Catalogo />} />
+        <Route path="/catalogo/editar/:slug" element={<ProductEditor />} />
+        <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
 
-          <Route path="/sucursales/nueva" element={<SucursalEditor />} />
-          <Route path="/sucursales/editar/:id" element={<SucursalEditor />} />
+        {/* Cambiado :id a :slug para que coincida con useParams() en los componentes */}
+        <Route path="/sucursal/:slug" element={<Sucursal />}>
+          <Route index element={<Overview />} />
+          <Route path="pedidos" element={<PedidosSucursal />} />
+          <Route path="notificaciones" element={<NotificacionesSucursal />} />
+          <Route path="banners" element={<BannersSucursal />} />
+          {/* Ruta relativa para el gestor de paquetes de un producto específico */}
+          <Route
+            path="stock/:catalogoProducto/paquetes"
+            element={<GestionPaquetes />}
+          />
+          <Route path="ajustes" element={<Informacion />} />
+          <Route path="equipo" element={<Empleados />} />
         </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+
+        <Route path="/sucursales/nueva" element={<SucursalEditor />} />
+        <Route path="/sucursales/editar/:id" element={<SucursalEditor />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import { API_URL } from "../config/api";
 import {
   ChevronDown,
@@ -11,10 +12,13 @@ import {
   ShoppingCart,
   Store,
   User,
+  LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
+  const { user, logout } = useAuth();
   const [sucursales, setSucursales] = useState([]);
   const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-600";
 
@@ -194,24 +198,47 @@ const Sidebar = () => {
           </ul>
         </div>
 
-        <div className="sticky inset-x-0 bottom-0 border-t border-gray-100">
-          <NavLink
-            to="/"
-            onClick={closeSidebar}
-            className="flex items-center gap-2 bg-white p-4 hover:bg-gray-50 hover:transition-colors"
-          >
-            <img
-              alt=""
-              src="https://images.unsplash.com/photo-1600486913747-55e5470d6f40?auto=format&fit=crop&q=80&w=1160"
-              className="size-10 rounded-full object-cover"
-            />
+        <div className="sticky inset-x-0 bottom-0 border-t border-gray-100 bg-white p-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="size-9 rounded-full bg-main-blue/10 text-main-blue font-black text-xs flex items-center justify-center border border-main-blue/20 shrink-0">
+                {user?.nombre
+                  ? user.nombre
+                      .split(" ")
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()
+                  : "AV"}
+              </div>
 
-            <p className="text-xs text-gray-900">
-              <strong className="block font-medium">Eric Frusciante</strong>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-900 truncate">
+                  {user?.nombre || "Administrador"}
+                </p>
+                <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
+                  <span className="capitalize font-semibold text-main-blue">
+                    {user?.rol || "Admin"}
+                  </span>
+                  {user?.email && (
+                    <>
+                      <span>·</span>
+                      <span className="truncate">{user.email}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
 
-              <span> eric@frusciante.com </span>
-            </p>
-          </NavLink>
+            <button
+              type="button"
+              onClick={logout}
+              title="Cerrar sesión"
+              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </div>
       </div>
     </>

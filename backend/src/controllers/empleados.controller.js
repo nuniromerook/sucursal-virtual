@@ -137,9 +137,110 @@ const deleteEmpleado = async (req, res) => {
   }
 };
 
+/**
+ * POST /empleados/login
+ * Autentica un empleado o administrador del panel
+ */
+const loginEmpleado = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Debe ingresar su correo y contraseña." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const result = await pool.query(
+      `SELECT e.id, e.nombre, e.apodo, e.rol, e.email, e.password, e.sucursal_id, e.telefono, e.activo,
+              s.nombre AS sucursal_nombre, s.slug AS sucursal_slug
+       FROM empleados e
+       LEFT JOIN sucursales s ON s.id = e.sucursal_id
+       WHERE LOWER(e.email) = $1
+       LIMIT 1`,
+      [cleanEmail]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Credenciales de acceso incorrectas." });
+    }
+
+    const emp = result.rows[0];
+
+    if (!emp.activo) {
+      return res.status(403).json({ error: "Su cuenta de usuario está desactivada." });
+    }
+
+    if (!emp.password) {
+      return res.status(401).json({ error: "Usuario sin contraseña asignada. Contacte al administrador." });
+    }
+
+    const { verifyPassword, generateToken } = require("../utils/auth");
+    const valid = verifyPassword(password, emp.password);
+
+    if (!valid) {
+      return res.status(401).json({ error: "Credenciales de acceso incorrectas." });
+    }
+
+    const token = generateToken({
+      id: emp.id,
+      email: emp.email,
+      nombre: emp.nombre,
+      rol: emp.rol,
+      sucursal_id: emp.sucursal_id,
+    });
+
+    const { password: _, ...userSafe } = emp;
+
+    res.json({
+      success: true,
+      message: "Sesión iniciada correctamente",
+      token,
+      user: userSafe,
+    });
+  } catch (error) {
+    console.error("Error en login de empleado:", error);
+    res.status(500).json({ error: "Error interno al iniciar sesión." });
+  }
+};
+
+/**
+ * GET /empleados/me
+ * Retorna datos del empleado/admin logueado
+ */
+const getMeEmpleado = async (req, res) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ error: "No autorizado." });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT e.id, e.nombre, e.apodo, e.rol, e.email, e.sucursal_id, e.telefono, e.activo,
+              s.nombre AS sucursal_nombre, s.slug AS sucursal_slug
+       FROM empleados e
+       LEFT JOIN sucursales s ON s.id = e.sucursal_id
+       WHERE e.id = $1 AND e.activo = true
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado o inactivo." });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error al obtener sesión de empleado:", error);
+    res.status(500).json({ error: "Error al consultar usuario." });
+  }
+};
+
 module.exports = {
   getEmpleadosBySucursal,
   createEmpleado,
   updateEmpleado,
   deleteEmpleado,
+  loginEmpleado,
+  getMeEmpleado,
 };
+

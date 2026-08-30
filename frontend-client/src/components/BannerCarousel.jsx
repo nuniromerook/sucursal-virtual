@@ -9,7 +9,8 @@ const BADGE_COLORS = {
   dorado: "bg-amber-500 text-white border-amber-300/50 shadow-amber-900/30",
   amarillo: "bg-amber-400 text-neutral-900 border-amber-200/50 font-black",
   azul: "bg-main-blue text-white border-blue-300/50 shadow-blue-900/30",
-  verde: "bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-900/30",
+  verde:
+    "bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-900/30",
   morado: "bg-purple-600 text-white border-purple-400/50 shadow-purple-900/30",
   negro: "bg-neutral-900 text-white border-neutral-700/50 shadow-black/40",
 };
@@ -77,11 +78,15 @@ export default function BannerCarousel() {
       try {
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, "1");
-          fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, { method: "POST" }).catch(() => {});
+          fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, {
+            method: "POST",
+          }).catch(() => {});
         }
       } catch {
         // Fallback si sessionStorage está deshabilitado
-        fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, { method: "POST" }).catch(() => {});
+        fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, {
+          method: "POST",
+        }).catch(() => {});
       }
       viewedBannersRef.current.add(currentBanner.id);
     }
@@ -91,7 +96,9 @@ export default function BannerCarousel() {
   const handleBannerClick = (banner) => {
     if (!banner) return;
     // Registrar clic en el backend
-    fetch(`${API_URL}/banners/${banner.id}/click`, { method: "POST" }).catch(() => {});
+    fetch(`${API_URL}/banners/${banner.id}/click`, { method: "POST" }).catch(
+      () => {},
+    );
 
     if (banner.enlace_url) {
       if (banner.enlace_url.startsWith("http")) {
@@ -143,7 +150,9 @@ export default function BannerCarousel() {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {banners.map((banner) => {
-          const badgeClass = BADGE_COLORS[banner.badge_color?.toLowerCase()] || BADGE_COLORS.rojo;
+          const badgeClass =
+            BADGE_COLORS[banner.badge_color?.toLowerCase()] ||
+            BADGE_COLORS.rojo;
 
           return (
             <div
@@ -217,9 +226,9 @@ export default function BannerCarousel() {
               handlePrev();
             }}
             aria-label="Anterior banner"
-            className="absolute left-3 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg z-20"
+            className="absolute left-6 top-6 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
-            <ChevronLeft className="size-5 sm:size-6" />
+            <ChevronLeft className="size-6 sm:size-6" />
           </button>
           <button
             type="button"
@@ -228,9 +237,9 @@ export default function BannerCarousel() {
               handleNext();
             }}
             aria-label="Siguiente banner"
-            className="absolute right-3 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-lg z-20"
+            className="absolute right-6 top-6 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
-            <ChevronRight className="size-5 sm:size-6" />
+            <ChevronRight className="size-6 sm:size-6" />
           </button>
         </>
       )}
@@ -248,7 +257,9 @@ export default function BannerCarousel() {
               }}
               aria-label={`Ir al banner ${idx + 1}`}
               className={`h-2 rounded-full transition-all cursor-pointer ${
-                idx === currentIndex ? "w-6 bg-white" : "w-2 bg-white/40 hover:bg-white/70"
+                idx === currentIndex
+                  ? "w-6 bg-white"
+                  : "w-2 bg-white/40 hover:bg-white/70"
               }`}
             />
           ))}
