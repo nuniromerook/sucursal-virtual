@@ -8,6 +8,7 @@ import { AuthContextProvider } from "./context/AuthContext.jsx";
 import { CartContextProvider } from "./context/CartContext.jsx";
 import { ToastContextProvider } from "./context/ToastContext.jsx";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
+import { NotificationContextProvider } from "./context/NotificationContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useCart } from "./context/CartContext.jsx";
 
@@ -50,12 +51,14 @@ createRoot(document.getElementById("root")).render(
       <AppContextProvider>
         <AuthContextProvider>
           <SocketContextProvider>
-            <CartContextProvider>
-              <ToastContextProvider>
-                <CartSyncBridge />
-                <App />
-              </ToastContextProvider>
-            </CartContextProvider>
+            <ToastContextProvider>
+              <NotificationContextProvider>
+                <CartContextProvider>
+                  <CartSyncBridge />
+                  <App />
+                </CartContextProvider>
+              </NotificationContextProvider>
+            </ToastContextProvider>
           </SocketContextProvider>
         </AuthContextProvider>
       </AppContextProvider>

@@ -42,4 +42,11 @@ export const categories = [
     image:
       "https://www.lanacion.com.ar/resizer/v2/un-usuario-en-twitter-mostro-una-forma-ingeniosa-5DOVOA6KMNB5JKN4HJUBH5Y2WM.jpg?auth=81ea206128ed788431af6b21eeaff491abc6be6130cedce3ebffd3b8e0529b45&width=768&quality=70&smart=false",
   },
+  {
+    id: 7,
+    nameId: "ofertas",
+    nombre: "Ofertas",
+    image:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+  },
 ];

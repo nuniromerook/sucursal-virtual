@@ -132,6 +132,26 @@ const emitirCambioCatalogo = (data) => {
   io.emit("catalogo_actualizado", data);
 };
 
+/**
+ * Emite evento de notificación genérica o personalizada
+ */
+const emitirNotificacion = (notificacion) => {
+  if (!io) return;
+
+  if (notificacion.cliente_id) {
+    const roomCliente = `sala_cliente_${notificacion.cliente_id}`;
+    console.log(`📢 Emitiendo 'nueva_notificacion' a ${roomCliente}`);
+    io.to(roomCliente).emit("nueva_notificacion", notificacion);
+  } else if (notificacion.sucursal_id) {
+    const roomSucursal = `sala_sucursal_${notificacion.sucursal_id}`;
+    console.log(`📢 Emitiendo 'nueva_notificacion' a ${roomSucursal}`);
+    io.to(roomSucursal).emit("nueva_notificacion", notificacion);
+  } else {
+    console.log("📢 Emitiendo 'nueva_notificacion' global (broadcast)");
+    io.emit("nueva_notificacion", notificacion);
+  }
+};
+
 module.exports = {
   initSocket,
   getIO,
@@ -139,4 +159,5 @@ module.exports = {
   emitirActualizacionPedido,
   emitirCambioStock,
   emitirCambioCatalogo,
+  emitirNotificacion,
 };

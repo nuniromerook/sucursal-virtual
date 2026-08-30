@@ -14,10 +14,12 @@ import EnvioNavbar from "@/components/EnvioNavbar";
 import { useAppContext } from "../context/AppContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const Navbar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
   const { openCart, totalItems } = useCart();
+  const { openNotifications, unreadCount } = useNotifications();
   const { user, isAuthenticated, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -67,12 +69,15 @@ const Navbar = () => {
               <button
                 type="button"
                 aria-label="Notificaciones"
-                className="relative mt-2"
+                onClick={openNotifications}
+                className="relative mt-2 cursor-pointer hover:opacity-90 transition-opacity"
               >
                 <Bell className="size-6 stroke-1" />
-                <p className="flex size-5 lg:size-5.5 items-center justify-center absolute -top-2 lg:-top-3 -right-2 lg:-right-3 bg-red-500 rounded-full text-xs p-1">
-                  10
-                </p>
+                {unreadCount > 0 && (
+                  <p className="flex size-5 lg:size-5.5 items-center justify-center absolute -top-2 lg:-top-3 -right-2 lg:-right-3 bg-red-500 rounded-full text-xs font-bold p-1 animate-in zoom-in-50">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </p>
+                )}
               </button>
               {/* Botón Ingresar (no autenticado, visible en mobile y desktop) */}
               {!isAuthenticated && (

@@ -69,6 +69,13 @@ const CATEGORY_META = {
     emoji: "🧂",
     badge: "Almacén",
   },
+  ofertas: {
+    title: "Ofertas & Descuentos",
+    subtitle:
+      "Aprovechá los mejores cortes y productos seleccionados con precios especiales y descuentos por tiempo limitado.",
+    emoji: "🔥",
+    badge: "Ofertas",
+  },
 };
 
 const ORDEN_ITEMS = [
@@ -162,6 +169,14 @@ export default function CategoryPage() {
       }
       if (target === "almacen") {
         return prodCategoria === "almacen" || prodCategoria === "despensa";
+      }
+      if (target === "ofertas") {
+        const anterior = Number(prod.precio_anterior);
+        const actual = Number(prod.precio);
+        const hasDiscount = anterior > 0 && anterior > actual;
+        const hasPromos = Array.isArray(prod.promos) && prod.promos.length > 0;
+        const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
+        return hasDiscount || hasPromos || hasDescuentoPorcentaje || prod.en_oferta === true;
       }
       if (target === "combos") {
         return (

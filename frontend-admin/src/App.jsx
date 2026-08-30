@@ -13,6 +13,8 @@ import Catalogo from "./pages/Catalogo";
 import SucursalEditor from "./pages/sucursales/SucursalEditor";
 import GestionPaquetes from "./pages/sucursales/sucursal-data/GestionPaquetes";
 
+import NotificacionesSucursal from "./pages/sucursales/sucursal-data/NotificacionesSucursal";
+
 function App() {
   return (
     <>
@@ -29,6 +31,7 @@ function App() {
           <Route path="/sucursal/:slug" element={<Sucursal />}>
             <Route index element={<Overview />} />
             <Route path="pedidos" element={<PedidosSucursal />} />
+            <Route path="notificaciones" element={<NotificacionesSucursal />} />
             {/* Ruta relativa para el gestor de paquetes de un producto específico */}
             <Route
               path="stock/:catalogoProducto/paquetes"

@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "../components/Footer";
 import Sidebar from "../components/Sidebar";
 import CartDrawer from "../components/CartDrawer";
+import NotificationsDrawer from "../components/NotificationsDrawer";
 
 export default function ecomLayout() {
   return (
@@ -11,6 +12,7 @@ export default function ecomLayout() {
       <Navbar />
       <Sidebar />
       <CartDrawer />
+      <NotificationsDrawer />
       {/* will either be <Home/> or <Settings/> */}
       <Outlet />
       <Footer />

@@ -1,7 +1,11 @@
 // backend/src/controllers/pedidos.controller.js
 const pool = require("../db");
 const { estimateShipping } = require("../services/pedidosya.service");
-const { emitirNuevoPedido, emitirActualizacionPedido } = require("../socket");
+const {
+  emitirNuevoPedido,
+  emitirActualizacionPedido,
+  emitirNotificacion,
+} = require("../socket");
 
 /**
  * POST /pedidos
@@ -166,13 +170,44 @@ const createPedido = async (req, res) => {
             pedidoCreado.id,
           ]
         );
+
+        // Notificación de puntos ganados
+        await pool.query(
+          `INSERT INTO notificaciones (cliente_id, pedido_id, titulo, mensaje, tipo, icono, enlace)
+           VALUES ($1, $2, $3, $4, 'puntos', 'sparkles', '/perfil?tab=puntos')`,
+          [
+            clienteId,
+            pedidoCreado.id,
+            `¡Sumaste ${puntosGanados} Puntos Valette! ⭐`,
+            `Acreditamos tus puntos por la compra del pedido #${pedidoCreado.id}. Consultá tu saldo en tu perfil.`,
+          ]
+        );
       }
     } catch (puntosError) {
-      // No crítico: el pedido se creó bien, solo falló la acreditación de puntos
       console.warn("No se pudieron acreditar puntos al pedido:", puntosError.message);
     }
 
-    // 4. Obtener pedido enriquecido para emisión en tiempo real
+    // 5. Crear notificación viva de pedido para el cliente
+    if (clienteId) {
+      try {
+        await pool.query(
+          `INSERT INTO notificaciones (cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, estado_pedido)
+           VALUES ($1, $2, $3, $4, $5, 'pedido', 'package', $6, 'solicitado')`,
+          [
+            clienteId,
+            Number(sucursal_id),
+            pedidoCreado.id,
+            `¡Pedido #${pedidoCreado.id} solicitado con éxito!`,
+            `Tu compra ingresó a la sucursal. Tocá acá para ver el seguimiento en vivo.`,
+            `/pedido/${pedidoCreado.id}/confirmacion`,
+          ]
+        );
+      } catch (notifErr) {
+        console.warn("No se pudo registrar notificación de pedido:", notifErr.message);
+      }
+    }
+
+    // 6. Obtener pedido enriquecido para emisión en tiempo real
     const pedidoCompleto = await obtenerPedidoEnriquecido(pool, pedidoCreado.id);
 
     // Emitir nuevo pedido en tiempo real a la sucursal y a los cortadores
@@ -302,6 +337,83 @@ const actualizarEstadoPedido = async (req, res) => {
       pedidoActualizado.sucursal_id,
       pedidoActualizado
     );
+
+    // Registrar y emitir notificación al cliente
+    if (pedidoActualizado.cliente_id) {
+      try {
+        let notifTitulo = `Actualización de Pedido #${id}`;
+        let notifMensaje = `El estado de tu pedido cambió a ${estado}.`;
+        let notifIcono = "package";
+
+        const est = (estado || "").toLowerCase();
+        if (est.includes("corte") || est.includes("preparacion")) {
+          notifTitulo = `Pedido #${id} en preparación 🔪`;
+          notifMensaje = `Nuestros cortadores están preparando y pesando tus cortes.`;
+        } else if (est.includes("pesado") || (est.includes("listo") && !est.includes("retiro"))) {
+          notifTitulo = `¡Cortes pesados y empaquetados! ⚖️`;
+          notifMensaje = `Tu pedido #${id} ya fue preparado. Monto final: $${pedidoActualizado.monto_total_final || pedidoActualizado.total_estimado}.`;
+        } else if (est.includes("camino")) {
+          notifTitulo = `Tu pedido #${id} va en camino 🛵`;
+          notifMensaje = `El cadete retiró tus cortes y se dirige a tu domicilio.`;
+          notifIcono = "truck";
+        } else if (est.includes("retiro")) {
+          notifTitulo = `¡Tu pedido #${id} está listo para retirar! 🛍️`;
+          notifMensaje = `Podés pasar por el mostrador de la sucursal a retirar tu compra.`;
+        } else if (est.includes("entregado") || est.includes("completado")) {
+          notifTitulo = `¡Pedido #${id} entregado! 🎉`;
+          notifMensaje = `¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.`;
+          notifIcono = "check";
+        } else if (est.includes("cancelado") || est.includes("rechazado")) {
+          notifTitulo = `Pedido #${id} cancelado ❌`;
+          notifMensaje = `El pedido fue cancelado. ${notas || "Contactanos por cualquier consulta."}`;
+          notifIcono = "alert";
+        }
+
+        // Actualizar la notificación viva existente del pedido o crearla si no existe
+        let notifFinal = null;
+        const updateNotifRes = await pool.query(
+          `UPDATE notificaciones
+           SET titulo = $1, mensaje = $2, icono = $3, enlace = $4, estado_pedido = $5, creada_en = NOW(), leida = FALSE
+           WHERE pedido_id = $6 AND tipo = 'pedido'
+           RETURNING *`,
+          [
+            notifTitulo,
+            notifMensaje,
+            notifIcono,
+            `/pedido/${id}/confirmacion`,
+            estado,
+            id,
+          ]
+        );
+
+        if (updateNotifRes.rows.length > 0) {
+          notifFinal = updateNotifRes.rows[0];
+        } else {
+          const insertNotifRes = await pool.query(
+            `INSERT INTO notificaciones (cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, estado_pedido)
+             VALUES ($1, $2, $3, $4, $5, 'pedido', $6, $7, $8)
+             RETURNING *`,
+            [
+              pedidoActualizado.cliente_id,
+              pedidoActualizado.sucursal_id,
+              id,
+              notifTitulo,
+              notifMensaje,
+              notifIcono,
+              `/pedido/${id}/confirmacion`,
+              estado,
+            ]
+          );
+          notifFinal = insertNotifRes.rows[0];
+        }
+
+        if (notifFinal) {
+          emitirNotificacion(notifFinal);
+        }
+      } catch (notifErr) {
+        console.warn("No se pudo registrar notificación de estado:", notifErr.message);
+      }
+    }
 
     res.json({
       success: true,

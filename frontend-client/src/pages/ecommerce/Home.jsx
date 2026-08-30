@@ -113,19 +113,23 @@ export default function Home() {
       {/* 2. SECCIÓN DE OFERTAS & PROMOS */}
       {(isLoading || data.ofertas.length > 0) && (
         <section className="mx-auto max-w-6xl px-4 pt-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Flame className="size-5 text-main-red" />
               <h2 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight">
-                Ofertas & Promociones
+                Ofertas & Promos
               </h2>
-              <span className="bg-main-red text-white text-[11px] font-black px-2 py-0.5 rounded uppercase shadow-2xs">
+              <span className="hidden lg:block bg-main-red text-white text-[11px] font-black px-2 py-0.5 rounded uppercase shadow-2xs">
                 Promo
               </span>
             </div>
-            <span className="text-xs font-bold text-neutral-500">
-              Precios especiales por tiempo limitado
-            </span>
+            <Link
+              to="/ofertas"
+              className="text-xs font-bold text-main-blue hover:underline flex items-center gap-1"
+            >
+              <span>Ver todas las ofertas</span>
+              <ArrowRight className="size-3.5" />
+            </Link>
           </div>
           <div className="rounded-lg border border-main-blue/20 bg-blue-50/40 p-1.5 sm:p-6 shadow-2xs">
             {isLoading ? (

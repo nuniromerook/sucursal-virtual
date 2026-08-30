@@ -1,5 +1,4 @@
-// frontend/src/components/ToastContainer.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -7,7 +6,7 @@ import {
   Info,
   X,
 } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { CartContext } from "../context/CartContext";
 
 /**
  * Configuración visual minimalista y sobria por tipo de Toast
@@ -157,7 +156,8 @@ function ToastItem({ toast, onDismiss }) {
  *   para evitar superponerse al drawer del carrito.
  */
 export default function ToastContainer({ toasts, onDismiss }) {
-  const { isCartOpen } = useCart();
+  const cart = useContext(CartContext);
+  const isCartOpen = cart?.isCartOpen || false;
 
   if (!toasts || toasts.length === 0) return null;
 
