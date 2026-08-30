@@ -1,74 +1,32 @@
-// frontend/src/pages/ecommerce/CategoryPage.jsx
+// frontend/src/pages/ecommerce/Productos.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronRight,
   Sparkles,
   Package,
   Tag,
+  Search,
+  SlidersHorizontal,
+  X,
   Flame,
-  ArrowRight,
 } from "lucide-react";
 import { API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
 import BasicDropdown from "../../components/ui/BasicDropdown";
+import SearchInput from "../../components/SearchInput";
 import { useSocket } from "../../context/SocketContext";
 
-/**
- * Metadatos y descripciones temáticas de categorías y especies
- */
-const CATEGORY_META = {
-  vacuno: {
-    title: "Carne Vacuna",
-    subtitle:
-      "Cortes seleccionados de novillo y ternera de primera calidad, frescos de mostrador.",
-    emoji: "🥩",
-    badge: "Vacuno",
-  },
-  cerdo: {
-    title: "Cortes de Cerdo",
-    subtitle:
-      "Bondiola, pechito, matambrito, costillitas y cortes tiernos para la parrilla o el horno.",
-    emoji: "🐷",
-    badge: "Cerdo",
-  },
-  pollo: {
-    title: "Pollo & Granja",
-    subtitle:
-      "Supremas, pata muslo, alitas y elaborados de pollo fresco con riguroso control de frescura.",
-    emoji: "🍗",
-    badge: "Pollo",
-  },
-  embutidos: {
-    title: "Embutidos & Achuras",
-    subtitle:
-      "Chorizos artesanales, morcillas, salchicha parrillera y achuras de máxima frescura.",
-    emoji: "🌭",
-    badge: "Embutidos",
-  },
-  preparados: {
-    title: "Elaborados & Caseros",
-    subtitle:
-      "Milanesas preparadas, arrollados rellenos y especialidades listas para cocinar sin vueltas.",
-    emoji: "🍲",
-    badge: "Elaborados",
-  },
-  combos: {
-    title: "Combos & Packs de Ahorro",
-    subtitle:
-      "Ahorrá llevando packs familiares y combos parrilleros listos para compartir.",
-    emoji: "📦",
-    badge: "Combos",
-    isCombo: true,
-  },
-  almacen: {
-    title: "Almacén & Acompañamientos",
-    subtitle:
-      "Carbón, sales, especias, aderezos y todo lo necesario para completar tu comida.",
-    emoji: "🧂",
-    badge: "Almacén",
-  },
-};
+const CATEGORIA_DROPDOWN_ITEMS = [
+  { value: "todos", label: "Todas las categorías" },
+  { value: "vacuno", label: "🥩 Carne Vacuna" },
+  { value: "cerdo", label: "🐷 Cortes de Cerdo" },
+  { value: "pollo", label: "🍗 Pollo & Granja" },
+  { value: "embutidos", label: "🌭 Embutidos & Achuras" },
+  { value: "preparados", label: "🍲 Elaborados & Caseros" },
+  { value: "combos", label: "📦 Packs & Combos" },
+  { value: "almacen", label: "🧂 Almacén" },
+];
 
 const ORDEN_ITEMS = [
   { value: "relevancia", label: "Relevancia" },
@@ -77,8 +35,9 @@ const ORDEN_ITEMS = [
   { value: "puntos_desc", label: "Más puntos" },
 ];
 
-export default function CategoryPage() {
-  const { categoria, especie } = useParams();
+export default function Productos() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryParam = searchParams.get("q") || "";
   const { catalogoVersion } = useSocket();
 
   // Estados de datos
@@ -86,22 +45,12 @@ export default function CategoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Filtros rápidos dentro de la categoría
+  // Filtros interactivos
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todos");
   const [filtroOfertas, setFiltroOfertas] = useState(false);
   const [filtroPuntos, setFiltroPuntos] = useState(false);
   const [filtroCombos, setFiltroCombos] = useState(false);
   const [orden, setOrden] = useState("relevancia");
-
-  // Identificador de la sección actual
-  const currentKey = (especie || categoria || "productos").toLowerCase().trim();
-  const meta = CATEGORY_META[currentKey] || {
-    title: currentKey.charAt(0).toUpperCase() + currentKey.slice(1),
-    subtitle: `Explorá todos los productos disponibles en la sección de ${currentKey}.`,
-    emoji: "🥩",
-    badge: currentKey,
-  };
-
-  const isComboCategory = meta.isCombo || currentKey === "combos";
 
   // Cargar catálogo desde la API
   useEffect(() => {
@@ -114,7 +63,7 @@ export default function CategoryPage() {
         const data = await res.json();
         setProductos(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("Error al cargar productos de categoría:", err);
+        console.error("Error al cargar productos:", err);
         setError(true);
       } finally {
         setIsLoading(false);
@@ -122,32 +71,45 @@ export default function CategoryPage() {
     };
 
     fetchProductos();
-  }, [categoria, especie, catalogoVersion]);
+  }, [catalogoVersion]);
 
-  // 1. Filtrar los productos que pertenecen EXCLUSIVAMENTE a esta categoría o especie
-  const categoryProducts = useMemo(() => {
-    return productos.filter((prod) => {
+  // Filtrado reactivo en memoria (incluyendo el texto gestionado por SearchInput)
+  const filteredProducts = useMemo(() => {
+    let result = productos.filter((prod) => {
       const prodCategoria = (prod.categoria || "").toLowerCase().trim();
       const prodEspecie = (prod.especie || "").toLowerCase().trim();
       const prodNombre = (prod.nombre_producto || "").toLowerCase().trim();
-      const target = currentKey;
+      const prodDesc = (prod.descripcion || "").toLowerCase().trim();
 
-      if (target === "productos") return true;
-      if (target === "combos") {
-        return (
-          prodCategoria.includes("combo") ||
-          prodCategoria.includes("pack") ||
-          prodNombre.includes("combo") ||
-          prodNombre.includes("pack")
-        );
+      // 1. Filtro por búsqueda de texto (desde URL ?q=...)
+      if (queryParam.trim()) {
+        const q = queryParam.toLowerCase().trim();
+        const matchQ =
+          prodNombre.includes(q) ||
+          prodDesc.includes(q) ||
+          prodCategoria.includes(q) ||
+          prodEspecie.includes(q);
+        if (!matchQ) return false;
       }
-      return prodCategoria.includes(target) || prodEspecie.includes(target);
-    });
-  }, [productos, currentKey]);
 
-  // 2. Aplicar micro-filtros (Ofertas, Puntos, Combos) sobre los productos de esta categoría
-  const filteredProducts = useMemo(() => {
-    let result = categoryProducts.filter((prod) => {
+      // 2. Filtro por categoría seleccionada
+      if (categoriaSeleccionada !== "todos") {
+        if (categoriaSeleccionada === "combos") {
+          const isCombo =
+            prodCategoria.includes("combo") ||
+            prodCategoria.includes("pack") ||
+            prodNombre.includes("combo") ||
+            prodNombre.includes("pack");
+          if (!isCombo) return false;
+        } else {
+          const matchCat =
+            prodCategoria.includes(categoriaSeleccionada) ||
+            prodEspecie.includes(categoriaSeleccionada);
+          if (!matchCat) return false;
+        }
+      }
+
+      // 3. Filtro de ofertas
       if (filtroOfertas) {
         const anterior = Number(prod.precio_anterior);
         const actual = Number(prod.precio);
@@ -156,16 +118,18 @@ export default function CategoryPage() {
         if (!hasDiscount && !hasPromos) return false;
       }
 
+      // 4. Filtro de puntos
       if (filtroPuntos) {
         if (!prod.gana_puntos || Number(prod.puntos) <= 0) return false;
       }
 
+      // 5. Filtro de combos
       if (filtroCombos) {
         const isCombo =
-          (prod.categoria || "").toLowerCase().includes("combo") ||
-          (prod.categoria || "").toLowerCase().includes("pack") ||
-          (prod.nombre_producto || "").toLowerCase().includes("combo") ||
-          (prod.nombre_producto || "").toLowerCase().includes("pack");
+          prodCategoria.includes("combo") ||
+          prodCategoria.includes("pack") ||
+          prodNombre.includes("combo") ||
+          prodNombre.includes("pack");
         if (!isCombo) return false;
       }
 
@@ -182,29 +146,54 @@ export default function CategoryPage() {
     }
 
     return result;
-  }, [categoryProducts, filtroOfertas, filtroPuntos, filtroCombos, orden]);
+  }, [
+    productos,
+    queryParam,
+    categoriaSeleccionada,
+    filtroOfertas,
+    filtroPuntos,
+    filtroCombos,
+    orden,
+  ]);
 
-  // Conteo exacto dentro de la categoría
+  // Contadores globales
   const totalOfertas = useMemo(
     () =>
-      categoryProducts.filter((p) => {
+      productos.filter((p) => {
         const hasDiscount = Number(p.precio_anterior) > Number(p.precio);
         const hasPromos = Array.isArray(p.promos) && p.promos.length > 0;
         return hasDiscount || hasPromos;
       }).length,
-    [categoryProducts],
+    [productos],
   );
 
   const totalPuntosCount = useMemo(
-    () =>
-      categoryProducts.filter((p) => p.gana_puntos && Number(p.puntos) > 0)
-        .length,
-    [categoryProducts],
+    () => productos.filter((p) => p.gana_puntos && Number(p.puntos) > 0).length,
+    [productos],
   );
+
+  const handleClearQuery = () => {
+    searchParams.delete("q");
+    setSearchParams(searchParams);
+  };
+
+  const handleResetAllFilters = () => {
+    handleClearQuery();
+    setCategoriaSeleccionada("todos");
+    setFiltroOfertas(false);
+    setFiltroPuntos(false);
+    setFiltroCombos(false);
+    setOrden("relevancia");
+  };
 
   return (
     <div className="w-full bg-neutral-50/60 min-h-screen pb-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 sm:pt-7">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+        {/* ─── SearchInput en Mobile (desplegado en la vista para acceso rápido) ─── */}
+        <div className="block lg:hidden mb-4">
+          <SearchInput />
+        </div>
+
         {/* ─── Breadcrumb ─── */}
         <nav aria-label="Navegación secundaria" className="mb-4">
           <ol className="flex items-center flex-wrap gap-y-1 text-sm lg:text-base">
@@ -214,70 +203,69 @@ export default function CategoryPage() {
               </Link>
               <ChevronRight className="size-4 shrink-0 text-gray-400 mx-1" />
             </li>
-            {categoria && especie ? (
-              <>
-                <li className="flex items-center">
-                  <Link
-                    to={`/categoria/${categoria}`}
-                    className="capitalize hover:text-main-blue transition-colors"
-                  >
-                    {categoria}
-                  </Link>
-                  <ChevronRight className="size-4 shrink-0 text-gray-400 mx-1" />
-                </li>
-                <li className="text-sm lg:text-base">
-                  <span className="font-medium text-gray-500 capitalize">
-                    {especie}
-                  </span>
-                </li>
-              </>
-            ) : (
-              <li className="text-neutral-900 font-bold capitalize">
-                {meta.title}
-              </li>
-            )}
+            <li className="font-medium text-gray-500 capitalize">
+              {queryParam ? "Búsqueda" : "Catálogo de Productos"}
+            </li>
           </ol>
         </nav>
 
-        {/* ─── Banner Header de Categoría ─── */}
-        <div className="bg-white rounded-xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs mb-5 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="size-13 sm:size-15 rounded-xl bg-neutral-100 border border-neutral-200/80 flex items-center justify-center text-3xl sm:text-4xl shadow-2xs shrink-0 select-none">
-                {meta.emoji}
+        {/* ─── Header de Vista de Productos ─── */}
+        <div className="bg-white rounded-lg p-4 sm:p-5 border border-neutral-200/80 shadow-2xs mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h1 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight">
+                  {queryParam ? (
+                    <span className="flex items-center gap-2">
+                      <span>Resultados para</span>
+                      <span className="text-main-blue">"{queryParam}"</span>
+                    </span>
+                  ) : (
+                    "Catálogo de Productos"
+                  )}
+                </h1>
+                <span className="text-xs font-bold text-main-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
+                  {isLoading
+                    ? "..."
+                    : `${filteredProducts.length} ${filteredProducts.length === 1 ? "corte" : "cortes"}`}
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h1 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
-                    {meta.title}
-                  </h1>
-                  <span className="text-xs font-bold text-main-blue bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200/60">
-                    {isLoading ? "..." : `${filteredProducts.length} productos`}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-neutral-500 max-w-xl leading-snug">
-                  {meta.subtitle}
-                </p>
-              </div>
+              <p className="text-xs sm:text-sm text-neutral-500">
+                {queryParam
+                  ? "Buscando en todos los cortes, elaborados y especialidades de la tienda."
+                  : "Explorá todas las categorías, ofertas y cortes disponibles con entrega directa."}
+              </p>
             </div>
-          </div>
 
-          {/* Banner especial para Combos y Packs */}
-          {isComboCategory && (
-            <div className="mt-4 pt-3.5 border-t border-neutral-100 flex items-center gap-2.5 text-xs text-amber-900 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
-              <Flame className="size-4 text-amber-600 shrink-0" />
-              <span>
-                <strong>Packs de Ahorro:</strong> Selecciones completas listas
-                para la parrilla o la semana con precio especial.
-              </span>
-            </div>
-          )}
+            {/* Chip de búsqueda activa con botón para limpiar */}
+            {queryParam && (
+              <button
+                type="button"
+                onClick={handleClearQuery}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-neutral-700 transition-colors cursor-pointer shrink-0"
+              >
+                <Search className="size-3.5 text-neutral-500" />
+                <span>Limpiar búsqueda</span>
+                <X className="size-3.5 text-neutral-400 hover:text-red-600" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* ─── Barra de Filtros Rápidos y Ordenamiento (con BasicDropdown) ─── */}
-        <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-neutral-200/80 shadow-2xs mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* ─── Barra de Filtros, Categorías y Ordenamiento ─── */}
+        <div className="bg-white rounded-lg p-3 sm:p-3.5 border border-neutral-200/80 shadow-2xs mb-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Dropdown de Categoría */}
+          <div className="w-full lg:w-56 shrink-0">
+            <BasicDropdown
+              items={CATEGORIA_DROPDOWN_ITEMS}
+              value={categoriaSeleccionada}
+              onChange={setCategoriaSeleccionada}
+              buttonClassName="py-1.5 text-xs"
+            />
+          </div>
+
           {/* Chips de filtro rápido */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 flex-1">
             <button
               type="button"
               onClick={() => {
@@ -291,7 +279,7 @@ export default function CategoryPage() {
                   : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
             >
-              Todos ({categoryProducts.length})
+              Todos ({productos.length})
             </button>
 
             {totalOfertas > 0 && (
@@ -339,10 +327,7 @@ export default function CategoryPage() {
           </div>
 
           {/* Ordenamiento con BasicDropdown UI */}
-          <div className="flex items-center gap-2 sm:w-48 shrink-0">
-            <span className="text-xs font-semibold text-neutral-500 hidden md:inline">
-              Ordenar:
-            </span>
+          <div className="w-full lg:w-48 shrink-0">
             <BasicDropdown
               items={ORDEN_ITEMS}
               value={orden}
@@ -355,7 +340,7 @@ export default function CategoryPage() {
         {/* ─── Grilla de Productos ─── */}
         {isLoading ? (
           <div className="grid grid-cols-2 gap-x-1.5 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {[...Array(8)].map((_, i) => (
+            {[...Array(10)].map((_, i) => (
               <div
                 key={i}
                 className="animate-pulse bg-white border border-neutral-200/60 p-3 rounded-lg flex flex-col gap-3"
@@ -369,10 +354,10 @@ export default function CategoryPage() {
         ) : error ? (
           <div className="bg-white rounded-xl p-8 text-center border border-red-200/80 shadow-2xs max-w-md mx-auto">
             <p className="text-sm font-bold text-red-600 mb-1">
-              Hubo un problema al cargar los cortes
+              Hubo un problema al cargar los productos
             </p>
             <p className="text-xs text-neutral-500 mb-4">
-              Revisá tu conexión o intentá recargar.
+              Revisá tu conexión a internet o intentá recargar la vista.
             </p>
             <button
               onClick={() => window.location.reload()}
@@ -387,22 +372,19 @@ export default function CategoryPage() {
               <Package className="size-6 stroke-1" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-neutral-900">
-              No encontramos cortes con los filtros seleccionados
+              No encontramos cortes que coincidan con tu búsqueda
             </h3>
             <p className="text-xs text-neutral-500 mt-1 mb-4">
-              Probá limpiando los filtros para ver todos los productos de{" "}
-              {meta.title.toLowerCase()}.
+              {queryParam
+                ? `No hay resultados para "${queryParam}".`
+                : "No hay cortes disponibles con los filtros actuales."}
             </p>
             <button
               type="button"
-              onClick={() => {
-                setFiltroOfertas(false);
-                setFiltroPuntos(false);
-                setFiltroCombos(false);
-              }}
+              onClick={handleResetAllFilters}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
             >
-              <span>Ver todos los de {meta.title}</span>
+              <span>Ver todo el catálogo</span>
             </button>
           </div>
         ) : (

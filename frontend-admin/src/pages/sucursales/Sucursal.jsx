@@ -1,28 +1,29 @@
+// frontend-admin/src/pages/sucursales/Sucursal.jsx
 import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useSocket } from "../../context/SocketContext";
 import { API_URL } from "../../config/api";
-import { Bell, Flame } from "lucide-react";
+import { Info, Bell, Users, Settings } from "lucide-react";
 
-const NavLinkTab = ({ to, text, badge, end }) => {
+const NavLinkTab = ({ to, text, icon: Icon, badge, end }) => {
   return (
     <NavLink
       to={to}
       role="tab"
       end={end}
-      aria-selected="true"
       className={({ isActive }) =>
-        `whitespace-nowrap py-2.5 px-4 rounded-t-lg font-bold text-xs sm:text-sm transition-all flex items-center gap-2 hover:cursor-pointer ${
+        `whitespace-nowrap py-2 px-3.5 rounded-md font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer ${
           isActive
-            ? "bg-neutral-100 text-neutral-900 border-x border-t border-neutral-300 shadow-2xs"
-            : "text-neutral-600 border-b border-b-neutral-300 hover:bg-neutral-200/80 rounded-b-none"
+            ? "bg-main-blue text-white shadow-2xs"
+            : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
         }`
       }
     >
+      {Icon && <Icon className="size-4 shrink-0" />}
       <span>{text}</span>
       {badge > 0 && (
-        <span className="bg-main-red text-white text-[11px] font-black rounded-full px-2 py-0.2 min-w-5 text-center animate-pulse">
+        <span className="bg-main-red text-white text-[11px] font-black rounded-full px-2 py-0.2 min-w-5 text-center animate-pulse shadow-2xs">
           {badge}
         </span>
       )}
@@ -98,38 +99,47 @@ const Sucursal = () => {
   }, [sucursal?.id, ultimoPedido]);
 
   return (
-    <div className="flex flex-col bg-white min-h-full">
+    <div className="flex flex-col gap-5">
+      {/* ─── Pestañas de Navegación de la Sucursal ─── */}
       <div
         role="tablist"
-        className="sticky top-17 z-20 flex max-w-screen overflow-x-auto lg:top-0 scrollbar-none"
+        className="bg-white rounded-lg p-1.5 border border-neutral-200/80 shadow-2xs flex items-center gap-1.5 overflow-x-auto scrollbar-none"
       >
-        <div className="flex bg-neutral-200 px-4 pt-3 lg:w-full gap-1">
-          <NavLinkTab
-            to={`/sucursal/${sucursalSlug}`}
-            text="Información general"
-            end={true}
-          />
+        <NavLinkTab
+          to={`/sucursal/${sucursalSlug}`}
+          text="Información general"
+          icon={Info}
+          end={true}
+        />
 
-          <NavLinkTab
-            to="pedidos"
-            text="Pedidos en vivo"
-            badge={pedidosPendientes}
-            end={true}
-          />
+        <NavLinkTab
+          to="pedidos"
+          text="Pedidos en vivo"
+          icon={Bell}
+          badge={pedidosPendientes}
+          end={true}
+        />
 
-          <NavLinkTab to="stock" text="Stock" end={false} />
+        <NavLinkTab
+          to="equipo"
+          text="Equipo"
+          icon={Users}
+          end={true}
+        />
 
-          <NavLinkTab to="equipo" text="Equipo" end={true} />
-
-          <NavLinkTab to="ajustes" text="Ajustes" end={true} />
-          <div className="flex flex-1 border-b border-b-neutral-300" />
-        </div>
+        <NavLinkTab
+          to="ajustes"
+          text="Ajustes"
+          icon={Settings}
+          end={true}
+        />
       </div>
 
-      <div role="tabpanel" className="flex-1 p-4 sm:p-6 bg-neutral-100">
+      {/* ─── Contenido Dinámico de la Pestaña ─── */}
+      <div>
         {isLoading ? (
-          <div className="flex items-center justify-center p-12 text-sm text-neutral-500">
-            Cargando sucursal...
+          <div className="flex items-center justify-center p-12 text-sm text-neutral-500 bg-white rounded-lg border border-neutral-200/80 shadow-2xs">
+            Cargando datos de la sucursal...
           </div>
         ) : (
           <Outlet

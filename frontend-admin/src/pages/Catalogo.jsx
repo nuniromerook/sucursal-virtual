@@ -1,7 +1,7 @@
-// src/pages/Catalogo.jsx
+// frontend-admin/src/pages/Catalogo.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Layers, RefreshCw, Filter } from "lucide-react";
 
 import { API_URL } from "../config/api";
 import { useAppContext } from "../context/AppContext";
@@ -15,6 +15,15 @@ const QUICK_FILTERS = [
   { value: "destacados", label: "Destacados" },
   { value: "ofertas", label: "En oferta" },
   { value: "puntos", label: "Ganan puntos" },
+];
+
+const CATEGORY_FILTERS = [
+  { value: "todas", label: "Todas las categorías" },
+  { value: "vacuno", label: "🥩 Vacuno" },
+  { value: "cerdo", label: "🐷 Cerdo" },
+  { value: "pollo", label: "🍗 Pollo" },
+  { value: "preparados", label: "🍲 Preparados" },
+  { value: "almacen", label: "🧂 Almacén" },
 ];
 
 const SORT_OPTIONS = [
@@ -75,18 +84,16 @@ const Catalogo = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState("todos");
+  const [categoryFilter, setCategoryFilter] = useState("todas");
   const [sortBy, setSortBy] = useState("recientes");
   const { setNavbarTitle } = useAppContext();
 
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      // El panel admin pide todo sin filtrar (activos e inactivos), a
-      // diferencia del ecommerce que pide ?activo=true.
       const response = await fetch(`${API_URL}/catalogo`);
       const data = await response.json();
-
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar el catálogo:", error);
     } finally {
@@ -99,8 +106,6 @@ const Catalogo = () => {
     setNavbarTitle("Catálogo de productos");
   }, []);
 
-  // Actualiza el producto en memoria cuando ProductCardAdmin togglea
-  // "activo" — evita recargar todo el catálogo por un solo cambio.
   const handleEstadoActualizado = (updated) => {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   };
@@ -115,36 +120,71 @@ const Catalogo = () => {
         product.descripcion?.toLowerCase().includes(term) ||
         product.id?.toString().includes(term);
 
-      return matchesSearch && matchesQuickFilter(product, quickFilter);
+      const matchesCat =
+        categoryFilter === "todas" ||
+        (product.categoria || "").toLowerCase() === categoryFilter ||
+        (product.especie || "").toLowerCase() === categoryFilter;
+
+      return matchesSearch && matchesCat && matchesQuickFilter(product, quickFilter);
     });
 
     return sortProducts(filtered, sortBy);
-  }, [products, search, quickFilter, sortBy]);
+  }, [products, search, categoryFilter, quickFilter, sortBy]);
 
   return (
-    <div className="flex min-h-dvh flex-col gap-y-4 lg:gap-y-6 p-2 lg:p-4 py-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="hidden lg:block text-2xl font-bold text-gray-900 py-6">
-          Catálogo de productos
-        </h1>
+    <div className="flex flex-col gap-5">
+      {/* ─── Encabezado en formato módulo ─── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="size-10 aspect-square rounded-lg bg-main-blue/10 flex items-center justify-center text-main-blue font-black shrink-0">
+            <Layers className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-black text-base sm:text-lg text-neutral-900 tracking-tight">
+                Catálogo de Productos
+              </h1>
+              <span className="text-[11px] font-bold bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                {products.length} productos
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Gestión global de cortes, precios por kilo, promociones y estados de la tienda.
+            </p>
+          </div>
+        </div>
 
-        <Link
-          to="/catalogo/nuevo-producto"
-          className="inline-flex items-center justify-center rounded-md bg-main-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-main-blue/80 gap-2"
-        >
-          <Plus className="shrink-0 size-4" /> Nuevo producto
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadProducts}
+            disabled={isLoading}
+            title="Refrescar catálogo"
+            className="p-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-50 border-neutral-200 hover:bg-neutral-100 text-neutral-700"
+          >
+            <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+          </button>
+
+          <Link
+            to="/catalogo/nuevo-producto"
+            className="inline-flex items-center justify-center rounded-lg bg-main-blue px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-main-blue/90 gap-1.5 cursor-pointer"
+          >
+            <Plus className="shrink-0 size-4" />
+            <span>Nuevo producto</span>
+          </Link>
+        </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-        <div className="flex h-10 w-full sm:max-w-xs items-center gap-1 rounded-md border border-gray-300 bg-white px-2">
-          <Search className="size-4 shrink-0 text-gray-400" />
+      {/* ─── Barra de Búsqueda y Ordenamiento ─── */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <div className="flex flex-1 sm:max-w-md items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 shadow-2xs focus-within:border-main-blue focus-within:ring-2 focus-within:ring-main-blue/20 transition-all">
+          <Search className="size-4 shrink-0 text-neutral-400" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, descripción o ID..."
-            className="h-full w-full border-none bg-transparent px-1 focus:outline-none focus:ring-0"
+            placeholder="Buscar por corte, especie o código..."
+            className="w-full border-none bg-transparent text-base sm:text-sm font-medium text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
             aria-label="Buscar producto en el catálogo"
           />
         </div>
@@ -154,12 +194,35 @@ const Catalogo = () => {
             id="sortBy"
             items={SORT_OPTIONS}
             value={sortBy}
-            setOnChange={(e) => setSortBy(e.target.value)}
+            onChange={(val) => setSortBy(val)}
+            buttonClassName="py-2 text-xs font-bold shadow-2xs"
           />
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* ─── Categorías Oficiales ─── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+        {CATEGORY_FILTERS.map((cat) => {
+          const isSelected = cat.value === categoryFilter;
+          return (
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => setCategoryFilter(cat.value)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                isSelected
+                  ? "border-neutral-900 bg-neutral-900 text-white shadow-2xs"
+                  : "border-neutral-200/80 bg-white text-neutral-600 hover:bg-neutral-50 shadow-2xs"
+              }`}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── Filtros Rápidos (Estado / Ofertas / Puntos) ─── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
         {QUICK_FILTERS.map((filter) => {
           const isSelected = filter.value === quickFilter;
 
@@ -168,10 +231,10 @@ const Catalogo = () => {
               key={filter.value}
               type="button"
               onClick={() => setQuickFilter(filter.value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 isSelected
-                  ? "border-main-blue bg-main-blue text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  ? "border-main-blue bg-main-blue text-white shadow-2xs"
+                  : "border-neutral-200/80 bg-white text-neutral-700 hover:bg-neutral-50 shadow-2xs"
               }`}
             >
               {filter.label}
@@ -180,12 +243,21 @@ const Catalogo = () => {
         })}
       </div>
 
+      {/* ─── Grilla de Productos ─── */}
       {isLoading ? (
-        <p className="text-sm text-gray-500">Cargando productos...</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="animate-pulse bg-white border border-neutral-200 p-3 rounded-lg h-64" />
+          ))}
+        </div>
       ) : visibleProducts.length === 0 ? (
-        <p className="text-sm text-gray-500">No se encontraron productos.</p>
+        <div className="text-center py-16 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
+          <Layers className="size-12 mx-auto mb-3 opacity-40 stroke-1 text-neutral-400" />
+          <h3 className="font-bold text-base text-neutral-800">No se encontraron productos</h3>
+          <p className="text-xs opacity-60 mt-1">Probá con otro término de búsqueda o cambiá el filtro.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {visibleProducts.map((product) => (
             <ProductCardAdmin
               key={product.id}

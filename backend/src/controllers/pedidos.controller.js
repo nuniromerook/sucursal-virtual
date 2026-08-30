@@ -49,7 +49,8 @@ const createPedido = async (req, res) => {
       [cliente.telefono.trim(), cliente.email ? cliente.email.trim().toLowerCase() : ""]
     );
 
-    let clienteId;
+    const nombreLimpio = cliente.nombre ? cliente.nombre.replace(/\s*\(@[^)]+\)/g, "").trim() : "Cliente";
+    const usuarioLimpio = cliente.usuario ? cliente.usuario.trim().replace(/^@/, "") : null;
 
     if (clienteExistente.rows.length > 0) {
       clienteId = clienteExistente.rows[0].id;
@@ -57,12 +58,14 @@ const createPedido = async (req, res) => {
       await dbClient.query(
         `UPDATE clientes 
          SET nombre = $1,
-             email = COALESCE($2, email),
-             direccion_default = COALESCE($3, direccion_default),
+             usuario = COALESCE(usuario, $2),
+             email = COALESCE($3, email),
+             direccion_default = COALESCE($4, direccion_default),
              actualizado_en = NOW()
-         WHERE id = $4`,
+         WHERE id = $5`,
         [
-          cliente.nombre.trim(),
+          nombreLimpio,
+          usuarioLimpio,
           cliente.email ? cliente.email.trim().toLowerCase() : null,
           direccion_entrega || null,
           clienteId,
@@ -70,11 +73,12 @@ const createPedido = async (req, res) => {
       );
     } else {
       const nuevoCliente = await dbClient.query(
-        `INSERT INTO clientes (nombre, telefono, email, direccion_default)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO clientes (nombre, usuario, telefono, email, direccion_default)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
         [
-          cliente.nombre.trim(),
+          nombreLimpio,
+          usuarioLimpio,
           cliente.telefono.trim(),
           cliente.email ? cliente.email.trim().toLowerCase() : null,
           direccion_entrega || null,
@@ -202,6 +206,7 @@ const obtenerPedidoEnriquecido = async (db, pedidoId) => {
        p.estado_local AS estado,
        p.monto_total_final AS monto_final_real,
        c.nombre AS cliente_nombre,
+       c.usuario AS cliente_usuario,
        c.telefono AS cliente_telefono,
        c.email AS cliente_email,
        s.nombre AS sucursal_nombre,

@@ -6,6 +6,7 @@ const {
   googleAuth,
   getPerfil,
   updatePerfil,
+  updatePassword,
   getHistorialPedidos,
   getHistorialPuntos,
   validarCodigoReferido,
@@ -25,6 +26,7 @@ router.post("/clientes/referido/validar", validarCodigoReferido);
 // ─── Rutas protegidas (requieren JWT) ───────────
 router.get("/clientes/perfil", requireAuth, getPerfil);
 router.put("/clientes/perfil", requireAuth, updatePerfil);
+router.put("/clientes/password", requireAuth, updatePassword);
 router.get("/clientes/pedidos", requireAuth, getHistorialPedidos);
 
 // Historial de movimientos de puntos

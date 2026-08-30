@@ -457,6 +457,58 @@ const updatePerfil = async (req, res) => {
 };
 
 /**
+ * PUT /clientes/password
+ * Actualiza la contraseña del cliente validando la contraseña actual
+ */
+const updatePassword = async (req, res) => {
+  const clienteId = req.user.id;
+  const { password_actual, password_nueva } = req.body;
+
+  if (!password_nueva || password_nueva.length < 6) {
+    return res.status(400).json({ error: "La nueva contraseña debe tener al menos 6 caracteres." });
+  }
+
+  try {
+    const clienteRes = await pool.query(
+      `SELECT id, password FROM clientes WHERE id = $1`,
+      [clienteId]
+    );
+
+    if (clienteRes.rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado." });
+    }
+
+    const cliente = clienteRes.rows[0];
+
+    // Si ya tenía contraseña previa, validar que coincida la actual
+    if (cliente.password) {
+      if (!password_actual) {
+        return res.status(400).json({ error: "Debes ingresar tu contraseña actual." });
+      }
+      const esValida = verifyPassword(password_actual, cliente.password);
+      if (!esValida) {
+        return res.status(400).json({ error: "La contraseña actual es incorrecta." });
+      }
+    }
+
+    const nuevoHash = hashPassword(password_nueva);
+
+    await pool.query(
+      `UPDATE clientes SET password = $1, actualizado_en = NOW() WHERE id = $2`,
+      [nuevoHash, clienteId]
+    );
+
+    res.json({
+      success: true,
+      message: "Contraseña actualizada exitosamente.",
+    });
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    res.status(500).json({ error: "Error al actualizar contraseña." });
+  }
+};
+
+/**
  * GET /clientes/pedidos
  * Obtiene el historial de pedidos del cliente autenticado
  */
@@ -595,6 +647,7 @@ module.exports = {
   googleAuth,
   getPerfil,
   updatePerfil,
+  updatePassword,
   getHistorialPedidos,
   getHistorialPuntos,
   validarCodigoReferido,

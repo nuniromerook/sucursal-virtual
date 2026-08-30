@@ -6,7 +6,6 @@ import ProductEditor from "@/pages/ProductEditor";
 import Sucursal from "@/pages/sucursales/Sucursal";
 import { Routes, Route } from "react-router-dom";
 import Overview from "@/pages/sucursales/sucursal-data/Overview";
-import Stock from "@/pages/sucursales/sucursal-data/Stock";
 import Informacion from "@/pages/sucursales/sucursal-data/Info";
 import Empleados from "@/pages/sucursales/sucursal-data/Empleados";
 import PedidosSucursal from "@/pages/sucursales/sucursal-data/PedidosSucursal";
@@ -30,7 +29,6 @@ function App() {
           <Route path="/sucursal/:slug" element={<Sucursal />}>
             <Route index element={<Overview />} />
             <Route path="pedidos" element={<PedidosSucursal />} />
-            <Route path="stock" element={<Stock />} />
             {/* Ruta relativa para el gestor de paquetes de un producto específico */}
             <Route
               path="stock/:catalogoProducto/paquetes"

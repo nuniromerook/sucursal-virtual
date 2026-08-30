@@ -232,6 +232,7 @@ const getPedidosSucursal = async (req, res) => {
         p.estado_local AS estado,
         p.monto_total_final AS monto_final_real,
         c.nombre AS cliente_nombre,
+        c.usuario AS cliente_usuario,
         c.telefono AS cliente_telefono,
         c.email AS cliente_email,
         e.nombre AS cortador_nombre,

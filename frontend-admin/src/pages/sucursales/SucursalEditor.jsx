@@ -3,6 +3,7 @@ import Input from "../../components/ui/Input";
 import ButtonLoader from "../../components/ui/ButtonLoader";
 import { useAppContext } from "../../context/AppContext";
 import { API_URL } from "../../config/api";
+import { Store } from "lucide-react";
 
 const SucursalEditor = () => {
   const [formValues, setFormValues] = useState({
@@ -83,12 +84,28 @@ const SucursalEditor = () => {
   };
 
   return (
-    <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
-      <h1 className="text-2xl font-bold text-gray-900">Nueva sucursal</h1>
+    <div className="flex flex-col gap-5">
+      {/* ─── Encabezado en formato módulo ─── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="size-10 aspect-square rounded-lg bg-main-blue/10 flex items-center justify-center text-main-blue font-black shrink-0">
+            <Store className="size-5" />
+          </div>
+          <div>
+            <h1 className="font-black text-base sm:text-lg text-neutral-900 tracking-tight">
+              Nueva Sucursal en la Red
+            </h1>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Registrá una nueva carnicería para habilitar comandas locales,
+              control de stock y equipo.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form
         id="sucursal-editor-form"
-        className="rounded-lg border border-gray-200 bg-white p-6"
+        className="rounded-lg border border-neutral-200/80 bg-white p-5 sm:p-6 shadow-2xs"
         onSubmit={handleSubmit}
       >
         <div className="flex flex-col gap-4">
@@ -99,9 +116,10 @@ const SucursalEditor = () => {
               inputName="nombre"
               inputType="text"
               autoComplete="off"
-              placeholder="Luis Guillón"
+              placeholder="Ej: Luis Guillón"
               value={formValues.nombre}
               setOnChange={handleNombreChange}
+              isRequired={true}
             />
 
             <Input
@@ -113,6 +131,7 @@ const SucursalEditor = () => {
               placeholder="luis-guillon"
               value={formValues.slug}
               setOnChange={handleSlugChange}
+              isRequired={true}
             />
           </div>
 
@@ -123,9 +142,10 @@ const SucursalEditor = () => {
               inputName="direccion"
               inputType="text"
               autoComplete="off"
-              placeholder="Av. Siempre Viva 742"
+              placeholder="Av. Luciano Valette 3910"
               value={formValues.direccion}
               setOnChange={handleChange}
+              isRequired={true}
             />
 
             <Input
@@ -137,6 +157,7 @@ const SucursalEditor = () => {
               placeholder="Luis Guillón"
               value={formValues.ciudad}
               setOnChange={handleChange}
+              isRequired={true}
             />
           </div>
 
@@ -158,7 +179,7 @@ const SucursalEditor = () => {
               inputName="horario_atencion"
               inputType="text"
               autoComplete="off"
-              placeholder="Lun a sáb 9 a 20hs"
+              placeholder="Lun a sáb 7 a 15hs"
               value={formValues.horario_atencion}
               setOnChange={handleChange}
             />
@@ -166,7 +187,7 @@ const SucursalEditor = () => {
 
           <div className="flex flex-col md:flex-row gap-4">
             <Input
-              label="Latitud (opcional)"
+              label="Latitud (opcional para cálculo de cobertura)"
               id="latitud"
               inputName="latitud"
               inputType="text"
@@ -177,7 +198,7 @@ const SucursalEditor = () => {
             />
 
             <Input
-              label="Longitud (opcional)"
+              label="Longitud (opcional para cálculo de cobertura)"
               id="longitud"
               inputName="longitud"
               inputType="text"
@@ -190,9 +211,9 @@ const SucursalEditor = () => {
         </div>
 
         <ButtonLoader
-          value="Guardar sucursal"
+          value="Crear Sucursal"
           loadingValue="Guardando la sucursal..."
-          classNames="w-full bg-emerald-700 transition hover:bg-emerald-600 text-white text-lg mt-6"
+          classNames="w-full bg-main-blue transition hover:bg-main-blue/90 text-white font-bold text-sm rounded-lg py-3 mt-6 shadow-2xs cursor-pointer"
           loaderColor="text-white"
           buttonType="submit"
           isLoading={isLoading}

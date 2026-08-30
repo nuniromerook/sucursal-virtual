@@ -1,4 +1,4 @@
-// Input.jsx
+// frontend-admin/src/components/ui/Input.jsx
 import React from "react";
 import { useAppContext } from "../../context/AppContext";
 
@@ -6,37 +6,44 @@ const Input = ({
   label,
   id,
   inputName,
-  inputType,
+  inputType = "text",
   autoComplete,
   placeholder,
   value,
   setOnChange,
+  onChange,
   isRequired,
+  disabled,
+  className = "",
 }) => {
-  const { isLoading } = useAppContext();
+  const { isLoading: contextLoading } = useAppContext();
+  const isDisabled = disabled !== undefined ? disabled : contextLoading;
+
+  const handleChange = (e) => {
+    if (typeof setOnChange === "function") setOnChange(e);
+    if (typeof onChange === "function") onChange(e);
+  };
 
   return (
-    <>
-      <div className="flex flex-col w-full">
-        <label htmlFor={id} className="block text-sm font-medium text-gray-900">
-          {label}
+    <div className="flex flex-col w-full">
+      {label && (
+        <label htmlFor={id} className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+          {label} {isRequired && <span className="text-main-red">*</span>}
         </label>
-        <div className="mt-2">
-          <input
-            id={id}
-            name={inputName}
-            type={inputType}
-            required={isRequired}
-            disabled={isLoading}
-            autoComplete={autoComplete}
-            value={value}
-            onChange={setOnChange}
-            placeholder={placeholder}
-            className="flex w-full rounded-md bg-white px-3 py-1.5 placeholder:text-gray-500 disabled:bg-gray-100 outline-1 outline-gray-300 focus:outline-gray-400"
-          />
-        </div>
-      </div>
-    </>
+      )}
+      <input
+        id={id}
+        name={inputName}
+        type={inputType}
+        required={isRequired}
+        disabled={isDisabled}
+        autoComplete={autoComplete}
+        value={value ?? ""}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={`w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-base sm:text-sm font-medium text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-main-blue focus:outline-none focus:ring-2 focus:ring-main-blue/20 disabled:bg-neutral-100 disabled:text-neutral-400 disabled:cursor-not-allowed ${className}`}
+      />
+    </div>
   );
 };
 

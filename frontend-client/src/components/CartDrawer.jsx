@@ -39,6 +39,8 @@ export default function CartDrawer() {
     totalEstimado,
     totalAhorro,
     totalKg,
+    totalUnidades,
+    resumenCantidad,
     totalItems,
     totalPuntos,
   } = useCart();
@@ -70,8 +72,10 @@ export default function CartDrawer() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${
-        isCartOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+      className={`fixed inset-0 z-101 overflow-hidden transition-all duration-300 ${
+        isCartOpen
+          ? "pointer-events-auto visible"
+          : "pointer-events-none invisible"
       }`}
     >
       {/* Backdrop oscuro con fade transition */}
@@ -93,9 +97,6 @@ export default function CartDrawer() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4 bg-neutral-50/70">
             <div className="flex items-center gap-2">
-              <div className="size-8 rounded-full bg-main-blue/10 flex items-center justify-center text-main-blue">
-                <ShoppingBag className="size-4.5" />
-              </div>
               <div>
                 <h2 className="text-base font-bold text-neutral-900 leading-tight">
                   Tu Carrito
@@ -105,7 +106,7 @@ export default function CartDrawer() {
                     ? "Vacío"
                     : `${totalItems} ${
                         totalItems === 1 ? "producto" : "productos"
-                      } (${formatCantidad(totalKg, "kg")})`}
+                      } (${resumenCantidad || "0 kg"})`}
                 </p>
               </div>
             </div>
@@ -128,7 +129,9 @@ export default function CartDrawer() {
                 title="Actualizar carrito"
                 className="rounded-lg p-1.5 text-neutral-400 hover:text-main-blue hover:bg-main-blue/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
-                <RefreshCw className={`size-4 ${isSyncing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`size-4 ${isSyncing ? "animate-spin" : ""}`}
+                />
               </button>
               <button
                 type="button"
@@ -144,11 +147,28 @@ export default function CartDrawer() {
           {/* Alertas de sincronización */}
           {isSyncing && (
             <div className="flex items-center gap-2 px-5 py-2 bg-main-blue/5 border-b border-main-blue/10">
-              <svg className="animate-spin size-3.5 text-main-blue" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              <svg
+                className="animate-spin size-3.5 text-main-blue"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8z"
+                />
               </svg>
-              <p className="text-[11px] text-main-blue font-medium">Actualizando tu carrito…</p>
+              <p className="text-[11px] text-main-blue font-medium">
+                Actualizando tu carrito…
+              </p>
             </div>
           )}
 

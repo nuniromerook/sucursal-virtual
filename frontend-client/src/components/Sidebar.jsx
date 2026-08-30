@@ -20,12 +20,11 @@ import {
 } from "lucide-react";
 
 const categories = [
-  { nameId: "vacuno", label: "Vacuno", emoji: "🐄" },
+  { nameId: "vacuno", label: "Vacuno", emoji: "🥩" },
   { nameId: "cerdo", label: "Cerdo", emoji: "🐷" },
-  { nameId: "pollo", label: "Pollo", emoji: "🐔" },
-  { nameId: "embutidos", label: "Embutidos", emoji: "🌭" },
-  { nameId: "preparados", label: "Preparados", emoji: "🍽️" },
-  { nameId: "almacen", label: "Almacén", emoji: "🛒" },
+  { nameId: "pollo", label: "Pollo", emoji: "🍗" },
+  { nameId: "preparados", label: "Preparados", emoji: "🍲" },
+  { nameId: "almacen", label: "Almacén", emoji: "🧂" },
 ];
 
 const Sidebar = () => {
@@ -57,14 +56,14 @@ const Sidebar = () => {
         <div
           aria-hidden="true"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-neutral-900/60 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-101 bg-neutral-900/60 backdrop-blur-xs lg:hidden touch-none"
         />
       )}
 
       {/* Panel lateral */}
       <div
         id="ecom-sidebar"
-        className={`fixed inset-y-0 inset-s-0 z-40 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
+        className={`fixed inset-y-0 inset-s-0 z-101 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

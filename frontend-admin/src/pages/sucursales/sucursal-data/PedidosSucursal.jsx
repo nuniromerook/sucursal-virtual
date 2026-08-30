@@ -398,11 +398,18 @@ export default function PedidosSucursal() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate leading-tight">
-                        {pedido.cliente_nombre || "Cliente Valette"}
-                      </p>
-                      <p className="text-sm text-neutral-400 flex items-center gap-1">
-                        <Phone className="size-4" />{" "}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-bold truncate leading-tight text-neutral-900">
+                          {pedido.cliente_nombre ? pedido.cliente_nombre.replace(/\s*\(@[^)]+\)/g, "").trim() : "Cliente Valette"}
+                        </p>
+                        {pedido.cliente_usuario && (
+                          <span className="text-[11px] font-bold text-main-blue bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">
+                            @{pedido.cliente_usuario.replace(/^@/, "")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
+                        <Phone className="size-3.5" />{" "}
                         {pedido.cliente_telefono || "Sin teléfono"}
                       </p>
                     </div>

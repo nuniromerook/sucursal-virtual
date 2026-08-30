@@ -14,6 +14,7 @@ import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
+import NotFound from "../NotFound";
 
 export default function Product() {
   // Desestructuramos los parámetros definidos en App.jsx (:categoria/:especie/:slug)
@@ -90,17 +91,12 @@ export default function Product() {
 
   if (error || !productData) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 gap-4">
-        <p className="text-base font-semibold text-red-600">
-          El producto solicitado no existe o no se encuentra disponible.
-        </p>
-        <Link
-          to="/"
-          className="text-sm font-medium text-main-blue hover:underline"
-        >
-          ← Volver al inicio
-        </Link>
-      </div>
+      <NotFound
+        title="Producto no encontrado"
+        message="El corte o producto que estás buscando no existe, fue dado de baja o no se encuentra disponible."
+        showHomeButton={true}
+        showProfileButton={false}
+      />
     );
   }
 

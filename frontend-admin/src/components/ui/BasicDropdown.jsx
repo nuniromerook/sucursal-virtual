@@ -1,6 +1,6 @@
-// src/components/ui/BasicDropdown.jsx
+// frontend-admin/src/components/ui/BasicDropdown.jsx
 import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 
 const BasicDropdown = ({
@@ -16,8 +16,8 @@ const BasicDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const { isLoading } = useAppContext();
 
-  const selectedLabel =
-    items.find((item) => item.value === value)?.label ?? placeholder;
+  const selectedItem = items.find((item) => String(item.value) === String(value));
+  const selectedLabel = selectedItem?.label ?? placeholder;
 
   const handleSelect = (item) => {
     if (typeof setOnChange === "function") {
@@ -34,17 +34,15 @@ const BasicDropdown = ({
   return (
     <div className="relative flex flex-col w-full">
       {isOpen && (
-        <div onClick={() => setIsOpen(false)} className="fixed inset-0 z-10" />
+        <div onClick={() => setIsOpen(false)} className="fixed inset-0 z-20" />
       )}
 
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-gray-900">
+        <label htmlFor={id} className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
           {label}
         </label>
       )}
 
-      {/* El id va acá, en el control real — antes estaba en el ícono de
-          la flecha, que no es lo que el label debe asociar. */}
       <button
         id={id}
         onClick={() => setIsOpen((prev) => !prev)}
@@ -52,49 +50,43 @@ const BasicDropdown = ({
         disabled={isLoading}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between ${
-          label ? "mt-2" : ""
-        } rounded-md border border-gray-300 bg-white px-3 py-1.5 text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50 ${
-          isLoading
-            ? "cursor-not-allowed bg-gray-100 opacity-70"
-            : "cursor-pointer"
+        className={`flex w-full items-center justify-between rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-sm font-bold text-neutral-800 transition-all hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-main-blue/20 focus:border-main-blue ${
+          isLoading ? "cursor-not-allowed bg-neutral-100 opacity-70" : "cursor-pointer"
         } ${buttonClassName}`}
       >
         <span className="truncate">{selectedLabel}</span>
-
         <ChevronDown
-          className={`size-4 shrink-0 text-gray-400 transition-transform duration-150 ${
-            isOpen ? "rotate-180" : ""
+          className={`size-4 shrink-0 text-neutral-500 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-main-blue" : ""
           }`}
         />
       </button>
 
       {isOpen && (
-        <div
+        <ul
           role="listbox"
-          className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-md border border-gray-300 bg-white py-1"
+          className="absolute top-full left-0 z-30 mt-1.5 max-h-60 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95 text-sm"
         >
           {items.map((item) => {
-            const isSelected = item.value === value;
-
+            const isSelected = String(item.value) === String(value);
             return (
-              <button
-                type="button"
+              <li
                 key={item.value}
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => handleSelect(item)}
-                className={`block w-full px-3 py-1.5 text-left text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between px-3.5 py-2 cursor-pointer font-medium transition-colors ${
                   isSelected
-                    ? "bg-main-blue text-white"
-                    : "text-gray-700 hover:bg-main-blue/30 cursor-pointer"
+                    ? "bg-main-blue/10 text-main-blue font-bold"
+                    : "text-neutral-700 hover:bg-neutral-100"
                 }`}
               >
-                {item.label}
-              </button>
+                <span className="truncate">{item.label}</span>
+                {isSelected && <Check className="size-4 text-main-blue shrink-0 ml-2" />}
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );

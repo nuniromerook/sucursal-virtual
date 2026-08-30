@@ -303,6 +303,7 @@ export function CartContextProvider({ children }) {
     let totalEstimado = 0;
     let totalAhorro = 0;
     let totalKg = 0;
+    let totalUnidades = 0;
     const totalItems = cartItems.length;
     let totalPuntos = 0;
 
@@ -311,14 +312,40 @@ export function CartContextProvider({ children }) {
       subtotal += calc.regularTotal;
       totalEstimado += calc.total;
       totalAhorro += calc.ahorro;
-      totalKg += Number(item.cantidad_kg) || 0;
+
+      const qty = Number(item.cantidad_kg) || 0;
+      const unidad = (item.unidad_medida || "kg").toLowerCase().trim();
+      if (unidad === "u" || unidad === "unidad" || unidad === "unidades" || unidad === "unid.") {
+        totalUnidades += qty;
+      } else {
+        totalKg += qty;
+      }
 
       if (item.gana_puntos && item.puntos > 0) {
         totalPuntos += Number(item.puntos);
       }
     }
 
-    return { subtotal, totalEstimado, totalAhorro, totalKg, totalItems, totalPuntos };
+    // Resumen combinado ej: "1 kg y 2 u" o "2 kg" o "5 u"
+    const resumenPartes = [];
+    if (totalKg > 0) {
+      resumenPartes.push(totalKg % 1 === 0 ? `${Math.round(totalKg)} kg` : `${totalKg.toLocaleString("es-AR")} kg`);
+    }
+    if (totalUnidades > 0) {
+      resumenPartes.push(`${totalUnidades} u`);
+    }
+    const resumenCantidad = resumenPartes.length > 0 ? resumenPartes.join(" y ") : "0 kg";
+
+    return {
+      subtotal,
+      totalEstimado,
+      totalAhorro,
+      totalKg,
+      totalUnidades,
+      resumenCantidad,
+      totalItems,
+      totalPuntos,
+    };
   }, [cartItems]);
 
   return (

@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   nombre_producto: "",
   slug: "",
   especie: "vacuno",
-  categoria: "cortes",
+  categoria: "vacuno",
   descripcion: "",
   proteinas: "",
   calorias: "",
@@ -50,16 +50,15 @@ const ProductEditor = () => {
     { value: "vacuno", label: "Vacuno" },
     { value: "cerdo", label: "Cerdo" },
     { value: "pollo", label: "Pollo" },
+    { value: "general", label: "General / Almacén" },
   ];
 
   const itemsCategoria = [
-    { value: "media", label: "Media" },
-    { value: "troceos", label: "Troceos" },
-    { value: "cortes", label: "Cortes" },
-    { value: "embutidos", label: "Embutidos" },
-    { value: "preparados", label: "Preparados" },
-    { value: "achuras", label: "Achuras" },
-    { value: "despensa", label: "Despensa" },
+    { value: "vacuno", label: "Vacuno" },
+    { value: "cerdo", label: "Cerdo (incluye embutidos)" },
+    { value: "pollo", label: "Pollo (incluye granja)" },
+    { value: "preparados", label: "Preparados / Elaborados" },
+    { value: "almacen", label: "Almacén" },
   ];
 
   const itemsUnidadMedida = [
@@ -335,27 +334,46 @@ const ProductEditor = () => {
 
   if (isEditMode && isFetchingProduct) {
     return (
-      <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
-        <p className="text-sm font-medium text-gray-500 animate-pulse">
-          Cargando producto...
-        </p>
+      <div className="flex flex-col gap-5 animate-pulse">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200 h-24" />
+        <div className="bg-white p-6 rounded-lg border border-neutral-200 h-96" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-fit gap-y-4 lg:gap-y-8 p-4 lg:p-6">
-      <h1 className="text-2xl font-bold text-gray-900">
-        {isEditMode ? `Editar producto - ID: #${productId}` : "Nuevo producto"}
-      </h1>
+    <div className="flex flex-col gap-5">
+      {/* ─── Encabezado en formato módulo ─── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="size-10 aspect-square rounded-lg bg-main-blue/10 flex items-center justify-center text-main-blue font-black shrink-0">
+            <ImageIcon className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-black text-base sm:text-lg text-neutral-900 tracking-tight">
+                {isEditMode ? `Editar: ${formValues.nombre_producto || "Producto"}` : "Nuevo Producto en Catálogo"}
+              </h1>
+              {isEditMode && (
+                <span className="text-[11px] font-bold bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                  ID #{productId}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Cargá los detalles del corte, precios por kilo, datos nutricionales y promociones.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form
         id="product-editor-form"
-        className="rounded-lg border border-gray-200 bg-white p-6"
+        className="rounded-lg border border-neutral-200/80 bg-white p-5 sm:p-6 shadow-2xs"
         onSubmit={handleSubmit}
       >
         {formError && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
             {formError}
           </div>
         )}
@@ -729,11 +747,11 @@ const ProductEditor = () => {
         </div>
 
         <ButtonLoader
-          value={isEditMode ? "Guardar cambios" : "Guardar producto"}
+          value={isEditMode ? "Guardar cambios" : "Crear producto"}
           loadingValue={
-            isEditMode ? "Guardando cambios..." : "Guardando el producto..."
+            isEditMode ? "Guardando cambios..." : "Creando producto..."
           }
-          classNames="w-full bg-emerald-700 transition hover:bg-emerald-600 text-white text-lg mt-6"
+          classNames="w-full bg-main-blue transition hover:bg-main-blue/90 text-white font-bold text-sm rounded-lg py-3 mt-6 shadow-2xs cursor-pointer"
           loaderColor="text-white"
           buttonType="submit"
           isLoading={isLoading || isUploadingImage}
@@ -741,18 +759,16 @@ const ProductEditor = () => {
       </form>
 
       {isEditMode && (
-        <div className="rounded-lg border border-red-200 bg-white p-6">
-          <h2 className="font-semibold text-gray-900">Ajustes delicados</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Eliminar el producto eliminará todas sus variaciones y podría
-            afectar al stock actual. <br /> Es recomendable desactivar el
-            producto.
+        <div className="rounded-lg border border-red-200/80 bg-white p-5 sm:p-6 shadow-2xs">
+          <h2 className="font-bold text-sm text-neutral-900">Ajustes delicados</h2>
+          <p className="mt-1 text-xs text-neutral-500">
+            Eliminar el producto eliminará todas sus variaciones y promociones. Se recomienda desactivar el producto en su lugar.
           </p>
           <button
             type="button"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="mt-4 inline-block rounded-md border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="mt-4 inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-main-red transition hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
           >
             {isDeleting ? "Eliminando..." : "Eliminar producto del catálogo"}
           </button>

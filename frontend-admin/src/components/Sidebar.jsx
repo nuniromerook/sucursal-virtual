@@ -39,10 +39,10 @@ const Sidebar = () => {
   }, []);
 
   const linkClassName = ({ isActive }) =>
-    `block rounded-lg px-4 py-2 text-sm font-medium transition-colors flex gap-x-2 items-center text-gray-700 ${
+    `block rounded-lg px-3.5 py-2 text-xs sm:text-sm font-bold transition-all flex gap-x-2.5 items-center ${
       isActive
-        ? "bg-gray-100 text-gray-900"
-        : "hover:bg-gray-100 hover:text-gray-900"
+        ? "bg-main-blue/10 text-main-blue shadow-2xs"
+        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
     }`;
 
   return (

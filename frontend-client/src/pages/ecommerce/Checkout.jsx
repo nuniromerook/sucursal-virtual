@@ -19,7 +19,7 @@ import {
 import { useCart, calculateItemPrice } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL } from "../../config/api";
-import { formatPrecio, formatCantidad } from "../../utils/formatters";
+import { formatPrecio, formatCantidad, formatPrecioPorUnidad } from "../../utils/formatters";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -187,9 +187,8 @@ export default function Checkout() {
     try {
       const payload = {
         cliente: {
-          nombre: cliente.usuario
-            ? `${cliente.nombre.trim()} (@${cliente.usuario.trim().replace(/^@/, "")})`
-            : cliente.nombre.trim(),
+          nombre: cliente.nombre.trim().replace(/\s*\(@[^)]+\)/g, ""),
+          usuario: cliente.usuario ? cliente.usuario.trim().replace(/^@/, "") : null,
           telefono: cliente.telefono.trim(),
           email: cliente.email ? cliente.email.trim() : null,
           direccion: tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
@@ -738,7 +737,7 @@ export default function Checkout() {
                         </p>
                         <p className="text-neutral-500">
                           {formatCantidad(item.cantidad_kg, item.unidad_medida || "kg")} •{" "}
-                          {formatPrecio(item.precio)}/kg
+                          {formatPrecioPorUnidad(item.precio, item.unidad_medida || "kg")}
                         </p>
                         {calc.hasPromo && (
                           <span className="text-[10px] text-emerald-700 font-semibold">
