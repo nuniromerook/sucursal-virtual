@@ -1,38 +1,50 @@
+// frontend-admin/src/pages/NotFound.jsx
 import React from "react";
+import { Link } from "react-router-dom";
+import { Home, List, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <>
-      {/*
-        This example requires updating your template:
-
-        ```
-        <html class="h-full">
-        <body class="h-full">
-        ```
-      */}
-      <main className="grid min-h-full place-items-center bg-white px-6 py-24 sm:py-32 lg:px-8">
-        <div className="text-center">
-          <p className="text-base font-semibold text-indigo-600">404</p>
-          <h1 className="mt-4 text-5xl font-semibold tracking-tight text-balance text-gray-900 sm:text-7xl">
-            Page not found
-          </h1>
-          <p className="mt-6 text-lg font-medium text-pretty text-gray-500 sm:text-xl/8">
-            Sorry, we couldn’t find the page you’re looking for.
-          </p>
-          <div className="mt-10 flex items-center justify-center gap-x-6">
-            <a
-              href="#"
-              className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Go back home
-            </a>
-            <a href="#" className="text-sm font-semibold text-gray-900">
-              Contact support <span aria-hidden="true">&rarr;</span>
-            </a>
-          </div>
+    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center items-center px-6 py-16 text-center select-none">
+      <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-neutral-200/80 shadow-xl space-y-6 animate-in fade-in zoom-in-95">
+        <div className="relative mx-auto size-24 rounded-2xl bg-main-blue/10 flex items-center justify-center border border-main-blue/20">
+          <img
+            src="/favicon.svg"
+            alt="Valette"
+            className="size-16 object-contain"
+          />
         </div>
-      </main>
-    </>
+
+        <div className="space-y-2">
+          <span className="text-xs font-black uppercase tracking-widest text-main-red bg-red-50 border border-red-200 px-3 py-1 rounded-full">
+            Error 404
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight pt-2">
+            Página no encontrada
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
+            La sección o comanda que estás buscando no existe, cambió de dirección o fue movida.
+          </p>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+          >
+            <Home className="size-4" />
+            <span>Inicio del Panel</span>
+          </Link>
+
+          <Link
+            to="/catalogo"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 hover:bg-neutral-100 text-neutral-700 font-bold text-xs sm:text-sm transition-all cursor-pointer"
+          >
+            <List className="size-4" />
+            <span>Ver Catálogo</span>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

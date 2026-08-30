@@ -28,6 +28,10 @@ import {
   BarChart3,
   Percent,
   MousePointerClick,
+  X,
+  MapPin,
+  Phone,
+  User,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { useSocket } from "../context/SocketContext";
@@ -51,6 +55,31 @@ export default function Inicio() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [favoritosRanking, setFavoritosRanking] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedComanda, setSelectedComanda] = useState(null);
+  const [isLoadingComanda, setIsLoadingComanda] = useState(false);
+
+  const handleVerComanda = async (ped) => {
+    setIsLoadingComanda(true);
+    const slug = ped.sucursal_slug || "luis-guillon";
+    try {
+      const res = await fetch(`${API_URL}/pedidos/${ped.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedComanda({
+          ...data,
+          sucursal_slug: slug,
+          sucursal_nombre: ped.sucursal_nombre,
+        });
+      } else {
+        navigate(`/sucursal/${slug}/pedidos`);
+      }
+    } catch (err) {
+      console.error(err);
+      navigate(`/sucursal/${slug}/pedidos`);
+    } finally {
+      setIsLoadingComanda(false);
+    }
+  };
 
   useEffect(() => {
     setNavbarTitle("Torre de Control");
@@ -622,12 +651,9 @@ export default function Inicio() {
                   <td className="py-3 text-right">
                     <button
                       type="button"
-                      onClick={() =>
-                        navigate(
-                          `/sucursales/${ped.sucursal_slug || 1}/pedidos`,
-                        )
-                      }
-                      className="px-2.5 py-1 rounded bg-neutral-100 hover:bg-main-blue hover:text-white font-bold text-[11px] transition-colors cursor-pointer"
+                      disabled={isLoadingComanda}
+                      onClick={() => handleVerComanda(ped)}
+                      className="px-2.5 py-1 rounded bg-neutral-100 hover:bg-main-blue hover:text-white font-bold text-[11px] transition-colors cursor-pointer disabled:opacity-50"
                     >
                       Ver Comanda
                     </button>
@@ -638,6 +664,120 @@ export default function Inicio() {
           </table>
         </div>
       </div>
+
+      {/* ─── Modal de Visualización Rápida de Comanda ─── */}
+      {selectedComanda && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 my-8">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-neutral-100 bg-neutral-50/70">
+              <div className="flex items-center gap-2.5">
+                <span className="text-base font-black text-main-blue">
+                  Comanda #{selectedComanda.id}
+                </span>
+                {estadoBadge(selectedComanda.estado_local || selectedComanda.estado)}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedComanda(null)}
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Información del Cliente */}
+              <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 space-y-1.5 text-xs">
+                <div className="flex items-center gap-2 font-bold text-neutral-900">
+                  <User className="size-3.5 text-main-blue" />
+                  <span>{selectedComanda.cliente_nombre || "Cliente Valette"}</span>
+                </div>
+                {selectedComanda.cliente_telefono && (
+                  <div className="flex items-center gap-2 text-neutral-600">
+                    <Phone className="size-3.5 text-emerald-600" />
+                    <span>{selectedComanda.cliente_telefono}</span>
+                  </div>
+                )}
+                {selectedComanda.direccion_entrega && (
+                  <div className="flex items-center gap-2 text-neutral-600">
+                    <MapPin className="size-3.5 text-main-red" />
+                    <span className="truncate">{selectedComanda.direccion_entrega}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-200/60 text-[11px] text-neutral-400">
+                  <span>Sucursal: <strong>{selectedComanda.sucursal_nombre || "Valette"}</strong></span>
+                  <span className="capitalize">{selectedComanda.tipo_entrega?.replace("_", " ")}</span>
+                </div>
+              </div>
+
+              {/* Items del Pedido */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">
+                  Cortes y Productos
+                </h4>
+                <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-xl overflow-hidden">
+                  {selectedComanda.items?.map((it, idx) => (
+                    <div key={idx} className="p-3 bg-white flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-neutral-900 truncate">
+                          {it.nombre_producto}
+                        </p>
+                        {it.fraccion && (
+                          <p className="text-[11px] text-neutral-500">
+                            Corte: <span className="font-semibold text-neutral-700">{it.fraccion}</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-black text-neutral-900 block">
+                          {Number(it.cantidad_kg_solicitada || it.cantidad || 1)}{" "}
+                          {it.unidad_medida || "kg"}
+                        </span>
+                        <span className="text-[11px] text-neutral-400">
+                          {formatMoney(it.subtotal || it.precio_unitario)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between p-3.5 bg-neutral-900 text-white rounded-xl">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+                  Total Comanda
+                </span>
+                <span className="text-base font-black">
+                  {formatMoney(selectedComanda.monto_total_final || selectedComanda.monto_total_estimado || selectedComanda.monto)}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-neutral-100 bg-neutral-50/50 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedComanda(null)}
+                className="px-4 py-2 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+              >
+                Cerrar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const slug = selectedComanda.sucursal_slug || "luis-guillon";
+                  setSelectedComanda(null);
+                  navigate(`/sucursal/${slug}/pedidos`);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                <span>Ir al Panel de Pedidos</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

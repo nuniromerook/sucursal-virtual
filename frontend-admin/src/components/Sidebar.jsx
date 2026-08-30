@@ -83,7 +83,7 @@ const Sidebar = () => {
             <li>
               <details className="group [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
+                  <p className="flex items-center gap-x-2 font-semibold">
                     <Store className={iconStyle} />
                     Sucursales
                   </p>
@@ -119,7 +119,7 @@ const Sidebar = () => {
             <li>
               <details className="group [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
+                  <p className="flex items-center gap-x-2 font-semibold">
                     <List className={iconStyle} />
                     Catálogo
                   </p>
@@ -148,52 +148,6 @@ const Sidebar = () => {
                   </li>
                 </ul>
               </details>
-            </li>
-
-            <li>
-              <details className="group [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2">
-                    <ShoppingCart className={iconStyle} />
-                    Pedidos
-                  </p>
-                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
-                </summary>
-
-                <ul className="mt-2 space-y-1 px-4">
-                  <li>
-                    <NavLink
-                      to="/nuevo-pedido"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} />
-                      Nuevo pedido
-                    </NavLink>
-                  </li>
-
-                  <li>
-                    <NavLink
-                      to="/historial-pedidos"
-                      onClick={closeSidebar}
-                      className={linkClassName}
-                    >
-                      Historial de Pedidos
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
-
-            <li>
-              <NavLink
-                to="/gestionar-usuarios"
-                onClick={closeSidebar}
-                className={linkClassName}
-              >
-                <User className={iconStyle} />
-                Gestionar Usuarios
-              </NavLink>
             </li>
           </ul>
         </div>

@@ -17,6 +17,7 @@ import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
 import { useFavorites } from "../../context/FavoritesContext";
 import FormattedDescription from "../../components/FormattedDescription";
+import RelatedProducts from "../../components/RelatedProducts";
 import NotFound from "../NotFound";
 
 export default function Product() {
@@ -418,6 +419,9 @@ export default function Product() {
             </div>
           </div>
         )}
+
+        {/* Productos Relacionados */}
+        {productData && <RelatedProducts currentProduct={productData} />}
       </div>
     </div>
   );
