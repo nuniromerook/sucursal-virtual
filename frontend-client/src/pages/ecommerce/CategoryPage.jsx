@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import {
   ChevronRight,
   Sparkles,
@@ -8,6 +8,8 @@ import {
   Flame,
   Star,
   ArrowRight,
+  Search,
+  X,
 } from "lucide-react";
 import { API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
@@ -102,6 +104,9 @@ const ORDEN_ITEMS = [
 
 export default function CategoryPage() {
   const { categoria } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryParam = (searchParams.get("q") || "").trim();
+
   const { catalogoVersion } = useSocket();
   const { favoriteIds, favoritesCount, cleanInvalidFavorites } = useFavorites();
 
@@ -153,13 +158,25 @@ export default function CategoryPage() {
     fetchProductos();
   }, [categoria, catalogoVersion, cleanInvalidFavorites]);
 
-  // 1. Filtrar los productos que pertenecen a esta categoría
+  // 1. Filtrar los productos que pertenecen a esta categoría y texto de búsqueda
   const categoryProducts = useMemo(() => {
     return productos.filter((prod) => {
       const prodCategoria = (prod.categoria || "").toLowerCase().trim();
       const prodEspecie = (prod.especie || "").toLowerCase().trim();
       const prodNombre = (prod.nombre_producto || "").toLowerCase().trim();
+      const prodDesc = (prod.descripcion || "").toLowerCase().trim();
       const target = currentKey;
+
+      // Filtrar por término de búsqueda en query params (?q=...)
+      if (queryParam) {
+        const q = queryParam.toLowerCase();
+        const matchQ =
+          prodNombre.includes(q) ||
+          prodDesc.includes(q) ||
+          prodCategoria.includes(q) ||
+          prodEspecie.includes(q);
+        if (!matchQ) return false;
+      }
 
       if (target === "productos") return true;
       if (target === "vacuno") {
@@ -214,7 +231,7 @@ export default function CategoryPage() {
 
       return prodCategoria === target || prodEspecie === target;
     });
-  }, [productos, currentKey, favoriteIds]);
+  }, [productos, currentKey, favoriteIds, queryParam]);
 
   // 2. Aplicar micro-filtros (Ofertas, Puntos, Combos, Favoritos) sobre los productos de esta categoría
   const filteredProducts = useMemo(() => {
@@ -317,31 +334,58 @@ export default function CategoryPage() {
           </ol>
         </nav>
 
-        {/* ─── Banner Header de Categoría ─── */}
+        {/* ─── Banner Header de Categoría / Búsqueda ─── */}
         <div className="bg-white rounded-lg p-4 sm:p-5 border border-neutral-200/80 shadow-2xs mb-4 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="size-12 sm:size-14 rounded-lg bg-neutral-100 border border-neutral-200/80 flex items-center justify-center text-2xl sm:text-3xl shadow-2xs shrink-0 select-none">
-                {meta.emoji}
+                {queryParam ? "🔍" : meta.emoji}
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap mb-0.5">
                   <h1 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight">
-                    {meta.title}
+                    {queryParam ? (
+                      <span className="flex items-center gap-2 flex-wrap">
+                        <span>Resultados para</span>
+                        <span className="text-main-blue">"{queryParam}"</span>
+                      </span>
+                    ) : (
+                      meta.title
+                    )}
                   </h1>
                   <span className="text-xs font-bold text-main-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
-                    {isLoading ? "..." : `${filteredProducts.length} productos`}
+                    {isLoading
+                      ? "..."
+                      : `${filteredProducts.length} ${filteredProducts.length === 1 ? "corte" : "cortes"}`}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-500 max-w-xl leading-snug">
-                  {meta.subtitle}
+                  {queryParam
+                    ? `Buscando en ${currentKey === "productos" ? "todos los cortes del catálogo" : `la sección de ${meta.title}`}.`
+                    : meta.subtitle}
                 </p>
               </div>
             </div>
+
+            {/* Chip para limpiar búsqueda activa */}
+            {queryParam && (
+              <button
+                type="button"
+                onClick={() => {
+                  searchParams.delete("q");
+                  setSearchParams(searchParams);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-neutral-700 transition-colors cursor-pointer shrink-0"
+              >
+                <Search className="size-3.5 text-neutral-500" />
+                <span>Limpiar búsqueda</span>
+                <X className="size-3.5 text-neutral-400 hover:text-red-600" />
+              </button>
+            )}
           </div>
 
           {/* Banner especial para Combos y Packs */}
-          {isComboCategory && (
+          {isComboCategory && !queryParam && (
             <div className="mt-3.5 pt-3 border-t border-neutral-100 flex items-center gap-2 text-xs text-amber-900 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg">
               <Flame className="size-4 text-amber-600 shrink-0" />
               <span>
@@ -463,19 +507,38 @@ export default function CategoryPage() {
         ) : filteredProducts.length === 0 ? (
           <div className="bg-white rounded-xl p-10 text-center border border-neutral-200/80 shadow-2xs max-w-lg mx-auto">
             <div className="size-14 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-500 shadow-2xs">
-              <Star className="size-7 fill-amber-400 text-amber-400" />
+              {queryParam ? (
+                <Search className="size-7 text-neutral-400" />
+              ) : (
+                <Star className="size-7 fill-amber-400 text-amber-400" />
+              )}
             </div>
             <h3 className="text-sm sm:text-base font-bold text-neutral-900">
-              {currentKey === "favoritos" || filtroFavoritos
+              {queryParam
+                ? `No encontramos cortes para "${queryParam}"`
+                : currentKey === "favoritos" || filtroFavoritos
                 ? "Aún no guardaste productos como favoritos"
                 : "No encontramos cortes con los filtros seleccionados"}
             </h3>
             <p className="text-xs text-neutral-500 mt-1 mb-4">
-              {currentKey === "favoritos" || filtroFavoritos
+              {queryParam
+                ? "Revisá la ortografía o probá con términos más generales como 'asado', 'vacio' o 'pollo'."
+                : currentKey === "favoritos" || filtroFavoritos
                 ? "Hacé clic en la estrella ⭐ de cualquier producto para tenerlo siempre a mano acá."
                 : `Probá limpiando los filtros para ver todos los productos de ${meta.title.toLowerCase()}.`}
             </p>
-            {currentKey === "favoritos" ? (
+            {queryParam ? (
+              <button
+                type="button"
+                onClick={() => {
+                  searchParams.delete("q");
+                  setSearchParams(searchParams);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
+              >
+                <span>Ver todo el catálogo</span>
+              </button>
+            ) : currentKey === "favoritos" ? (
               <Link
                 to="/productos"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-main-blue text-white font-bold text-xs shadow-2xs hover:bg-main-blue/90 transition-all cursor-pointer"
