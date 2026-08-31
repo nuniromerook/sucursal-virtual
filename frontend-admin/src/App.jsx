@@ -11,10 +11,9 @@ import Empleados from "@/pages/sucursales/sucursal-data/Empleados";
 import PedidosSucursal from "@/pages/sucursales/sucursal-data/PedidosSucursal";
 import Catalogo from "./pages/Catalogo";
 import SucursalEditor from "./pages/sucursales/SucursalEditor";
-import GestionPaquetes from "./pages/sucursales/sucursal-data/GestionPaquetes";
-
 import NotificacionesSucursal from "./pages/sucursales/sucursal-data/NotificacionesSucursal";
 import BannersSucursal from "./pages/sucursales/sucursal-data/BannersSucursal";
+import Comandas from "./pages/sucursales/sucursal-data/Comandas";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -22,6 +21,16 @@ function App() {
     <Routes>
       {/* Ruta pública de login */}
       <Route path="/ingresar" element={<Auth />} />
+
+      {/* Vista KDS TV Pantalla Completa Dedicada */}
+      <Route
+        path="/comandas/:slug"
+        element={
+          <ProtectedRoute>
+            <Comandas />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Rutas protegidas del panel de administración */}
       <Route
@@ -38,17 +47,13 @@ function App() {
         <Route path="/catalogo/editar/:slug" element={<ProductEditor />} />
         <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
 
-        {/* Cambiado :id a :slug para que coincida con useParams() en los componentes */}
+        {/* Rutas de Sucursal */}
         <Route path="/sucursal/:slug" element={<Sucursal />}>
           <Route index element={<Overview />} />
           <Route path="pedidos" element={<PedidosSucursal />} />
+          <Route path="comandas" element={<Comandas />} />
           <Route path="notificaciones" element={<NotificacionesSucursal />} />
           <Route path="banners" element={<BannersSucursal />} />
-          {/* Ruta relativa para el gestor de paquetes de un producto específico */}
-          <Route
-            path="stock/:catalogoProducto/paquetes"
-            element={<GestionPaquetes />}
-          />
           <Route path="ajustes" element={<Informacion />} />
           <Route path="equipo" element={<Empleados />} />
         </Route>

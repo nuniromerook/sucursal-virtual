@@ -17,3 +17,10 @@ export const formatCantidad = (cantidad, unidadMedida = "kg") => {
   // Si es mayor o igual a 1kg, formateamos a máximo 2 decimales
   return `${Number(cantidad.toFixed(2))} kg`;
 };
+
+export const formatMoney = (amount) => {
+  if (amount === undefined || amount === null || isNaN(amount)) return "$0";
+  return `$${Number(amount).toLocaleString("es-AR")}`;
+};
+
+export const formatPrecio = formatMoney;

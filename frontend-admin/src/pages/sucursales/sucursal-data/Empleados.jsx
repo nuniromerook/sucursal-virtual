@@ -53,6 +53,8 @@ export default function Empleados() {
     nombre: "",
     apodo: "",
     rol: "cortador",
+    email: "",
+    password: "",
     telefono: "",
     activo: true,
   });
@@ -83,6 +85,8 @@ export default function Empleados() {
       nombre: "",
       apodo: "",
       rol: "cortador",
+      email: "",
+      password: "",
       telefono: "",
       activo: true,
     });
@@ -96,6 +100,8 @@ export default function Empleados() {
       nombre: emp.nombre || "",
       apodo: emp.apodo || "",
       rol: emp.rol || "cortador",
+      email: emp.email || "",
+      password: "",
       telefono: emp.telefono || "",
       activo: emp.activo !== false,
     });
@@ -474,6 +480,36 @@ export default function Empleados() {
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
+
+              {(formValues.rol === "encargado" || formValues.rol === "admin" || formValues.rol === "cajero") && (
+                <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-xl space-y-3">
+                  <div>
+                    <label className="block font-bold text-purple-900 mb-1">
+                      Correo Electrónico de Acceso (Usuario)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="encargado@valette.com"
+                      value={formValues.email}
+                      onChange={(e) => setFormValues({ ...formValues, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-purple-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-purple-900 mb-1">
+                      {editingEmpleado ? "Asignar / Cambiar Contraseña" : "Contraseña de Acceso"}
+                    </label>
+                    <input
+                      type="password"
+                      placeholder={editingEmpleado ? "Dejar en blanco para mantener la actual" : "Mínimo 4 caracteres"}
+                      value={formValues.password}
+                      onChange={(e) => setFormValues({ ...formValues, password: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-purple-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 pt-2">
                 <input

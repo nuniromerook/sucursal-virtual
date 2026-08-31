@@ -49,7 +49,7 @@ const getEmpleadosBySucursal = async (req, res) => {
  */
 const createEmpleado = async (req, res) => {
   const { id } = req.params;
-  const { nombre, apodo, rol, telefono, activo = true } = req.body;
+  const { nombre, apodo, rol, email, password, telefono, activo = true } = req.body;
 
   if (!nombre || !rol) {
     return res.status(400).json({ error: "Nombre y rol son requeridos." });
@@ -66,12 +66,23 @@ const createEmpleado = async (req, res) => {
     }
 
     const sucursalId = sucRes.rows[0].id;
+    const { hashPassword } = require("../utils/auth");
+    const passHash = password ? hashPassword(password) : null;
 
     const result = await pool.query(
-      `INSERT INTO empleados (nombre, apodo, rol, sucursal_id, telefono, activo)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [nombre.trim(), apodo ? apodo.trim() : null, rol, sucursalId, telefono || null, activo]
+      `INSERT INTO empleados (nombre, apodo, rol, email, password, sucursal_id, telefono, activo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, nombre, apodo, rol, email, sucursal_id, telefono, activo, creado_en`,
+      [
+        nombre.trim(),
+        apodo ? apodo.trim() : null,
+        rol,
+        email ? email.trim().toLowerCase() : null,
+        passHash,
+        sucursalId,
+        telefono || null,
+        activo,
+      ]
     );
 
     res.status(201).json(result.rows[0]);
@@ -83,23 +94,53 @@ const createEmpleado = async (req, res) => {
 
 /**
  * PUT /empleados/:id
- * Modifica datos de un empleado
+ * Modifica datos de un empleado (incluyendo rol y contraseña asignada por el admin)
  */
 const updateEmpleado = async (req, res) => {
   const { id } = req.params;
-  const { nombre, apodo, rol, telefono, activo } = req.body;
+  const { nombre, apodo, rol, email, password, telefono, activo } = req.body;
 
   try {
+    const { hashPassword } = require("../utils/auth");
+    let passClause = "";
+    let values = [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, telefono, activo, id];
+
+    if (password && password.trim().length > 0) {
+      const passHash = hashPassword(password.trim());
+      values = [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, passHash, telefono, activo, id];
+      passClause = ", password = COALESCE($5, password)";
+      
+      const result = await pool.query(
+        `UPDATE empleados
+         SET nombre = COALESCE($1, nombre),
+             apodo = COALESCE($2, apodo),
+             rol = COALESCE($3, rol),
+             email = COALESCE($4, email),
+             password = $5,
+             telefono = COALESCE($6, telefono),
+             activo = COALESCE($7, activo)
+         WHERE id = $8
+         RETURNING id, nombre, apodo, rol, email, sucursal_id, telefono, activo, creado_en`,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Empleado no encontrado" });
+      }
+      return res.json(result.rows[0]);
+    }
+
     const result = await pool.query(
       `UPDATE empleados
        SET nombre = COALESCE($1, nombre),
            apodo = COALESCE($2, apodo),
            rol = COALESCE($3, rol),
-           telefono = COALESCE($4, telefono),
-           activo = COALESCE($5, activo)
-       WHERE id = $6
-       RETURNING *`,
-      [nombre, apodo, rol, telefono, activo, id]
+           email = COALESCE($4, email),
+           telefono = COALESCE($5, telefono),
+           activo = COALESCE($6, activo)
+       WHERE id = $7
+       RETURNING id, nombre, apodo, rol, email, sucursal_id, telefono, activo, creado_en`,
+      [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, telefono, activo, id]
     );
 
     if (result.rows.length === 0) {
@@ -110,6 +151,49 @@ const updateEmpleado = async (req, res) => {
   } catch (error) {
     console.error("Error al actualizar empleado:", error.message);
     res.status(500).json({ error: "Error al actualizar el empleado" });
+  }
+};
+
+/**
+ * GET /sucursales/:id/cortadores-carga
+ * Retorna cortadores de la sucursal con métricas de carga diaria (pedidos activos vs totales)
+ */
+const getCortadoresConCarga = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const sucRes = await pool.query(
+      `SELECT id FROM sucursales WHERE id::text = $1 OR slug = $1 LIMIT 1`,
+      [id]
+    );
+
+    if (sucRes.rows.length === 0) {
+      return res.status(404).json({ error: "Sucursal no encontrada" });
+    }
+
+    const sucursalId = sucRes.rows[0].id;
+
+    const result = await pool.query(
+      `SELECT 
+         e.id, 
+         e.nombre, 
+         e.apodo, 
+         e.rol, 
+         e.telefono,
+         COALESCE(COUNT(CASE WHEN p.estado_local = 'en_corte' AND p.creado_en >= CURRENT_DATE THEN 1 END), 0)::int AS pedidos_en_corte,
+         COALESCE(COUNT(CASE WHEN p.creado_en >= CURRENT_DATE AND p.estado_local != 'cancelado' THEN 1 END), 0)::int AS pedidos_hoy
+       FROM empleados e
+       LEFT JOIN pedidos p ON p.empleado_id = e.id
+       WHERE e.sucursal_id = $1 AND e.activo = true AND e.rol IN ('cortador', 'encargado')
+       GROUP BY e.id, e.nombre, e.apodo, e.rol, e.telefono
+       ORDER BY e.nombre ASC`,
+      [sucursalId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al consultar cortadores con carga:", error);
+    res.status(500).json({ error: "Error al consultar cortadores" });
   }
 };
 
@@ -373,6 +457,7 @@ module.exports = {
   getMeEmpleado,
   recuperarConMasterPin,
   cambiarPasswordEmpleado,
+  getCortadoresConCarga,
 };
 
 

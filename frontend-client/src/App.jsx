@@ -7,7 +7,6 @@ import Auth from "@/pages/ecommerce/Auth";
 import RestablecerPassword from "@/pages/ecommerce/RestablecerPassword";
 import Profile from "@/pages/ecommerce/Profile";
 import CategoryPage from "@/pages/ecommerce/CategoryPage";
-import Productos from "@/pages/ecommerce/Productos";
 import NotFound from "@/pages/NotFound";
 import { Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
@@ -26,7 +25,7 @@ function App() {
           <Route path="restablecer-password" element={<RestablecerPassword />} />
           <Route path="perfil" element={<Profile />} />
           <Route path="checkout" element={<Checkout />} />
-          <Route path="productos" element={<Productos />} />
+          <Route path="productos" element={<CategoryPage />} />
           
           {/* Rutas de comprobante de pedido */}
           <Route path="pedido/:id/confirmacion" element={<OrderSuccess />} />

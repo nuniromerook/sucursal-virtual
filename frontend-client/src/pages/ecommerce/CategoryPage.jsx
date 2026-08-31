@@ -84,6 +84,13 @@ const CATEGORY_META = {
     emoji: "⭐",
     badge: "Favoritos",
   },
+  productos: {
+    title: "Catálogo de Productos",
+    subtitle:
+      "Explorá todas las categorías, ofertas y cortes disponibles con entrega directa.",
+    emoji: "🥩",
+    badge: "Todos",
+  },
 };
 
 const ORDEN_ITEMS = [
