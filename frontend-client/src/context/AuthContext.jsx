@@ -217,6 +217,35 @@ export function AuthContextProvider({ children }) {
   };
 
   /**
+   * Restablecer contraseña con token de recuperación
+   */
+  const restablecerPassword = async (resetToken, newPassword) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/clientes/restablecer-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, newPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Error al restablecer la contraseña");
+      }
+
+      setAuthState({
+        token: data.token,
+        user: data.user,
+        isAuthenticated: true,
+      });
+
+      return data;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
    * Cerrar sesión
    */
   const logout = () => {
@@ -237,6 +266,7 @@ export function AuthContextProvider({ children }) {
         login,
         register,
         loginWithGoogle,
+        restablecerPassword,
         logout,
         updateProfile,
         refreshUser,

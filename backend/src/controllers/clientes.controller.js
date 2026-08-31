@@ -637,7 +637,135 @@ const validarCodigoReferido = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al validar código de referido:", error);
-    res.status(500).json({ valido: false, error: "Error al validar el código." });
+/**
+ * POST /clientes/solicitar-recuperacion
+ * Envía un correo con el token de recuperación usando Resend
+ */
+const solicitarRecuperacionPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Debe ingresar su correo electrónico." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  try {
+    const result = await pool.query(
+      `SELECT id, nombre, email, password FROM clientes WHERE LOWER(email) = $1 LIMIT 1`,
+      [cleanEmail]
+    );
+
+    if (result.rows.length === 0) {
+      // Por seguridad para evitar enumeración de correos, devolvemos éxito incluso si no existe
+      return res.json({
+        success: true,
+        message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña.",
+      });
+    }
+
+    const cliente = result.rows[0];
+
+    if (!cliente.password) {
+      return res.status(400).json({
+        error: "Esta cuenta fue registrada con Google. Podés ingresar directamente con el botón de Google.",
+      });
+    }
+
+    // Generar token aleatorio seguro
+    const crypto = require("crypto");
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Guardar token con expiración de 15 minutos en PostgreSQL
+    await pool.query(
+      `UPDATE clientes 
+       SET reset_token = $1, reset_token_expires = NOW() + INTERVAL '15 minutes' 
+       WHERE id = $2`,
+      [token, cliente.id]
+    );
+
+    // Determinar la URL del frontend (origen de la petición o variable de entorno)
+    const origin = req.headers.origin || req.headers.referer;
+    let baseUrl = origin ? origin.replace(/\/$/, "") : "";
+    if (!baseUrl || baseUrl.includes("render.com")) {
+      baseUrl = process.env.FRONTEND_URL || "https://sucursal-virtual-git-main-nuniromerooks-projects.vercel.app";
+    }
+
+    const resetUrl = `${baseUrl}/restablecer-password?token=${token}`;
+
+    const { enviarEmailRecuperacion } = require("../services/email.service");
+    await enviarEmailRecuperacion({
+      to: cliente.email,
+      nombre: cliente.nombre,
+      resetUrl,
+    });
+
+    res.json({
+      success: true,
+      message: "¡Listo! Te enviamos un correo con el enlace para restablecer tu contraseña.",
+    });
+  } catch (error) {
+    console.error("Error al solicitar recuperación de contraseña:", error);
+    res.status(500).json({ error: "Error al procesar la solicitud de recuperación." });
+  }
+};
+
+/**
+ * POST /clientes/restablecer-password
+ * Valida el token y actualiza la contraseña del cliente
+ */
+const restablecerPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "El token y la nueva contraseña son obligatorios." });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres." });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, nombre, email, usuario, telefono, avatar_url, puntos_acumulados, referral_code
+       FROM clientes
+       WHERE reset_token = $1 AND reset_token_expires > NOW()
+       LIMIT 1`,
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({
+        error: "El enlace de recuperación es inválido o ya expiró. Por favor solicitá uno nuevo.",
+      });
+    }
+
+    const cliente = result.rows[0];
+    const newHash = hashPassword(newPassword);
+
+    // Actualizar contraseña y limpiar el token
+    await pool.query(
+      `UPDATE clientes 
+       SET password = $1, reset_token = NULL, reset_token_expires = NULL 
+       WHERE id = $2`,
+      [newHash, cliente.id]
+    );
+
+    const jwtToken = generateToken({
+      id: cliente.id,
+      email: cliente.email,
+      nombre: cliente.nombre,
+    });
+
+    res.json({
+      success: true,
+      message: "¡Tu contraseña fue restablecida con éxito!",
+      token: jwtToken,
+      user: cliente,
+    });
+  } catch (error) {
+    console.error("Error al restablecer contraseña:", error);
+    res.status(500).json({ error: "Error interno al restablecer la contraseña." });
   }
 };
 
@@ -651,4 +779,7 @@ module.exports = {
   getHistorialPedidos,
   getHistorialPuntos,
   validarCodigoReferido,
+  solicitarRecuperacionPassword,
+  restablecerPassword,
 };
+

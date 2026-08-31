@@ -28,9 +28,14 @@ export default function Auth() {
   const { login, register, loginWithGoogle, isLoading } = useAuth();
   const toast = useToast();
 
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login"); // "login" | "register" | "forgot"
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Recuperación de Contraseña
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [isSendingForgot, setIsSendingForgot] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   // Formulario Login
   const [loginData, setLoginData] = useState({
@@ -120,8 +125,39 @@ export default function Auth() {
         navigate("/perfil", { replace: true });
       }, 1000);
     } catch (err) {
-      setErrorMsg(err.message || "Error al registrar cuenta.");
-      toast.error(err.message || "Error al registrar cuenta.");
+      setErrorMsg(err.message || "Error al registrarse.");
+      toast.error(err.message || "Error al registrarse.");
+    }
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      setErrorMsg("Por favor ingresá tu correo electrónico.");
+      return;
+    }
+
+    setIsSendingForgot(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const res = await fetch(`${API_URL}/clientes/solicitar-recuperacion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al solicitar recuperación.");
+
+      setForgotSent(true);
+      setSuccessMsg(data.message || "Te enviamos un correo con las instrucciones.");
+      toast.success("Correo enviado exitosamente.");
+    } catch (err) {
+      setErrorMsg(err.message || "Error al enviar correo de recuperación.");
+      toast.error(err.message || "Error al enviar correo.");
+    } finally {
+      setIsSendingForgot(false);
     }
   };
 
@@ -162,46 +198,56 @@ export default function Auth() {
             />
           </Link>
           <h1 className="text-2xl font-extrabold text-neutral-900">
-            {mode === "login" ? "Hola de nuevo!" : "Creá tu cuenta"}
+            {mode === "login"
+              ? "Hola de nuevo!"
+              : mode === "register"
+              ? "Creá tu cuenta"
+              : "Recuperar Contraseña"}
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
             {mode === "login"
               ? "Ingresá a tu cuenta para gestionar pedidos y sumar puntos"
-              : "Registrate en Abastecedora Valette y sumá puntos con tus compras"}
+              : mode === "register"
+              ? "Registrate en Abastecedora Valette y sumá puntos con tus compras"
+              : "Ingresá tu correo para recibir un enlace de recuperación seguro"}
           </p>
         </div>
 
         {/* Pestañas Login / Registro */}
-        <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-xl mb-6 font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("login");
-              setErrorMsg("");
-            }}
-            className={`py-2 rounded-lg transition-all cursor-pointer ${
-              mode === "login"
-                ? "bg-white text-main-blue shadow-2xs"
-                : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            Iniciar Sesión
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("register");
-              setErrorMsg("");
-            }}
-            className={`py-2 rounded-lg transition-all cursor-pointer ${
-              mode === "register"
-                ? "bg-white text-main-blue shadow-2xs"
-                : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            Crear Cuenta
-          </button>
-        </div>
+        {mode !== "forgot" ? (
+          <div className="grid grid-cols-2 p-1 bg-neutral-100 rounded-xl mb-6 font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setErrorMsg("");
+                setSuccessMsg("");
+              }}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${
+                mode === "login"
+                  ? "bg-white text-main-blue shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("register");
+                setErrorMsg("");
+                setSuccessMsg("");
+              }}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${
+                mode === "register"
+                  ? "bg-white text-main-blue shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              Crear Cuenta
+            </button>
+          </div>
+        ) : null}
 
         {/* Mensajes de feedback */}
         {errorMsg && (
@@ -218,8 +264,51 @@ export default function Auth() {
           </div>
         )}
 
-        {/* Formulario LOGIN */}
-        {mode === "login" ? (
+        {/* Formulario FORGOT PASSWORD */}
+        {mode === "forgot" ? (
+          <form onSubmit={handleForgotSubmit} className="space-y-4 animate-in fade-in">
+            <div>
+              <label className={inputLabel}>
+                Tu correo electrónico registrado
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  placeholder="tu-email@gmail.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className={inputClassnames}
+                />
+                <Mail className={`${iconClassnames} left-3`} />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSendingForgot}
+              className="w-full py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <span>{isSendingForgot ? "Enviando enlace..." : "Enviar Enlace de Recuperación"}</span>
+              <ArrowRight className="size-3.5" />
+            </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setErrorMsg("");
+                  setSuccessMsg("");
+                }}
+                className="text-xs font-bold text-neutral-600 hover:text-main-blue transition-colors cursor-pointer"
+              >
+                ← Volver al inicio de sesión
+              </button>
+            </div>
+          </form>
+        ) : mode === "login" ? (
+          /* Formulario LOGIN */
           <form onSubmit={handleLoginSubmit} className="space-y-3.5">
             <div>
               <label className={inputLabel}>
@@ -246,18 +335,17 @@ export default function Auth() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className={inputLabel}>Contraseña</label>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert(
-                      "Para restablecer tu clave contactanos por WhatsApp.",
-                    );
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setErrorMsg("");
+                    setSuccessMsg("");
                   }}
-                  className="text-sm text-main-blue hover:underline"
+                  className="text-sm text-main-blue hover:underline cursor-pointer"
                 >
                   ¿Olvidaste tu contraseña?
-                </a>
+                </button>
               </div>
               <div className="relative">
                 <input

@@ -10,6 +10,8 @@ const {
   getHistorialPedidos,
   getHistorialPuntos,
   validarCodigoReferido,
+  solicitarRecuperacionPassword,
+  restablecerPassword,
 } = require("../controllers/clientes.controller");
 const { requireAuth } = require("../utils/auth");
 
@@ -19,6 +21,8 @@ const router = Router();
 router.post("/clientes/registro", registroCliente);
 router.post("/clientes/login", loginCliente);
 router.post("/clientes/google", googleAuth);
+router.post("/clientes/solicitar-recuperacion", solicitarRecuperacionPassword);
+router.post("/clientes/restablecer-password", restablecerPassword);
 
 // Validar código de referido (público, se llama desde el form de registro)
 router.post("/clientes/referido/validar", validarCodigoReferido);

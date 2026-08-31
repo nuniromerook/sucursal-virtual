@@ -4,6 +4,7 @@ import Product from "@/pages/ecommerce/Product";
 import Checkout from "@/pages/ecommerce/Checkout";
 import OrderSuccess from "@/pages/ecommerce/OrderSuccess";
 import Auth from "@/pages/ecommerce/Auth";
+import RestablecerPassword from "@/pages/ecommerce/RestablecerPassword";
 import Profile from "@/pages/ecommerce/Profile";
 import CategoryPage from "@/pages/ecommerce/CategoryPage";
 import Productos from "@/pages/ecommerce/Productos";
@@ -22,6 +23,7 @@ function App() {
         <Route path="/" element={<EcommerceLayout />}>
           <Route index element={<Home />} />
           <Route path="ingresar" element={<Auth />} />
+          <Route path="restablecer-password" element={<RestablecerPassword />} />
           <Route path="perfil" element={<Profile />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="productos" element={<Productos />} />
