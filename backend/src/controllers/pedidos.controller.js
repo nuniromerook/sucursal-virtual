@@ -50,11 +50,18 @@ const createPedido = async (req, res) => {
     // 1. Buscar o registrar al cliente
     const clienteExistente = await dbClient.query(
       `SELECT * FROM clientes WHERE telefono = $1 OR (email IS NOT NULL AND email = $2) LIMIT 1`,
-      [cliente.telefono.trim(), cliente.email ? cliente.email.trim().toLowerCase() : ""]
+      [
+        cliente.telefono.trim(),
+        cliente.email ? cliente.email.trim().toLowerCase() : "",
+      ],
     );
 
-    const nombreLimpio = cliente.nombre ? cliente.nombre.replace(/\s*\(@[^)]+\)/g, "").trim() : "Cliente";
-    const usuarioLimpio = cliente.usuario ? cliente.usuario.trim().replace(/^@/, "") : null;
+    const nombreLimpio = cliente.nombre
+      ? cliente.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
+      : "Cliente";
+    const usuarioLimpio = cliente.usuario
+      ? cliente.usuario.trim().replace(/^@/, "")
+      : null;
 
     if (clienteExistente.rows.length > 0) {
       clienteId = clienteExistente.rows[0].id;
@@ -73,7 +80,7 @@ const createPedido = async (req, res) => {
           cliente.email ? cliente.email.trim().toLowerCase() : null,
           direccion_entrega || null,
           clienteId,
-        ]
+        ],
       );
     } else {
       const nuevoCliente = await dbClient.query(
@@ -86,7 +93,7 @@ const createPedido = async (req, res) => {
           cliente.telefono.trim(),
           cliente.email ? cliente.email.trim().toLowerCase() : null,
           direccion_entrega || null,
-        ]
+        ],
       );
       clienteId = nuevoCliente.rows[0].id;
     }
@@ -116,7 +123,7 @@ const createPedido = async (req, res) => {
         Number(monto_total_estimado) || 0,
         direccion_entrega || null,
         notas || null,
-      ]
+      ],
     );
 
     const pedidoCreado = insertPedidoRes.rows[0];
@@ -125,8 +132,10 @@ const createPedido = async (req, res) => {
     for (const item of items) {
       const catalogoId = Number(item.catalogo_id || item.id);
       const cantidadKg = Number(item.cantidad_kg) || 1;
-      const precioPorKg = Number(item.precio_por_kg_congelado || item.precio) || 0;
-      const precioEstimado = Number(item.precio_estimado || item.total) || precioPorKg * cantidadKg;
+      const precioPorKg =
+        Number(item.precio_por_kg_congelado || item.precio) || 0;
+      const precioEstimado =
+        Number(item.precio_estimado || item.total) || precioPorKg * cantidadKg;
 
       await dbClient.query(
         `INSERT INTO pedido_items (
@@ -137,7 +146,7 @@ const createPedido = async (req, res) => {
            precio_estimado,
            estado_item
          ) VALUES ($1, $2, $3, $4, $5, 'pendiente')`,
-        [pedidoCreado.id, catalogoId, cantidadKg, precioPorKg, precioEstimado]
+        [pedidoCreado.id, catalogoId, cantidadKg, precioPorKg, precioEstimado],
       );
     }
 
@@ -151,14 +160,14 @@ const createPedido = async (req, res) => {
          FROM pedido_items pi
          JOIN catalogo c ON c.id = pi.catalogo_id
          WHERE pi.pedido_id = $1 AND c.gana_puntos = true AND c.puntos > 0`,
-        [pedidoCreado.id]
+        [pedidoCreado.id],
       );
       const puntosGanados = Number(puntosRes.rows[0].total_puntos);
 
       if (puntosGanados > 0 && clienteId) {
         await pool.query(
           `UPDATE clientes SET puntos_acumulados = puntos_acumulados + $1 WHERE id = $2`,
-          [puntosGanados, clienteId]
+          [puntosGanados, clienteId],
         );
         await pool.query(
           `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion, pedido_id)
@@ -168,7 +177,7 @@ const createPedido = async (req, res) => {
             puntosGanados,
             `Puntos ganados por el pedido #${pedidoCreado.id}`,
             pedidoCreado.id,
-          ]
+          ],
         );
 
         // Notificación de puntos ganados
@@ -180,11 +189,14 @@ const createPedido = async (req, res) => {
             pedidoCreado.id,
             `¡Sumaste ${puntosGanados} Puntos Valette! ⭐`,
             `Acreditamos tus puntos por la compra del pedido #${pedidoCreado.id}. Consultá tu saldo en tu perfil.`,
-          ]
+          ],
         );
       }
     } catch (puntosError) {
-      console.warn("No se pudieron acreditar puntos al pedido:", puntosError.message);
+      console.warn(
+        "No se pudieron acreditar puntos al pedido:",
+        puntosError.message,
+      );
     }
 
     // 5. Crear notificación viva de pedido para el cliente
@@ -200,15 +212,21 @@ const createPedido = async (req, res) => {
             `¡Pedido #${pedidoCreado.id} solicitado con éxito!`,
             `Tu compra ingresó a la sucursal. Tocá acá para ver el seguimiento en vivo.`,
             `/pedido/${pedidoCreado.id}/confirmacion`,
-          ]
+          ],
         );
       } catch (notifErr) {
-        console.warn("No se pudo registrar notificación de pedido:", notifErr.message);
+        console.warn(
+          "No se pudo registrar notificación de pedido:",
+          notifErr.message,
+        );
       }
     }
 
     // 6. Obtener pedido enriquecido para emisión en tiempo real
-    const pedidoCompleto = await obtenerPedidoEnriquecido(pool, pedidoCreado.id);
+    const pedidoCompleto = await obtenerPedidoEnriquecido(
+      pool,
+      pedidoCreado.id,
+    );
 
     // Emitir nuevo pedido en tiempo real a la sucursal y a los cortadores
     emitirNuevoPedido(Number(sucursal_id), pedidoCompleto);
@@ -218,7 +236,6 @@ const createPedido = async (req, res) => {
       message: "Pedido creado correctamente",
       pedido: pedidoCompleto,
     });
-
   } catch (error) {
     await dbClient.query("ROLLBACK");
     console.error("Error al crear pedido:", error);
@@ -256,7 +273,7 @@ const obtenerPedidoEnriquecido = async (db, pedidoId) => {
      JOIN sucursales s ON p.sucursal_id = s.id
      LEFT JOIN empleados e ON p.cortador_id = e.id
      WHERE p.id = $1`,
-    [pedidoId]
+    [pedidoId],
   );
 
   if (pedidoRes.rows.length === 0) return null;
@@ -275,7 +292,7 @@ const obtenerPedidoEnriquecido = async (db, pedidoId) => {
      FROM pedido_items pi
      JOIN catalogo cat ON pi.catalogo_id = cat.id
      WHERE pi.pedido_id = $1`,
-    [pedidoId]
+    [pedidoId],
   );
 
   pedido.items = itemsRes.rows;
@@ -311,7 +328,8 @@ const getPedidoById = async (req, res) => {
 const actualizarEstadoPedido = async (req, res) => {
   const { id } = req.params;
   const estado = req.body.estado || req.body.estado_local;
-  const monto_final_real = req.body.monto_final_real || req.body.monto_total_final;
+  const monto_final_real =
+    req.body.monto_final_real || req.body.monto_total_final;
   const cortador_id = req.body.cortador_id || req.body.empleado_id;
   const notas = req.body.notas;
 
@@ -325,7 +343,13 @@ const actualizarEstadoPedido = async (req, res) => {
            actualizado_en = NOW()
        WHERE id = $5
        RETURNING *`,
-      [estado || null, monto_final_real || null, notas || null, cortador_id ? Number(cortador_id) : null, id]
+      [
+        estado || null,
+        monto_final_real || null,
+        notas || null,
+        cortador_id ? Number(cortador_id) : null,
+        id,
+      ],
     );
 
     if (updateRes.rows.length === 0) {
@@ -338,7 +362,7 @@ const actualizarEstadoPedido = async (req, res) => {
     emitirActualizacionPedido(
       pedidoActualizado.cliente_id,
       pedidoActualizado.sucursal_id,
-      pedidoActualizado
+      pedidoActualizado,
     );
 
     // Registrar y emitir notificación al cliente
@@ -352,12 +376,15 @@ const actualizarEstadoPedido = async (req, res) => {
         if (est.includes("corte") || est.includes("preparacion")) {
           notifTitulo = `Pedido #${id} en preparación 🔪`;
           notifMensaje = `Nuestros cortadores están preparando y pesando tus cortes.`;
-        } else if (est.includes("pesado") || (est.includes("listo") && !est.includes("retiro"))) {
+        } else if (
+          est.includes("pesado") ||
+          (est.includes("listo") && !est.includes("retiro"))
+        ) {
           notifTitulo = `¡Cortes pesados y empaquetados! ⚖️`;
           notifMensaje = `Tu pedido #${id} ya fue preparado. Monto final: $${pedidoActualizado.monto_total_final || pedidoActualizado.total_estimado}.`;
         } else if (est.includes("camino")) {
           notifTitulo = `Tu pedido #${id} va en camino 🛵`;
-          notifMensaje = `El cadete retiró tus cortes y se dirige a tu domicilio.`;
+          notifMensaje = `El repartidor retiró tu pedido y se dirige a tu domicilio.`;
           notifIcono = "truck";
         } else if (est.includes("retiro")) {
           notifTitulo = `¡Tu pedido #${id} está listo para retirar! 🛍️`;
@@ -386,7 +413,7 @@ const actualizarEstadoPedido = async (req, res) => {
             `/pedido/${id}/confirmacion`,
             estado,
             id,
-          ]
+          ],
         );
 
         if (updateNotifRes.rows.length > 0) {
@@ -405,7 +432,7 @@ const actualizarEstadoPedido = async (req, res) => {
               notifIcono,
               `/pedido/${id}/confirmacion`,
               estado,
-            ]
+            ],
           );
           notifFinal = insertNotifRes.rows[0];
         }
@@ -421,13 +448,18 @@ const actualizarEstadoPedido = async (req, res) => {
               body: notifFinal.mensaje,
               url: `/pedido/${id}/confirmacion`,
               icon: "/favicon.svg",
-            }).catch((err) => console.error("Error enviando push de pedido:", err));
+            }).catch((err) =>
+              console.error("Error enviando push de pedido:", err),
+            );
           } catch (pushErr) {
             console.warn("Error al invocar pushService:", pushErr);
           }
         }
       } catch (notifErr) {
-        console.warn("No se pudo registrar notificación de estado:", notifErr.message);
+        console.warn(
+          "No se pudo registrar notificación de estado:",
+          notifErr.message,
+        );
       }
     }
 
@@ -454,7 +486,7 @@ const cotizarEnvio = async (req, res) => {
     if (sucursal_id) {
       const sucursalRes = await pool.query(
         `SELECT id, nombre, direccion, ciudad, latitud, longitud FROM sucursales WHERE id = $1`,
-        [sucursal_id]
+        [sucursal_id],
       );
       if (sucursalRes.rows.length > 0) {
         sucursal = sucursalRes.rows[0];

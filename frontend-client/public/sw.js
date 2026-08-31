@@ -17,8 +17,8 @@ self.addEventListener("push", (event) => {
     title: "Abastecedora Valette",
     body: "Tenés una nueva actualización de tu pedido.",
     url: "/",
-    icon: "/favicon.svg",
-    badge: "/favicon.svg",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
   };
 
   if (event.data) {
@@ -32,8 +32,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || "/favicon.svg",
-    badge: data.badge || "/favicon.svg",
+    icon: data.icon || "/icon-192.png",
+    badge: data.badge || "/icon-192.png",
     vibrate: [200, 100, 200],
     data: {
       url: data.url || "/",
