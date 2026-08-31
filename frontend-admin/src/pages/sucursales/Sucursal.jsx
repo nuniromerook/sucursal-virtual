@@ -121,13 +121,6 @@ const Sucursal = () => {
         />
 
         <NavLinkTab
-          to="comandas"
-          text="Comandas TV (KDS)"
-          icon={Tv}
-          end={true}
-        />
-
-        <NavLinkTab
           to="notificaciones"
           text="Notificaciones"
           icon={Megaphone}

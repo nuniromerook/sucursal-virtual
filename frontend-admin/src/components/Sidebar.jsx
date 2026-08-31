@@ -19,6 +19,8 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
+  Tv,
+  ArrowUpRight,
 } from "lucide-react";
 import ButtonLoader from "./ui/ButtonLoader";
 
@@ -106,9 +108,9 @@ const Sidebar = () => {
                   <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
                 </summary>
 
-                <ul className="mt-2 space-y-1 px-4">
+                <ul className="mt-2 space-y-1.5 px-3">
                   {sucursales.map((sucursal) => (
-                    <li key={sucursal.id}>
+                    <li key={sucursal.id} className="space-y-1">
                       <NavLink
                         to={`/sucursal/${sucursal.slug}`}
                         onClick={closeSidebar}
@@ -116,10 +118,23 @@ const Sidebar = () => {
                       >
                         {sucursal.nombre}
                       </NavLink>
+                      <a
+                        href={`/comandas/${sucursal.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg px-3 py-1 text-xs font-bold text-neutral-600 hover:bg-amber-50 hover:text-amber-900 flex items-center justify-between transition-colors ml-1 border border-neutral-100 bg-neutral-50/50"
+                        title="Abrir pantalla KDS para Smart TV"
+                      >
+                        <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-amber-800">
+                          <Tv className="size-3.5 text-amber-600 shrink-0" />
+                          <span>Comandas TV</span>
+                        </span>
+                        <ArrowUpRight className="size-3 text-neutral-400" />
+                      </a>
                     </li>
                   ))}
 
-                  <li>
+                  <li className="pt-1">
                     <NavLink
                       to="/sucursales/nueva"
                       onClick={closeSidebar}

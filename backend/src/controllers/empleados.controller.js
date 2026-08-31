@@ -183,7 +183,7 @@ const getCortadoresConCarga = async (req, res) => {
          COALESCE(COUNT(CASE WHEN p.estado_local = 'en_corte' AND p.creado_en >= CURRENT_DATE THEN 1 END), 0)::int AS pedidos_en_corte,
          COALESCE(COUNT(CASE WHEN p.creado_en >= CURRENT_DATE AND p.estado_local != 'cancelado' THEN 1 END), 0)::int AS pedidos_hoy
        FROM empleados e
-       LEFT JOIN pedidos p ON p.empleado_id = e.id
+       LEFT JOIN pedidos p ON p.cortador_id = e.id
        WHERE e.sucursal_id = $1 AND e.activo = true AND e.rol IN ('cortador', 'encargado')
        GROUP BY e.id, e.nombre, e.apodo, e.rol, e.telefono
        ORDER BY e.nombre ASC`,

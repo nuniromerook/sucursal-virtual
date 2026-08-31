@@ -310,7 +310,10 @@ const getPedidoById = async (req, res) => {
  */
 const actualizarEstadoPedido = async (req, res) => {
   const { id } = req.params;
-  const { estado, monto_final_real, notas, cortador_id } = req.body;
+  const estado = req.body.estado || req.body.estado_local;
+  const monto_final_real = req.body.monto_final_real || req.body.monto_total_final;
+  const cortador_id = req.body.cortador_id || req.body.empleado_id;
+  const notas = req.body.notas;
 
   try {
     const updateRes = await pool.query(
@@ -322,7 +325,7 @@ const actualizarEstadoPedido = async (req, res) => {
            actualizado_en = NOW()
        WHERE id = $5
        RETURNING *`,
-      [estado, monto_final_real, notas, cortador_id ? Number(cortador_id) : null, id]
+      [estado || null, monto_final_real || null, notas || null, cortador_id ? Number(cortador_id) : null, id]
     );
 
     if (updateRes.rows.length === 0) {

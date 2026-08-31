@@ -1,44 +1,52 @@
 // frontend-admin/src/pages/sucursales/sucursal-data/Comandas.jsx
-import React, { useEffect, useState, useMemo } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useParams, Link } from "react-router-dom";
 import {
-  Clock,
-  Radio,
-  Scissors,
-  CheckCircle2,
-  AlertCircle,
-  User,
-  Users,
+  Bell,
   Volume2,
   VolumeX,
-  Maximize2,
-  ArrowUpDown,
-  Sparkles,
+  RefreshCw,
+  Scissors,
+  Package,
+  Truck,
+  User,
+  Phone,
+  MessageCircle,
+  Clock,
+  Radio,
   Search,
   X,
-  Flame,
-  Check,
-  Scale,
-  DollarSign,
-  PackageCheck,
-  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Maximize2,
 } from "lucide-react";
 import { API_URL } from "../../../config/api";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
 import { formatMoney } from "../../../utils/formatters";
 
-export default function Comandas() {
-  const { sucursal } = useOutletContext() || {};
-  const { slug } = useParams();
-  const { ultimoPedido, reproducirSonidoComanda } = useSocket();
-  const { user } = useAuth();
+const ESTADOS = [
+  { key: "todos", label: "Todos los pedidos" },
+  { key: "solicitado", label: "Solicitados" },
+  { key: "en_corte", label: "En Corte" },
+  { key: "pesado", label: "Esperando Aprobación" },
+  { key: "listo", label: "Listos" },
+  { key: "en_camino", label: "En Camino" },
+  { key: "entregado", label: "Entregados" },
+];
 
+export default function Comandas() {
+  const { slug } = useParams();
+  const { user } = useAuth();
+  const { socket, isConnected, joinSucursal, leaveSucursal, reproducirSonidoComanda, ultimoPedido } = useSocket();
+
+  const [sucursal, setSucursal] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
-  const [horaActual, setHoraActual] = useState(new Date());
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [actualizandoId, setActualizandoId] = useState(null);
 
   // Modal de Asignación de Cortador
   const [modalAsignacion, setModalAsignacion] = useState({
@@ -47,30 +55,31 @@ export default function Comandas() {
   });
   const [ordenCortadores, setOrdenCortadores] = useState("menos_pedidos"); // "menos_pedidos" | "alfabetico"
   const [filtroTextoCortador, setFiltroTextoCortador] = useState("");
-  const [asignandoId, setAsignandoId] = useState(null);
 
-  // Modal de Pesaje en Balanza (para pasar a pesado/listo)
-  const [modalPesaje, setModalPesaje] = useState({
-    open: false,
-    pedido: null,
-    pesoFinal: "",
-    montoFinal: "",
-  });
+  const puedeGestionar = Boolean(
+    user && (user.rol === "admin" || user.rol === "administrador" || user.rol === "encargado")
+  );
 
-  // Reloj digital en vivo
-  useEffect(() => {
-    const timer = setInterval(() => setHoraActual(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const loadData = async () => {
-    const idOrSlug = sucursal?.id || slug;
-    if (!idOrSlug) return;
-
+  // 1. Cargar datos de la sucursal y pedidos
+  const loadData = useCallback(async () => {
+    if (!slug) return;
+    setIsLoading(true);
     try {
+      // Obtener info de la sucursal
+      const resSuc = await fetch(`${API_URL}/sucursales/${slug}`);
+      const dataSuc = await resSuc.json();
+      if (dataSuc.error) return;
+      setSucursal(dataSuc);
+
+      // Unir socket a la sala de esta sucursal
+      if (dataSuc.id) {
+        joinSucursal(dataSuc.id);
+      }
+
+      // Cargar pedidos y cortadores con carga
       const [resPed, resCort] = await Promise.all([
-        fetch(`${API_URL}/sucursales/${idOrSlug}/pedidos`),
-        fetch(`${API_URL}/sucursales/${idOrSlug}/cortadores-carga`),
+        fetch(`${API_URL}/sucursales/${dataSuc.id}/pedidos`),
+        fetch(`${API_URL}/sucursales/${dataSuc.id}/cortadores-carga`),
       ]);
 
       if (resPed.ok) {
@@ -82,47 +91,116 @@ export default function Comandas() {
         setCortadores(Array.isArray(dataCort) ? dataCort : []);
       }
     } catch (err) {
-      console.error("Error al cargar comandas TV:", err);
+      console.error("Error al cargar comandas:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [slug, joinSucursal]);
 
   useEffect(() => {
     loadData();
-  }, [sucursal?.id, slug]);
 
-  // Alerta sonora y recarga en vivo con Socket.io
-  useEffect(() => {
-    if (ultimoPedido) {
-      if (sonidoHabilitado) {
-        reproducirSonidoComanda();
+    return () => {
+      if (sucursal?.id) {
+        leaveSucursal(sucursal.id);
       }
-      loadData();
+    };
+  }, [slug, loadData]);
+
+  // 2. Escuchar eventos Socket.io en tiempo real y reproducir timbre
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNuevoPedido = (pedido) => {
+      if (sucursal?.id && Number(pedido.sucursal_id) === Number(sucursal.id)) {
+        reproducirSonidoComanda();
+        setPedidos((prev) => {
+          if (prev.some((p) => p.id === pedido.id)) return prev;
+          return [pedido, ...prev];
+        });
+      }
+    };
+
+    const handlePedidoActualizado = (pedido) => {
+      if (sucursal?.id && Number(pedido.sucursal_id) === Number(sucursal.id)) {
+        setPedidos((prev) =>
+          prev.map((p) => (p.id === pedido.id ? { ...p, ...pedido } : p))
+        );
+      }
+    };
+
+    socket.on("nuevo_pedido", handleNuevoPedido);
+    socket.on("pedido_actualizado", handlePedidoActualizado);
+
+    return () => {
+      socket.off("nuevo_pedido", handleNuevoPedido);
+      socket.off("pedido_actualizado", handlePedidoActualizado);
+    };
+  }, [socket, sucursal?.id, reproducirSonidoComanda]);
+
+  // Escuchar cuando SocketContext reciba un nuevo pedido global
+  useEffect(() => {
+    if (ultimoPedido && sucursal?.id && Number(ultimoPedido.sucursal_id) === Number(sucursal.id)) {
+      setPedidos((prev) => {
+        if (prev.some((p) => p.id === ultimoPedido.id)) return prev;
+        return [ultimoPedido, ...prev];
+      });
     }
-  }, [ultimoPedido, sonidoHabilitado]);
+  }, [ultimoPedido, sucursal?.id]);
 
-  // Filtrar pedidos activos para el KDS de la carnicería
-  const comandasSolicitadas = useMemo(
-    () => pedidos.filter((p) => p.estado_local === "solicitado"),
-    [pedidos]
-  );
-  const comandasEnCorte = useMemo(
-    () => pedidos.filter((p) => p.estado_local === "en_corte"),
-    [pedidos]
-  );
-  const comandasListas = useMemo(
-    () =>
-      pedidos.filter(
-        (p) =>
-          p.estado_local === "pesado" ||
-          p.estado_local === "listo" ||
-          p.estado_local === "en_camino"
-      ),
-    [pedidos]
-  );
+  // 3. Asignar cortador al pedido
+  const handleAsignarCortador = async (cortador) => {
+    if (!modalAsignacion.pedido) return;
+    setActualizandoId(modalAsignacion.pedido.id);
 
-  // Cortadores ordenados según el filtro del modal
+    try {
+      const res = await fetch(
+        `${API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cortador_id: cortador.id,
+            estado: "en_corte",
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        setModalAsignacion({ open: false, pedido: null });
+        loadData();
+      }
+    } catch (err) {
+      console.error("Error al asignar cortador:", err);
+    } finally {
+      setActualizandoId(null);
+    }
+  };
+
+  // 4. Filtrar pedidos por estado
+  const pedidosFiltrados = useMemo(() => {
+    if (filtroEstado === "todos") return pedidos;
+    return pedidos.filter(
+      (p) => (p.estado || p.estado_local) === filtroEstado
+    );
+  }, [pedidos, filtroEstado]);
+
+  // Contadores para las pestañas
+  const conteoPorEstado = useMemo(() => {
+    const counts = {};
+    ESTADOS.forEach((e) => (counts[e.key] = 0));
+    pedidos.forEach((p) => {
+      const est = p.estado || p.estado_local;
+      counts.todos = (counts.todos || 0) + 1;
+      if (counts[est] !== undefined) {
+        counts[est] += 1;
+      }
+    });
+    return counts;
+  }, [pedidos]);
+
+  // Cortadores ordenados para el modal
   const cortadoresOrdenados = useMemo(() => {
     let list = [...cortadores];
 
@@ -136,7 +214,6 @@ export default function Comandas() {
     }
 
     if (ordenCortadores === "menos_pedidos") {
-      // Priorizar los que tienen 0 en corte, luego menor cantidad de pedidos hoy
       list.sort((a, b) => {
         if (a.pedidos_en_corte !== b.pedidos_en_corte) {
           return a.pedidos_en_corte - b.pedidos_en_corte;
@@ -150,297 +227,432 @@ export default function Comandas() {
     return list;
   }, [cortadores, ordenCortadores, filtroTextoCortador]);
 
-  // Asignar cortador al pedido
-  const handleAsignarCortador = async (cortador) => {
-    if (!modalAsignacion.pedido) return;
-    setAsignandoId(cortador.id);
-
-    try {
-      const res = await fetch(
-        `${API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empleado_id: cortador.id,
-            estado_local: "en_corte",
-          }),
-        }
-      );
-
-      if (res.ok) {
-        setModalAsignacion({ open: false, pedido: null });
-        loadData();
-      }
-    } catch (err) {
-      console.error("Error al asignar cortador:", err);
-    } finally {
-      setAsignandoId(null);
-    }
+  const badgeEstado = (estado) => {
+    const map = {
+      solicitado: {
+        label: "Solicitado",
+        bg: "bg-amber-50 text-amber-800 border-amber-200",
+      },
+      en_corte: {
+        label: "En Corte",
+        bg: "bg-blue-50 text-blue-800 border-blue-200",
+      },
+      pesado: {
+        label: "Esperando Aprobación",
+        bg: "bg-purple-50 text-purple-800 border-purple-200 animate-pulse",
+      },
+      listo: {
+        label: "Listo para Despacho",
+        bg: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      },
+      en_camino: {
+        label: "En Camino",
+        bg: "bg-orange-50 text-orange-800 border-orange-200",
+      },
+      entregado: {
+        label: "Entregado",
+        bg: "bg-neutral-100 text-neutral-600 border-neutral-200",
+      },
+      cancelado: {
+        label: "Cancelado",
+        bg: "bg-red-50 text-red-700 border-red-200",
+      },
+    };
+    const conf = map[estado] || {
+      label: estado || "Solicitado",
+      bg: "bg-neutral-100 text-neutral-600 border-neutral-200",
+    };
+    return (
+      <span
+        className={`text-xs font-bold px-2.5 py-0.5 rounded-sm border ${conf.bg}`}
+      >
+        {conf.label}
+      </span>
+    );
   };
 
-  // Guardar peso real y monto final de balanza
-  const handleGuardarPesaje = async (e) => {
-    e.preventDefault();
-    if (!modalPesaje.pedido) return;
-
-    try {
-      const res = await fetch(
-        `${API_URL}/pedidos/${modalPesaje.pedido.id}/estado`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            estado_local: "listo",
-            peso_total_real: parseFloat(modalPesaje.pesoFinal) || null,
-            monto_total_final: parseFloat(modalPesaje.montoFinal) || null,
-          }),
-        }
-      );
-
-      if (res.ok) {
-        setModalPesaje({ open: false, pedido: null, pesoFinal: "", montoFinal: "" });
-        loadData();
-      }
-    } catch (err) {
-      console.error("Error al registrar pesaje:", err);
-    }
+  const especieBadge = (especie) => {
+    if (!especie) return null;
+    const esp = String(especie).toLowerCase().trim();
+    const map = {
+      vacuno: { label: "VACUNO", color: "bg-red-50 text-red-700 border-red-200" },
+      cerdo: { label: "CERDO", color: "bg-rose-50 text-rose-700 border-rose-200" },
+      pollo: { label: "POLLO", color: "bg-amber-50 text-amber-800 border-amber-200" },
+      embutidos: { label: "EMBUTIDOS", color: "bg-orange-50 text-orange-800 border-orange-200" },
+      almacen: { label: "ALMACÉN", color: "bg-slate-50 text-slate-700 border-slate-200" },
+    };
+    const conf = map[esp];
+    if (!conf) return null;
+    return (
+      <span
+        className={`text-[10px] font-black uppercase px-1.5 py-0.2 rounded border ${conf.color}`}
+      >
+        {conf.label}
+      </span>
+    );
   };
-
-  const puedeGestionar = user?.rol === "admin" || user?.rol === "administrador" || user?.rol === "encargado";
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex flex-col font-sans select-none -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
-      {/* ─── Encabezado KDS TV ─── */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-neutral-800 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="size-11 rounded-2xl bg-main-red/20 border border-main-red/40 flex items-center justify-center text-main-red shadow-lg">
-            <Scissors className="size-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase">
-                Comandas en Vivo · {sucursal?.nombre || "Sector de Corte"}
-              </h1>
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black animate-pulse">
-                <Radio className="size-3" />
-                <span>TV ON</span>
-              </div>
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 font-sans select-none">
+      <div className="max-w-7xl mx-auto flex flex-col gap-5">
+        {/* ─── Barra Superior de Comandas ─── */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="size-10 aspect-square rounded-lg bg-main-blue/10 flex items-center justify-center text-main-blue font-black">
+              <Bell className="size-5 shrink-0" />
             </div>
-            <p className="text-xs text-neutral-400 font-medium mt-0.5">
-              {puedeGestionar ? `Modo Encargado (${user.nombre})` : "Pantalla KDS de Despacho & Corte"}
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <h2 className="font-black text-base sm:text-lg text-neutral-900">
+                  Comandas en Vivo: {sucursal?.nombre || "Cargando..."}
+                </h2>
+                <span className="flex w-fit bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase animate-pulse">
+                  Socket.io Activo
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                {puedeGestionar
+                  ? `Panel de Encargado (${user.nombre}) · Asignación y gestión habilitada`
+                  : "Los pedidos entrantes aparecen instantáneamente y reproducen el timbre 🔔"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Botón probar timbre */}
+            <button
+              type="button"
+              onClick={reproducirSonidoComanda}
+              title="Probar timbre de comanda"
+              className="p-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-50 border-neutral-200 hover:bg-neutral-100 text-neutral-700"
+            >
+              <Volume2 className="size-4" />
+              <span className="inline">Probar Timbre</span>
+            </button>
+
+            {/* Botón refrescar */}
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={isLoading}
+              className="p-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-50 border-neutral-200 hover:bg-neutral-100 text-neutral-700"
+            >
+              <RefreshCw
+                className={`size-4 ${isLoading ? "animate-spin" : ""}`}
+              />
+              <span className="inline">Refrescar</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Filtros de Estado ─── */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {ESTADOS.map((est) => {
+            const isActive = filtroEstado === est.key;
+            const count = conteoPorEstado[est.key] || 0;
+
+            return (
+              <button
+                key={est.key}
+                type="button"
+                onClick={() => setFiltroEstado(est.key)}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "bg-main-blue text-white shadow-2xs"
+                    : "bg-white text-neutral-600 border border-neutral-200/80 hover:bg-neutral-50"
+                }`}
+              >
+                <span>{est.label}</span>
+                <span
+                  className={`text-[11px] font-black rounded-full px-1.5 py-0.2 min-w-4 text-center ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-neutral-100 text-neutral-500"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ─── Grilla de Comandas ─── */}
+        {isLoading && pedidos.length === 0 ? (
+          <div className="text-center py-16 rounded-xl border bg-white border-neutral-200/80 shadow-2xs">
+            <RefreshCw className="size-8 mx-auto mb-2 text-main-blue animate-spin" />
+            <p className="text-sm font-bold text-neutral-600">
+              Conectando con la sucursal...
             </p>
           </div>
-        </div>
-
-        {/* Reloj y Controles */}
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-xl text-neutral-300 text-sm font-black font-mono shadow-inner">
-            <Clock className="size-4 text-neutral-500" />
-            <span>
-              {horaActual.toLocaleTimeString("es-AR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </span>
+        ) : pedidosFiltrados.length === 0 ? (
+          <div className="text-center py-16 rounded-xl border bg-white border-neutral-200/80 shadow-2xs">
+            <Package className="size-12 mx-auto mb-3 opacity-40 stroke-1" />
+            <h3 className="font-bold text-base text-neutral-800">
+              No hay pedidos en estado "
+              {ESTADOS.find((e) => e.key === filtroEstado)?.label}"
+            </h3>
+            <p className="text-xs opacity-60 mt-1">
+              Los pedidos entrantes aparecerán acá automáticamente.
+            </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pedidosFiltrados.map((pedido) => {
+              const cortadorAsignado =
+                pedido.cortador_apodo ||
+                pedido.cortador_nombre ||
+                pedido.empleado_nombre;
+              const items = Array.isArray(pedido.items) ? pedido.items : [];
+              const estadoActual = pedido.estado || pedido.estado_local || "solicitado";
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSonidoHabilitado(!sonidoHabilitado)}
-              title={sonidoHabilitado ? "Silenciar alarmas" : "Activar alarmas sonoras"}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                sonidoHabilitado
-                  ? "bg-neutral-900 border-neutral-700 text-emerald-400 hover:bg-neutral-800"
-                  : "bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-neutral-300"
-              }`}
-            >
-              {sonidoHabilitado ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
-            </button>
+              return (
+                <div
+                  key={pedido.id}
+                  className="flex flex-col justify-between rounded-lg border p-4 sm:p-5 transition-all bg-white border-neutral-200/80 shadow-2xs hover:shadow-xs"
+                >
+                  <div>
+                    {/* Header de la Comanda */}
+                    <div className="flex items-center justify-between gap-2 border-b pb-3 mb-3 text-sm border-neutral-100">
+                      <div>
+                        <span className="text-xl font-black tracking-tight text-main-blue">
+                          #{pedido.id}
+                        </span>
+                        <span className="ml-2 text-neutral-400">
+                          {new Date(pedido.creado_en).toLocaleTimeString(
+                            "es-AR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false,
+                            }
+                          )}{" "}
+                          hs
+                        </span>
+                      </div>
+                      {badgeEstado(estadoActual)}
+                    </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (!document.fullscreenElement) {
-                  document.documentElement.requestFullscreen().catch(() => {});
-                } else {
-                  document.exitFullscreen().catch(() => {});
-                }
-              }}
-              title="Pantalla Completa TV"
-              className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
-            >
-              <Maximize2 className="size-5" />
-            </button>
+                    {/* Cortador asignado badge */}
+                    {cortadorAsignado && (
+                      <div className="mb-3 flex items-center justify-between gap-1.5 bg-blue-50/70 border border-blue-200/70 px-2.5 py-1 rounded-lg text-sm font-bold text-blue-900">
+                        <div className="flex items-center gap-1.5">
+                          <Scissors className="size-3.5 text-blue-700 shrink-0" />
+                          <span>
+                            Cortador: <strong>{cortadorAsignado}</strong>
+                          </span>
+                        </div>
+                        {puedeGestionar && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setModalAsignacion({ open: true, pedido })
+                            }
+                            className="text-xs text-blue-700 hover:text-blue-900 underline cursor-pointer font-medium"
+                          >
+                            Cambiar
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Datos del Cliente */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="size-8 rounded-full bg-main-blue/10 flex items-center justify-center text-main-blue font-bold text-xs shrink-0">
+                        {pedido.cliente_nombre ? (
+                          pedido.cliente_nombre.charAt(0).toUpperCase()
+                        ) : (
+                          <User className="size-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-bold truncate leading-tight text-neutral-900">
+                            {pedido.cliente_nombre
+                              ? pedido.cliente_nombre
+                                  .replace(/\s*\(@[^)]+\)/g, "")
+                                  .trim()
+                              : "Cliente Valette"}
+                          </p>
+                          {pedido.cliente_usuario && (
+                            <span className="text-[11px] font-bold text-main-blue bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">
+                              @{pedido.cliente_usuario.replace(/^@/, "")}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Teléfono: Solo visible para Encargado / Admin */}
+                        {puedeGestionar && (
+                          <p className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
+                            <Phone className="size-3.5" />{" "}
+                            {pedido.cliente_telefono || "Sin teléfono"}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Botón WhatsApp: Solo visible para Encargado / Admin */}
+                      {puedeGestionar && pedido.cliente_telefono && (
+                        <a
+                          href={`https://wa.me/${pedido.cliente_telefono.replace(/[^0-9]/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                          title="Contactar por WhatsApp"
+                        >
+                          <MessageCircle className="size-5" />
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Tipo de entrega */}
+                    <div className="flex items-center gap-1.5 text-xs uppercase text-neutral-600 mb-3 bg-neutral-50 p-2 rounded-lg border border-neutral-100">
+                      {pedido.tipo_entrega !== "retiro_sucursal" ? (
+                        <>
+                          <Truck className="size-3.5 text-main-blue shrink-0" />
+                          <span className="truncate">
+                            <strong>Envío:</strong>{" "}
+                            {puedeGestionar
+                              ? pedido.direccion_entrega || "A domicilio"
+                              : "A Domicilio"}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Package className="size-4 text-emerald-600 shrink-0" />
+                          <span>
+                            <strong>Retira en mostrador</strong>
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Lista de Cortes / Items */}
+                    <div className="space-y-1.5 mb-4">
+                      <p className="text-xs uppercase font-bold tracking-wider text-neutral-400">
+                        Cortes Solicitados ({items.length})
+                      </p>
+                      <ul className="divide-y divide-neutral-100 max-h-48 overflow-y-auto text-sm">
+                        {items.map((item, idx) => (
+                          <li
+                            key={idx}
+                            className="py-2 flex items-center justify-between gap-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-bold text-neutral-900 truncate">
+                                {item.nombre_producto ||
+                                  `Corte #${item.catalogo_id}`}
+                              </span>
+                              {especieBadge(item.especie)}
+                            </div>
+                            <span className="font-black text-neutral-900 bg-neutral-100 px-2.5 py-0.5 rounded text-xs shrink-0">
+                              {Number(
+                                item.cantidad_kg ||
+                                  item.cantidad_kg_solicitada ||
+                                  item.cantidad ||
+                                  1
+                              )}{" "}
+                              {item.unidad_medida || "kg"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Footer: Montos y Botón de Asignación */}
+                  <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-500 font-medium">
+                        {pedido.monto_final_real
+                          ? "Monto final real:"
+                          : "Monto estimado:"}
+                      </span>
+                      <span className="font-black text-lg text-neutral-900">
+                        $
+                        {Number(
+                          pedido.monto_final_real ||
+                            pedido.monto_total_final ||
+                            pedido.monto_total_estimado ||
+                            pedido.monto ||
+                            0
+                        ).toLocaleString("es-AR")}
+                      </span>
+                    </div>
+
+                    {/* Botón ¿Quién fracciona? -> Solo para Encargado / Admin */}
+                    {puedeGestionar && !cortadorAsignado && estadoActual === "solicitado" && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setModalAsignacion({ open: true, pedido })
+                          }
+                          className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
+                        >
+                          <Scissors className="size-4" />
+                          <span>Asignar Cortador</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </header>
+        )}
+      </div>
 
-      {/* ─── Columnas de Comandas ─── */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 pt-6 items-start">
-        {/* COLUMNA 1: SOLICITADOS / NUEVOS */}
-        <section className="bg-neutral-900/90 rounded-2xl border border-amber-500/30 overflow-hidden flex flex-col shadow-2xl">
-          <div className="p-4 bg-amber-500/15 border-b border-amber-500/30 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-black text-sm tracking-wide text-amber-400 uppercase">
-              <span className="size-2.5 rounded-full bg-amber-400 animate-ping" />
-              <span>1. Nuevos Solicitados</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-neutral-950 font-black text-xs">
-              {comandasSolicitadas.length}
-            </span>
-          </div>
-
-          <div className="p-3.5 space-y-3.5 max-h-[calc(100vh-230px)] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700">
-            {comandasSolicitadas.length === 0 ? (
-              <div className="p-8 text-center text-neutral-500 text-xs font-semibold">
-                Sin pedidos nuevos por asignar
-              </div>
-            ) : (
-              comandasSolicitadas.map((ped) => (
-                <ComandaCard
-                  key={ped.id}
-                  pedido={ped}
-                  puedeGestionar={puedeGestionar}
-                  onAsignar={() => setModalAsignacion({ open: true, pedido: ped })}
-                  onPesaje={() =>
-                    setModalPesaje({
-                      open: true,
-                      pedido: ped,
-                      pesoFinal: ped.peso_total_real || "",
-                      montoFinal: ped.monto_total_final || ped.monto_total_estimado || "",
-                    })
-                  }
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* COLUMNA 2: EN CORTE / PREPARACIÓN */}
-        <section className="bg-neutral-900/90 rounded-2xl border border-blue-500/30 overflow-hidden flex flex-col shadow-2xl">
-          <div className="p-4 bg-blue-500/15 border-b border-blue-500/30 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-black text-sm tracking-wide text-blue-400 uppercase">
-              <Scissors className="size-4 animate-bounce" />
-              <span>2. En Corte / Preparación</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-400 text-neutral-950 font-black text-xs">
-              {comandasEnCorte.length}
-            </span>
-          </div>
-
-          <div className="p-3.5 space-y-3.5 max-h-[calc(100vh-230px)] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700">
-            {comandasEnCorte.length === 0 ? (
-              <div className="p-8 text-center text-neutral-500 text-xs font-semibold">
-                No hay comandas en corte actualmente
-              </div>
-            ) : (
-              comandasEnCorte.map((ped) => (
-                <ComandaCard
-                  key={ped.id}
-                  pedido={ped}
-                  puedeGestionar={puedeGestionar}
-                  onAsignar={() => setModalAsignacion({ open: true, pedido: ped })}
-                  onPesaje={() =>
-                    setModalPesaje({
-                      open: true,
-                      pedido: ped,
-                      pesoFinal: ped.peso_total_real || "",
-                      montoFinal: ped.monto_total_final || ped.monto_total_estimado || "",
-                    })
-                  }
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* COLUMNA 3: PESADOS & LISTOS */}
-        <section className="bg-neutral-900/90 rounded-2xl border border-emerald-500/30 overflow-hidden flex flex-col shadow-2xl">
-          <div className="p-4 bg-emerald-500/15 border-b border-emerald-500/30 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-black text-sm tracking-wide text-emerald-400 uppercase">
-              <PackageCheck className="size-4" />
-              <span>3. Pesados & Listos</span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-neutral-950 font-black text-xs">
-              {comandasListas.length}
-            </span>
-          </div>
-
-          <div className="p-3.5 space-y-3.5 max-h-[calc(100vh-230px)] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700">
-            {comandasListas.length === 0 ? (
-              <div className="p-8 text-center text-neutral-500 text-xs font-semibold">
-                Sin pedidos listos pendientes de entrega
-              </div>
-            ) : (
-              comandasListas.map((ped) => (
-                <ComandaCard
-                  key={ped.id}
-                  pedido={ped}
-                  puedeGestionar={puedeGestionar}
-                  onAsignar={() => setModalAsignacion({ open: true, pedido: ped })}
-                  onPesaje={() =>
-                    setModalPesaje({
-                      open: true,
-                      pedido: ped,
-                      pesoFinal: ped.peso_total_real || "",
-                      montoFinal: ped.monto_total_final || ped.monto_total_estimado || "",
-                    })
-                  }
-                />
-              ))
-            )}
-          </div>
-        </section>
-      </main>
-
-      {/* ─── Modal de Asignación Inteligente de Cortador ─── */}
+      {/* ─── Modal de Asignación de Cortador con Balanceo de Carga ─── */}
       {modalAsignacion.open && modalAsignacion.pedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-neutral-200">
             {/* Header Modal */}
-            <div className="p-5 border-b border-neutral-800 bg-neutral-950/80 flex items-center justify-between">
+            <div className="p-5 border-b border-neutral-100 bg-neutral-50/80 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <Scissors className="size-4 text-main-red" />
-                  <span>Asignar Cortador · Comanda #{modalAsignacion.pedido.id}</span>
+                <h3 className="text-base font-black text-neutral-900 flex items-center gap-2">
+                  <Scissors className="size-4 text-main-blue" />
+                  <span>
+                    Asignar Cortador · Comanda #{modalAsignacion.pedido.id}
+                  </span>
                 </h3>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Cliente: <strong>{modalAsignacion.pedido.cliente_nombre || "Cliente"}</strong>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Cliente:{" "}
+                  <strong>
+                    {modalAsignacion.pedido.cliente_nombre || "Cliente"}
+                  </strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setModalAsignacion({ open: false, pedido: null })}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 cursor-pointer"
               >
                 <X className="size-5" />
               </button>
             </div>
 
-            {/* Controles de Ordenamiento y Búsqueda */}
-            <div className="p-4 bg-neutral-950/40 border-b border-neutral-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            {/* Controles de Orden y Búsqueda */}
+            <div className="p-4 bg-white border-b border-neutral-100 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
               <div className="relative flex-1">
                 <input
                   type="text"
                   placeholder="Buscar cortador..."
                   value={filtroTextoCortador}
                   onChange={(e) => setFiltroTextoCortador(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-neutral-800 border border-neutral-700 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-main-blue"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-neutral-50 border border-neutral-200 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-main-blue focus:bg-white"
                 />
                 <Search className="size-3.5 text-neutral-400 absolute left-2.5 inset-y-0 my-auto" />
               </div>
 
               {/* Botón Switch de Orden */}
-              <div className="flex items-center gap-1 bg-neutral-800 p-0.5 rounded-lg border border-neutral-700 shrink-0">
+              <div className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 shrink-0">
                 <button
                   type="button"
                   onClick={() => setOrdenCortadores("menos_pedidos")}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
                     ordenCortadores === "menos_pedidos"
                       ? "bg-main-blue text-white shadow-xs"
-                      : "text-neutral-400 hover:text-white"
+                      : "text-neutral-600 hover:text-neutral-900"
                   }`}
                   title="Balancear carga de trabajo"
                 >
@@ -452,7 +664,7 @@ export default function Comandas() {
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
                     ordenCortadores === "alfabetico"
                       ? "bg-main-blue text-white shadow-xs"
-                      : "text-neutral-400 hover:text-white"
+                      : "text-neutral-600 hover:text-neutral-900"
                   }`}
                 >
                   A-Z
@@ -461,15 +673,17 @@ export default function Comandas() {
             </div>
 
             {/* Lista de Cortadores con Carga Diaria */}
-            <div className="p-4 max-h-80 overflow-y-auto space-y-2 divide-y divide-neutral-800/60">
+            <div className="p-4 max-h-80 overflow-y-auto space-y-2 divide-y divide-neutral-100">
               {cortadoresOrdenados.length === 0 ? (
                 <div className="p-6 text-center text-xs text-neutral-500">
-                  No hay cortadores activos en esta sucursal
+                  No hay cortadores activos registrados en esta sucursal
                 </div>
               ) : (
                 cortadoresOrdenados.map((c) => {
-                  const isCurrent = modalAsignacion.pedido.empleado_id === c.id;
-                  const isBusy = c.pedidos_en_corte > 0;
+                  const isCurrent =
+                    modalAsignacion.pedido.cortador_id === c.id ||
+                    modalAsignacion.pedido.empleado_id === c.id;
+                  const isBusy = Number(c.pedidos_en_corte) > 0;
 
                   return (
                     <div
@@ -480,52 +694,54 @@ export default function Comandas() {
                         <div
                           className={`size-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
                             isCurrent
-                              ? "bg-main-red text-white"
+                              ? "bg-main-blue text-white"
                               : isBusy
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                              : "bg-neutral-800 text-neutral-300"
+                              ? "bg-amber-100 text-amber-800 border border-amber-200"
+                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                           }`}
                         >
-                          {c.apodo ? c.apodo.slice(0, 2).toUpperCase() : c.nombre.slice(0, 2).toUpperCase()}
+                          {c.apodo
+                            ? c.apodo.slice(0, 2).toUpperCase()
+                            : c.nombre.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-xs font-black text-white truncate">
+                            <p className="text-xs font-black text-neutral-900 truncate">
                               {c.nombre} {c.apodo && `(${c.apodo})`}
                             </p>
                             {isCurrent && (
-                              <span className="px-1.5 py-0.2 rounded bg-main-red/30 text-main-red text-[10px] font-black border border-main-red/50">
+                              <span className="px-1.5 py-0.2 rounded bg-blue-100 text-main-blue text-[10px] font-black border border-blue-200">
                                 Asignado
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-neutral-400 mt-0.5">
+                          <div className="flex items-center gap-2 text-[11px] text-neutral-500 mt-0.5">
                             <span
                               className={`font-bold ${
-                                isBusy ? "text-amber-400" : "text-emerald-400"
+                                isBusy ? "text-amber-600" : "text-emerald-600"
                               }`}
                             >
-                              {c.pedidos_en_corte === 0
-                                ? "🟢 Libre"
-                                : `🟡 ${c.pedidos_en_corte} en corte`}
+                              {isBusy
+                                ? `🟡 ${c.pedidos_en_corte} en corte`
+                                : "🟢 Libre"}
                             </span>
                             <span>·</span>
-                            <span>{c.pedidos_hoy} pedidos hoy</span>
+                            <span>{c.pedidos_hoy || 0} pedidos hoy</span>
                           </div>
                         </div>
                       </div>
 
                       <button
                         type="button"
-                        disabled={asignandoId === c.id}
+                        disabled={actualizandoId === modalAsignacion.pedido.id}
                         onClick={() => handleAsignarCortador(c)}
-                        className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 ${
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer disabled:opacity-50 shrink-0 ${
                           isCurrent
-                            ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
-                            : "bg-main-blue hover:bg-main-blue/90 text-white shadow-md active:scale-95"
+                            ? "bg-neutral-100 hover:bg-neutral-200 text-neutral-700"
+                            : "bg-main-blue hover:bg-main-blue/90 text-white shadow-xs active:scale-95"
                         }`}
                       >
-                        {asignandoId === c.id
+                        {actualizandoId === modalAsignacion.pedido.id
                           ? "Asignando..."
                           : isCurrent
                           ? "Reasignar"
@@ -537,11 +753,11 @@ export default function Comandas() {
               )}
             </div>
 
-            <div className="p-3.5 border-t border-neutral-800 bg-neutral-950/60 text-right">
+            <div className="p-3.5 border-t border-neutral-100 bg-neutral-50 text-right">
               <button
                 type="button"
                 onClick={() => setModalAsignacion({ open: false, pedido: null })}
-                className="px-4 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-300 cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-xs font-bold text-neutral-700 cursor-pointer"
               >
                 Cerrar
               </button>
@@ -549,180 +765,6 @@ export default function Comandas() {
           </div>
         </div>
       )}
-
-      {/* ─── Modal de Carga de Balanza / Pesaje ─── */}
-      {modalPesaje.open && modalPesaje.pedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-5 border-b border-neutral-800 bg-neutral-950/80 flex items-center justify-between">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Scale className="size-4 text-emerald-400" />
-                <span>Cargar Peso de Balanza · #{modalPesaje.pedido.id}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalPesaje({ open: false, pedido: null })}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleGuardarPesaje} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
-                  Peso Real de Balanza (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.005"
-                  required
-                  placeholder="Ej: 1.620"
-                  value={modalPesaje.pesoFinal}
-                  onChange={(e) =>
-                    setModalPesaje({ ...modalPesaje, pesoFinal: e.target.value })
-                  }
-                  className="w-full rounded-xl bg-neutral-800 border border-neutral-700 px-3.5 py-2.5 text-sm text-white font-mono focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
-                  Monto Final Exacto ($)
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  required
-                  placeholder="Ej: 12960"
-                  value={modalPesaje.montoFinal}
-                  onChange={(e) =>
-                    setModalPesaje({ ...modalPesaje, montoFinal: e.target.value })
-                  }
-                  className="w-full rounded-xl bg-neutral-800 border border-neutral-700 px-3.5 py-2.5 text-sm text-white font-mono focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setModalPesaje({ open: false, pedido: null })}
-                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-300 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md cursor-pointer transition-all"
-                >
-                  Confirmar y Marcar Listo
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Tarjeta individual de comanda para TV KDS
- */
-function ComandaCard({ pedido, puedeGestionar, onAsignar, onPesaje }) {
-  const items = Array.isArray(pedido.items) ? pedido.items : [];
-
-  return (
-    <div className="bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-xl p-4 transition-all shadow-md flex flex-col gap-3">
-      {/* Header Comanda */}
-      <div className="flex items-start justify-between gap-2 border-b border-neutral-800/80 pb-2.5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-base font-black text-white font-mono">
-              #{pedido.id}
-            </span>
-            <span className="px-2 py-0.2 rounded bg-neutral-800 text-[10px] font-extrabold uppercase text-neutral-300 tracking-wider">
-              {pedido.tipo_entrega?.replace("_", " ")}
-            </span>
-          </div>
-          <p className="text-xs font-bold text-neutral-300 mt-0.5 truncate">
-            {pedido.cliente_nombre || "Cliente"}
-          </p>
-        </div>
-
-        {/* Cortador Asignado */}
-        {pedido.empleado_nombre ? (
-          <div className="text-right">
-            <span className="text-[10px] font-bold uppercase text-neutral-500 block">
-              Cortador
-            </span>
-            <span className="text-xs font-black text-main-blue bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded-lg inline-block">
-              {pedido.empleado_nombre}
-            </span>
-          </div>
-        ) : (
-          <span className="text-[10px] font-black uppercase text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-lg">
-            Sin Cortador
-          </span>
-        )}
-      </div>
-
-      {/* Items y Cortes detallados */}
-      <div className="space-y-2">
-        {items.map((it, idx) => (
-          <div
-            key={idx}
-            className="p-2 rounded-lg bg-neutral-900/80 border border-neutral-800/60 flex items-start justify-between gap-2 text-xs"
-          >
-            <div className="min-w-0">
-              <p className="font-black text-white leading-snug">
-                {it.nombre_producto}
-              </p>
-              {it.fraccion && (
-                <p className="text-[11px] font-extrabold text-amber-400 mt-0.5">
-                  ✂️ {it.fraccion}
-                </p>
-              )}
-            </div>
-            <span className="font-black text-white font-mono bg-neutral-800 px-2 py-0.5 rounded shrink-0">
-              {Number(it.cantidad_kg_solicitada || it.cantidad || 1)}{" "}
-              {it.unidad_medida || "kg"}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer de Comanda */}
-      <div className="flex items-center justify-between pt-1 border-t border-neutral-800/80 text-xs">
-        <span className="font-black text-neutral-400 font-mono">
-          {formatMoney(
-            pedido.monto_total_final || pedido.monto_total_estimado || pedido.monto
-          )}
-        </span>
-
-        {puedeGestionar && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={onAsignar}
-              className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-[11px] font-bold transition-colors cursor-pointer"
-            >
-              {pedido.empleado_nombre ? "Reasignar" : "Asignar Cortador"}
-            </button>
-
-            {pedido.estado_local === "en_corte" && (
-              <button
-                type="button"
-                onClick={onPesaje}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-colors cursor-pointer"
-              >
-                Pesar Balanza
-              </button>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

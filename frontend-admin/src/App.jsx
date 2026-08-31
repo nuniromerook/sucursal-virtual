@@ -22,15 +22,8 @@ function App() {
       {/* Ruta pública de login */}
       <Route path="/ingresar" element={<Auth />} />
 
-      {/* Vista KDS TV Pantalla Completa Dedicada */}
-      <Route
-        path="/comandas/:slug"
-        element={
-          <ProtectedRoute>
-            <Comandas />
-          </ProtectedRoute>
-        }
-      />
+      {/* Vista KDS TV Pantalla Completa Dedicada (Pública para Smart TVs y monitores) */}
+      <Route path="/comandas/:slug" element={<Comandas />} />
 
       {/* Rutas protegidas del panel de administración */}
       <Route
@@ -51,7 +44,6 @@ function App() {
         <Route path="/sucursal/:slug" element={<Sucursal />}>
           <Route index element={<Overview />} />
           <Route path="pedidos" element={<PedidosSucursal />} />
-          <Route path="comandas" element={<Comandas />} />
           <Route path="notificaciones" element={<NotificacionesSucursal />} />
           <Route path="banners" element={<BannersSucursal />} />
           <Route path="ajustes" element={<Informacion />} />
