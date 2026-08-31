@@ -174,8 +174,27 @@ const crearNotificacion = async (req, res) => {
 
     const nuevaNotif = rows[0];
 
-    // Emitir inmediatamente por WebSockets
+    // 1. Emitir inmediatamente por WebSockets (para cuando la app está abierta)
     emitirNotificacion(nuevaNotif);
+
+    // 2. Emitir Web Push en segundo plano (para cuando la app/celular está bloqueado)
+    const { enviarPushACliente, enviarPushGlobal } = require("../services/push.service");
+    const pushPayload = {
+      title: nuevaNotif.titulo,
+      body: nuevaNotif.mensaje,
+      url: nuevaNotif.enlace || "/",
+      icon: "/favicon.svg",
+    };
+
+    if (nuevaNotif.cliente_id) {
+      enviarPushACliente(nuevaNotif.cliente_id, pushPayload).catch((err) =>
+        console.error("Error enviando push a cliente:", err)
+      );
+    } else {
+      enviarPushGlobal(pushPayload).catch((err) =>
+        console.error("Error enviando push global:", err)
+      );
+    }
 
     res.status(201).json({
       message: "Notificación creada y emitida con éxito",
@@ -185,6 +204,19 @@ const crearNotificacion = async (req, res) => {
     console.error("Error al crear notificación:", error);
     res.status(500).json({ error: "Error al crear notificación" });
   }
+};
+
+/**
+ * Retorna la clave pública VAPID para suscripciones push
+ * GET /notificaciones/push/public-key
+ */
+const getPublicKey = (req, res) => {
+  const { getVapidPublicKey } = require("../services/push.service");
+  const publicKey = getVapidPublicKey();
+  if (!publicKey) {
+    return res.status(500).json({ error: "Clave pública VAPID no disponible" });
+  }
+  res.json({ publicKey });
 };
 
 /**
@@ -208,6 +240,7 @@ const suscribirPush = async (req, res) => {
       [clienteId || null, endpoint, JSON.stringify(keys)]
     );
 
+    console.log(`✅ [Push Subscribed] Dispositivo registrado para cliente: ${clienteId || "anónimo"}`);
     res.status(201).json({ message: "Suscripción Push registrada exitosamente" });
   } catch (error) {
     console.error("Error al registrar suscripción push:", error);
@@ -221,4 +254,5 @@ module.exports = {
   marcarTodasLeidas,
   crearNotificacion,
   suscribirPush,
+  getPublicKey,
 };

@@ -1,11 +1,25 @@
 // frontend-client/src/context/NotificationContext.jsx
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { API_URL } from "../config/api";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 import { useToast } from "./ToastContext";
 
 const NotificationContext = createContext(null);
+
+/**
+ * Convierte una clave VAPID pública base64 en Uint8Array para el Service Worker
+ */
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export const NotificationContextProvider = ({ children }) => {
   const { user, token, isAuthenticated } = useAuth();
@@ -20,35 +34,86 @@ export const NotificationContextProvider = ({ children }) => {
   // Detección de plataforma
   const isIOS = typeof navigator !== "undefined" && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
   const isStandalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
-  // La API de Notifications requiere contexto seguro (https:// o localhost)
   const isSecureContext = typeof window !== "undefined" && window.isSecureContext;
-  const supportsPush = typeof window !== "undefined" && "Notification" in window && isSecureContext;
+  const supportsPush = typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator && isSecureContext;
 
   // Calcula el estado real actual de los permisos push
   const calcPushStatus = () => {
     if (!supportsPush) return "unsupported";
     const browserPermission = Notification.permission; // 'default' | 'granted' | 'denied'
-    // Si ya fue explícitamente concedido o denegado, ese es el estado real
     if (browserPermission === "granted" || browserPermission === "denied") {
       return browserPermission;
     }
-    // Solo ocultamos el banner si el usuario tocó "Ahora no" Y el navegador
-    // todavía no lo denegó (cuando el usuario ya respondió, el navegador lo guarda)
     if (localStorage.getItem("valette_push_dismissed") === "true") {
       return "dismissed";
     }
     return "default";
   };
 
-  // Estado de permisos push: 'default' | 'granted' | 'denied' | 'unsupported' | 'dismissed'
   const [pushStatus, setPushStatus] = useState(calcPushStatus);
 
-  // Re-sincronizar el estado real del navegador cuando cambia (ej: el usuario revoca desde config del browser)
+  // 1. Registrar el Service Worker al inicio
   useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          console.log("⚙️ [Service Worker] Registrado con éxito en scope:", reg.scope);
+        })
+        .catch((err) => {
+          console.warn("⚠️ [Service Worker] Error al registrar:", err);
+        });
+    }
+  }, []);
+
+  // 2. Sincronizar suscripción Web Push con el backend
+  const syncPushSubscription = useCallback(async (currentUserId) => {
     if (!supportsPush) return;
-    const newStatus = calcPushStatus();
-    setPushStatus(newStatus);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    try {
+      if (Notification.permission !== "granted") return;
+
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+
+      // Si no existe suscripción previa, obtener la clave pública VAPID y suscribir
+      if (!sub) {
+        const resKey = await fetch(`${API_URL}/notificaciones/push/public-key`);
+        const { publicKey } = await resKey.json();
+        if (!publicKey) {
+          console.warn("⚠️ [Push] No se pudo obtener la clave VAPID pública");
+          return;
+        }
+
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+      }
+
+      // Enviar la suscripción al servidor vinculado al ID del cliente
+      const subJson = sub.toJSON();
+      await fetch(`${API_URL}/notificaciones/push/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente_id: currentUserId || null,
+          endpoint: sub.endpoint,
+          keys: subJson.keys,
+        }),
+      });
+
+      console.log("✅ [Push] Suscripción sincronizada con el backend para cliente:", currentUserId || "anónimo");
+    } catch (err) {
+      console.error("❌ [Push] Error al sincronizar suscripción push:", err);
+    }
+  }, [supportsPush]);
+
+  // Re-sincronizar suscripción cuando el usuario inicia sesión o cambia de cuenta
+  useEffect(() => {
+    if (supportsPush && Notification.permission === "granted") {
+      syncPushSubscription(user?.id);
+    }
+  }, [user?.id, supportsPush, syncPushSubscription]);
 
   const openNotifications = () => setIsDrawerOpen(true);
   const closeNotifications = () => setIsDrawerOpen(false);
@@ -56,7 +121,6 @@ export const NotificationContextProvider = ({ children }) => {
 
   const resetPushDismissed = () => {
     localStorage.removeItem("valette_push_dismissed");
-    // Mostrar de nuevo el banner de activación
     setPushStatus(supportsPush ? Notification.permission : "unsupported");
   };
 
@@ -93,7 +157,7 @@ export const NotificationContextProvider = ({ children }) => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Escuchar eventos en vivo de Socket.io
+  // Escuchar eventos en vivo de Socket.io (cuando la web está abierta)
   useEffect(() => {
     if (!socket) return;
 
@@ -107,18 +171,6 @@ export const NotificationContextProvider = ({ children }) => {
       if (toast) {
         toast.info(`${notif.titulo}: ${notif.mensaje}`);
       }
-
-      // Notificación nativa del navegador si tiene permiso
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification(notif.titulo, {
-            body: notif.mensaje,
-            icon: "/favicon.svg",
-          });
-        } catch (e) {
-          console.warn("Error mostrando notificación push:", e);
-        }
-      }
     };
 
     const handlePedidoActualizado = (pedido) => {
@@ -129,7 +181,7 @@ export const NotificationContextProvider = ({ children }) => {
           if (notif.pedido_id === pedido.id) {
             return {
               ...notif,
-              estado_pedido: pedido.estado,
+              estado_pedido: pedido.estado || pedido.estado_local,
             };
           }
           return notif;
@@ -182,43 +234,30 @@ export const NotificationContextProvider = ({ children }) => {
     }
   };
 
-  // Solicitar permisos Push al navegador
-  // Compatible con browsers modernos (Promise) y legacy Android (callback)
-  const requestPushPermission = () => {
+  // Solicitar permisos Push al navegador y suscribir con VAPID
+  const requestPushPermission = async () => {
     if (!supportsPush) {
       setPushStatus("unsupported");
       return;
     }
 
-    // Primero limpiamos el dismissed para no bloquearnos
     localStorage.removeItem("valette_push_dismissed");
 
-    const handleResult = (permission) => {
-      const resolved = permission || Notification.permission;
-      setPushStatus(resolved);
-      if (resolved === "granted") {
-        localStorage.setItem("valette_push_dismissed", "true");
-        if (toast) toast.success("¡Notificaciones activadas con éxito!");
-      }
-    };
-
     try {
-      const result = Notification.requestPermission();
-      if (result && typeof result.then === "function") {
-        // API moderna — retorna Promise
-        result.then(handleResult).catch((err) => {
-          console.error("Error al solicitar permiso push:", err);
-        });
-      } else {
-        // API legacy (callback) — algunos Android Chrome viejos
-        handleResult(result);
+      const permission = await Notification.requestPermission();
+      setPushStatus(permission);
+
+      if (permission === "granted") {
+        localStorage.setItem("valette_push_dismissed", "true");
+        await syncPushSubscription(user?.id);
+        if (toast) toast.success("¡Notificaciones en segundo plano activadas!");
       }
     } catch (err) {
       console.error("Error al solicitar permiso de notificación:", err);
     }
   };
 
-  // Ocultar banner de permisos permanentemente
+  // Ocultar banner de permisos
   const dismissPushPrompt = () => {
     localStorage.setItem("valette_push_dismissed", "true");
     setPushStatus("dismissed");

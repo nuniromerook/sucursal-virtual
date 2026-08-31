@@ -412,6 +412,19 @@ const actualizarEstadoPedido = async (req, res) => {
 
         if (notifFinal) {
           emitirNotificacion(notifFinal);
+
+          // Enviar Web Push a todos los celulares/navegadores registrados del cliente en segundo plano
+          try {
+            const { enviarPushACliente } = require("../services/push.service");
+            enviarPushACliente(pedidoActualizado.cliente_id, {
+              title: notifFinal.titulo,
+              body: notifFinal.mensaje,
+              url: `/pedido/${id}/confirmacion`,
+              icon: "/favicon.svg",
+            }).catch((err) => console.error("Error enviando push de pedido:", err));
+          } catch (pushErr) {
+            console.warn("Error al invocar pushService:", pushErr);
+          }
         }
       } catch (notifErr) {
         console.warn("No se pudo registrar notificación de estado:", notifErr.message);
