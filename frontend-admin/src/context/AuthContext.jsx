@@ -89,6 +89,48 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  const recuperarConMasterPin = async (email, masterPin, newPassword) => {
+    const res = await fetch(`${API_URL}/empleados/recuperar-maestro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, masterPin, newPassword }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Error al restablecer contraseña.");
+    }
+
+    setToken(data.token);
+    setUser(data.user);
+    localStorage.setItem(
+      ADMIN_STORAGE_KEY,
+      JSON.stringify({ token: data.token, user: data.user })
+    );
+
+    return data.user;
+  };
+
+  const cambiarPassword = async (currentPassword, newPassword) => {
+    if (!token) throw new Error("No hay una sesión activa.");
+
+    const res = await fetch(`${API_URL}/empleados/cambiar-password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Error al actualizar contraseña.");
+    }
+
+    return data;
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -103,6 +145,8 @@ export function AuthProvider({ children }) {
         isAuthenticated: Boolean(token && user),
         isLoading,
         login,
+        recuperarConMasterPin,
+        cambiarPassword,
         logout,
       }}
     >

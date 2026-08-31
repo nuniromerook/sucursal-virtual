@@ -14,12 +14,28 @@ import {
   User,
   LogOut,
   ShieldCheck,
+  KeyRound,
+  Lock,
+  X,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
+import ButtonLoader from "./ui/ButtonLoader";
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
-  const { user, logout } = useAuth();
+  const { user, logout, cambiarPassword } = useAuth();
   const [sucursales, setSucursales] = useState([]);
+  const [modalSeguridadOpen, setModalSeguridadOpen] = useState(false);
+
+  // Estados para cambio de contraseña
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPass, setIsChangingPass] = useState(false);
+  const [passError, setPassError] = useState(null);
+  const [passSuccess, setPassSuccess] = useState(null);
+
   const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-600";
 
   const closeSidebar = () => {
@@ -184,17 +200,171 @@ const Sidebar = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={logout}
-              title="Cerrar sesión"
-              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-            >
-              <LogOut className="size-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setPassError(null);
+                  setPassSuccess(null);
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setModalSeguridadOpen(true);
+                }}
+                title="Cambiar contraseña"
+                className="p-2 rounded-lg text-gray-400 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
+              >
+                <KeyRound className="size-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={logout}
+                title="Cerrar sesión"
+                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ─── Modal de Cambio de Contraseña para el Admin ─── */}
+      {modalSeguridadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs select-none">
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between p-5 border-b border-neutral-100 bg-neutral-50/70">
+              <div className="flex items-center gap-2">
+                <Lock className="size-5 text-main-blue" />
+                <h3 className="font-extrabold text-base text-neutral-900">
+                  Seguridad de la Cuenta
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalSeguridadOpen(false)}
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPassError(null);
+                setPassSuccess(null);
+
+                if (!currentPassword || !newPassword) {
+                  setPassError("Completá la contraseña actual y la nueva.");
+                  return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                  setPassError("Las nuevas contraseñas no coinciden.");
+                  return;
+                }
+
+                if (newPassword.length < 4) {
+                  setPassError("La contraseña debe tener al menos 4 caracteres.");
+                  return;
+                }
+
+                setIsChangingPass(true);
+                try {
+                  const res = await cambiarPassword(currentPassword, newPassword);
+                  setPassSuccess(res.message || "¡Contraseña actualizada!");
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setTimeout(() => {
+                    setModalSeguridadOpen(false);
+                  }, 1500);
+                } catch (err) {
+                  setPassError(err.message || "Error al actualizar contraseña.");
+                } finally {
+                  setIsChangingPass(false);
+                }
+              }}
+              className="p-5 sm:p-6 space-y-4"
+            >
+              {passError && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
+                  <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                  <span>{passError}</span>
+                </div>
+              )}
+
+              {passSuccess && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
+                  <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+                  <span>{passSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                  Contraseña Actual
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Tu contraseña actual"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-main-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                  Nueva Contraseña
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Mínimo 4 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-main-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                  Confirmar Nueva Contraseña
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Repetí la nueva contraseña"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-main-blue focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setModalSeguridadOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <ButtonLoader
+                  value="Guardar Contraseña"
+                  loadingValue="Actualizando..."
+                  isLoading={isChangingPass}
+                  classNames="px-4 py-2 bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                />
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };

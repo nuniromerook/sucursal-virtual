@@ -242,6 +242,128 @@ const getMeEmpleado = async (req, res) => {
   }
 };
 
+/**
+ * POST /empleados/recuperar-maestro
+ * Restablece la contraseña de un admin/empleado usando el PIN Maestro de rescate
+ */
+const recuperarConMasterPin = async (req, res) => {
+  const { email, masterPin, newPassword } = req.body;
+
+  if (!email || !masterPin || !newPassword) {
+    return res.status(400).json({ error: "Todos los campos son obligatorios." });
+  }
+
+  const expectedPin = process.env.ADMIN_MASTER_PIN || "Valette2026Master!";
+  if (masterPin.trim() !== expectedPin.trim()) {
+    return res.status(401).json({ error: "El PIN Maestro de rescate es incorrecto." });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: "La nueva contraseña debe tener al menos 4 caracteres." });
+  }
+
+  const cleanIdent = email.trim().toLowerCase();
+
+  try {
+    const result = await pool.query(
+      `SELECT e.id, e.nombre, e.apodo, e.rol, e.email, e.sucursal_id, e.telefono, e.activo,
+              s.nombre AS sucursal_nombre, s.slug AS sucursal_slug
+       FROM empleados e
+       LEFT JOIN sucursales s ON s.id = e.sucursal_id
+       WHERE LOWER(TRIM(COALESCE(e.email, ''))) = $1
+          OR LOWER(TRIM(COALESCE(e.nombre, ''))) = $1
+          OR LOWER(TRIM(COALESCE(e.apodo, ''))) = $1
+       LIMIT 1`,
+      [cleanIdent]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No se encontró ningún usuario con ese correo o nombre." });
+    }
+
+    const emp = result.rows[0];
+    const { hashPassword, generateToken } = require("../utils/auth");
+    const newHash = hashPassword(newPassword);
+
+    await pool.query(
+      `UPDATE empleados SET password = $1 WHERE id = $2`,
+      [newHash, emp.id]
+    );
+
+    const token = generateToken({
+      id: emp.id,
+      email: emp.email,
+      nombre: emp.nombre,
+      rol: emp.rol,
+      sucursal_id: emp.sucursal_id,
+    });
+
+    res.json({
+      success: true,
+      message: "¡Contraseña restablecida exitosamente!",
+      token,
+      user: emp,
+    });
+  } catch (error) {
+    console.error("Error al restablecer contraseña con PIN Maestro:", error);
+    res.status(500).json({ error: "Error al restablecer la contraseña." });
+  }
+};
+
+/**
+ * PUT /empleados/cambiar-password
+ * Permite a un empleado/admin logueado cambiar su contraseña
+ */
+const cambiarPasswordEmpleado = async (req, res) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ error: "No autorizado." });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Debe ingresar la contraseña actual y la nueva." });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: "La nueva contraseña debe tener al menos 4 caracteres." });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, password FROM empleados WHERE id = $1 LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado." });
+    }
+
+    const emp = result.rows[0];
+    const { verifyPassword, hashPassword } = require("../utils/auth");
+
+    let valid = verifyPassword(currentPassword, emp.password);
+    if (!valid && emp.password === currentPassword) {
+      valid = true;
+    }
+
+    if (!valid) {
+      return res.status(400).json({ error: "La contraseña actual no es correcta." });
+    }
+
+    const newHash = hashPassword(newPassword);
+    await pool.query(`UPDATE empleados SET password = $1 WHERE id = $2`, [newHash, emp.id]);
+
+    res.json({
+      success: true,
+      message: "¡Tu contraseña fue actualizada correctamente!",
+    });
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    res.status(500).json({ error: "Error al actualizar contraseña." });
+  }
+};
+
 module.exports = {
   getEmpleadosBySucursal,
   createEmpleado,
@@ -249,5 +371,8 @@ module.exports = {
   deleteEmpleado,
   loginEmpleado,
   getMeEmpleado,
+  recuperarConMasterPin,
+  cambiarPasswordEmpleado,
 };
+
 
