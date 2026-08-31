@@ -710,7 +710,7 @@ const solicitarRecuperacionPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al solicitar recuperación de contraseña:", error);
-    res.status(500).json({ error: "Error al procesar la solicitud de recuperación." });
+    res.status(500).json({ error: error.message || "Error al procesar la solicitud de recuperación." });
   }
 };
 
