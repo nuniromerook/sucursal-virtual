@@ -637,6 +637,10 @@ const validarCodigoReferido = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al validar código de referido:", error);
+    res.status(500).json({ error: "Error al validar el código." });
+  }
+};
+
 /**
  * POST /clientes/solicitar-recuperacion
  * Envía un correo con el token de recuperación usando Resend
