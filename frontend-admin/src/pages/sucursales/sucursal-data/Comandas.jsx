@@ -461,7 +461,7 @@ export default function Comandas() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pedidosFiltrados.map((pedido) => {
+            {pedidosFiltrados.map((pedido, idx) => {
               const cortadorAsignado =
                 pedido.cortador_apodo ||
                 pedido.cortador_nombre ||
