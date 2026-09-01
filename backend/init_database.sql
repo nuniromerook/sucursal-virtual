@@ -1,8 +1,26 @@
--- DUMP COMPLETO Y CORREGIDO VALETTE_DB
+-- EXPORTACION COMPLETA Y DEFINITIVA DESDE NEON.TECH
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. SUCURSALES
-CREATE TABLE IF NOT EXISTS sucursales (
+
+DROP TABLE IF EXISTS metricas_eventos CASCADE;
+DROP TABLE IF EXISTS metricas_visitas CASCADE;
+DROP TABLE IF EXISTS puntos_historial CASCADE;
+DROP TABLE IF EXISTS push_subscriptions CASCADE;
+DROP TABLE IF EXISTS notificaciones CASCADE;
+DROP TABLE IF EXISTS cliente_favoritos CASCADE;
+DROP TABLE IF EXISTS carrito_items CASCADE;
+DROP TABLE IF EXISTS carritos CASCADE;
+DROP TABLE IF EXISTS pedido_items CASCADE;
+DROP TABLE IF EXISTS pedidos CASCADE;
+DROP TABLE IF EXISTS stock_sucursal CASCADE;
+DROP TABLE IF EXISTS catalogo_promos CASCADE;
+DROP TABLE IF EXISTS catalogo CASCADE;
+DROP TABLE IF EXISTS banners_publicidad CASCADE;
+DROP TABLE IF EXISTS empleados CASCADE;
+DROP TABLE IF EXISTS sucursales CASCADE;
+DROP TABLE IF EXISTS clientes CASCADE;
+
+CREATE TABLE sucursales (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     direccion VARCHAR(255),
@@ -13,8 +31,7 @@ CREATE TABLE IF NOT EXISTS sucursales (
     creada_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. EMPLEADOS
-CREATE TABLE IF NOT EXISTS empleados (
+CREATE TABLE empleados (
     id SERIAL PRIMARY KEY,
     sucursal_id INTEGER REFERENCES sucursales(id) ON DELETE SET NULL,
     nombre VARCHAR(100) NOT NULL,
@@ -25,8 +42,7 @@ CREATE TABLE IF NOT EXISTS empleados (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. CLIENTES
-CREATE TABLE IF NOT EXISTS clientes (
+CREATE TABLE clientes (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     email VARCHAR(150) UNIQUE,
@@ -43,8 +59,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. CATALOGO
-CREATE TABLE IF NOT EXISTS catalogo (
+CREATE TABLE catalogo (
     id SERIAL PRIMARY KEY,
     nombre_producto VARCHAR(200) NOT NULL,
     descripcion TEXT,
@@ -55,6 +70,7 @@ CREATE TABLE IF NOT EXISTS catalogo (
     unidad_medida VARCHAR(20) DEFAULT 'kg',
     stock NUMERIC(10,2) DEFAULT 100,
     activo BOOLEAN DEFAULT TRUE,
+    destacar BOOLEAN DEFAULT FALSE,
     imagen_url TEXT,
     permite_fraccion BOOLEAN DEFAULT TRUE,
     incremento_fraccion NUMERIC(6,3) DEFAULT 0.5,
@@ -67,8 +83,16 @@ CREATE TABLE IF NOT EXISTS catalogo (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. STOCK SUCURSAL
-CREATE TABLE IF NOT EXISTS stock_sucursal (
+CREATE TABLE catalogo_promos (
+    id SERIAL PRIMARY KEY,
+    catalogo_id INTEGER REFERENCES catalogo(id) ON DELETE CASCADE,
+    cantidad_kg NUMERIC(10,3) NOT NULL,
+    precio_promocional NUMERIC(10,2) NOT NULL,
+    activa BOOLEAN DEFAULT TRUE,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE stock_sucursal (
     id SERIAL PRIMARY KEY,
     sucursal_id INTEGER REFERENCES sucursales(id) ON DELETE CASCADE,
     producto_id INTEGER REFERENCES catalogo(id) ON DELETE CASCADE,
@@ -77,8 +101,7 @@ CREATE TABLE IF NOT EXISTS stock_sucursal (
     UNIQUE(sucursal_id, producto_id)
 );
 
--- 6. PEDIDOS
-CREATE TABLE IF NOT EXISTS pedidos (
+CREATE TABLE pedidos (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL,
     sucursal_id INTEGER REFERENCES sucursales(id) ON DELETE SET NULL,
@@ -96,8 +119,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. PEDIDO_ITEMS
-CREATE TABLE IF NOT EXISTS pedido_items (
+CREATE TABLE pedido_items (
     id SERIAL PRIMARY KEY,
     pedido_id INTEGER REFERENCES pedidos(id) ON DELETE CASCADE,
     producto_id INTEGER REFERENCES catalogo(id) ON DELETE SET NULL,
@@ -109,15 +131,14 @@ CREATE TABLE IF NOT EXISTS pedido_items (
     corte_personalizado TEXT
 );
 
--- 8. CARRILLOS & ITEMS
-CREATE TABLE IF NOT EXISTS carritos (
+CREATE TABLE carritos (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE UNIQUE,
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     actualizado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS carrito_items (
+CREATE TABLE carrito_items (
     id SERIAL PRIMARY KEY,
     carrito_id INTEGER REFERENCES carritos(id) ON DELETE CASCADE,
     producto_id INTEGER REFERENCES catalogo(id) ON DELETE CASCADE,
@@ -126,8 +147,7 @@ CREATE TABLE IF NOT EXISTS carrito_items (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 9. FAVORITOS
-CREATE TABLE IF NOT EXISTS cliente_favoritos (
+CREATE TABLE cliente_favoritos (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
     producto_id INTEGER REFERENCES catalogo(id) ON DELETE CASCADE,
@@ -135,8 +155,7 @@ CREATE TABLE IF NOT EXISTS cliente_favoritos (
     UNIQUE (cliente_id, producto_id)
 );
 
--- 10. NOTIFICACIONES
-CREATE TABLE IF NOT EXISTS notificaciones (
+CREATE TABLE notificaciones (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
     sucursal_id INTEGER REFERENCES sucursales(id) ON DELETE CASCADE,
@@ -151,8 +170,7 @@ CREATE TABLE IF NOT EXISTS notificaciones (
     creada_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 11. PUSH SUBSCRIPTIONS
-CREATE TABLE IF NOT EXISTS push_subscriptions (
+CREATE TABLE push_subscriptions (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
     endpoint TEXT UNIQUE NOT NULL,
@@ -160,20 +178,24 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     creada_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 12. BANNERS PUBLICIDAD
-CREATE TABLE IF NOT EXISTS banners_publicidad (
+CREATE TABLE banners_publicidad (
     id SERIAL PRIMARY KEY,
     titulo VARCHAR(150),
     subtitulo VARCHAR(255),
-    imagen_url TEXT,
-    enlace TEXT DEFAULT '/',
-    activo BOOLEAN DEFAULT TRUE,
+    imagen_desktop_url TEXT NOT NULL,
+    imagen_mobile_url TEXT,
+    enlace_url TEXT DEFAULT '/productos',
+    badge_texto VARCHAR(50),
+    badge_color VARCHAR(30) DEFAULT 'rojo',
+    boton_texto VARCHAR(50) DEFAULT 'Ver más',
+    impresiones INTEGER DEFAULT 0,
+    clics INTEGER DEFAULT 0,
     orden INTEGER DEFAULT 1,
+    activo BOOLEAN DEFAULT TRUE,
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 13. PUNTOS HISTORIAL
-CREATE TABLE IF NOT EXISTS puntos_historial (
+CREATE TABLE puntos_historial (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
     tipo VARCHAR(50) NOT NULL,
@@ -182,8 +204,7 @@ CREATE TABLE IF NOT EXISTS puntos_historial (
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 14. METRICAS VISITAS & EVENTOS
-CREATE TABLE IF NOT EXISTS metricas_visitas (
+CREATE TABLE metricas_visitas (
     id SERIAL PRIMARY KEY,
     ip VARCHAR(50),
     user_agent TEXT,
@@ -192,7 +213,7 @@ CREATE TABLE IF NOT EXISTS metricas_visitas (
     fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS metricas_eventos (
+CREATE TABLE metricas_eventos (
     id SERIAL PRIMARY KEY,
     tipo_evento VARCHAR(100),
     metadata JSONB DEFAULT '{}'::jsonb,
@@ -201,60 +222,530 @@ CREATE TABLE IF NOT EXISTS metricas_eventos (
 );
 
 -- DATA SUCURSALES
-INSERT INTO sucursales (id, nombre, direccion, telefono, horario, abierta, slug) 
-VALUES (1, 'Luis Guillon', 'Av. Luciano Valette 3910', '1135534033', 'Lun a Sáb 8:00 a 20:00', true, 'luis-guillon') 
-ON CONFLICT (id) DO UPDATE SET nombre = EXCLUDED.nombre, abierta = true, slug = EXCLUDED.slug;
-
-SELECT setval('sucursales_id_seq', (SELECT COALESCE(MAX(id), 1) FROM sucursales));
-
--- DATA CATALOGO
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (10, 'Hamburguesas de Carne', 'hamburguesas artesanales de pura carne', 'preparados', 'vacuno', 10450.00, 12300.00, 'kg', 100, true, 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787865020/smv3jqaihner01b9s9ma.jpg', true, 0.5, 0.5, true, 20, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (11, 'Matambre', 'matambre tierno para la parrilla o arrollar', 'vacuno', 'vacuno', 13500.00, 14500.00, 'kg', 100, true, 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787865062/diejnvhkquijesu7uxss.png', true, 0.5, 0.5, true, 30, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (9, 'Osobuco', 'corte con hueso y caracú ideal para guisos', 'vacuno', 'vacuno', 10000.00, 12500.00, 'kg', 100, true, 'https://www.carniceriademadrid.es/wp-content/uploads/2021/04/osobuco-4.jpg', true, 0.5, 0.5, false, 0, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (12, 'Jamón s/hueso', 'pulpa de jamon fresca y magra', 'cerdo', 'cerdo', 7600.00, 0.00, 'kg', 100, true, 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787730523/zrhuld2zctmfgtz4mnes.jpg', true, 0.5, 0.5, false, 0, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (13, 'Chorizo', 'Chorizo parrillero puro cerdo tradicional', 'embutidos', 'cerdo', 1320.00, 0.00, 'u', 100, true, 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787730873/utaomrg2gtgcirlzfoxp.webp', true, 0.5, 0.5, true, 8, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-INSERT INTO catalogo (id, nombre_producto, descripcion, categoria, especie, precio, precio_anterior, unidad_medida, stock, activo, imagen_url, permite_fraccion, incremento_fraccion, fraccion_minima, gana_puntos, puntos, en_oferta, descuento_porcentaje, promos) 
-VALUES (8, 'Bondiola', 'Bondiola de cerdo fresca de primera calidad', 'cerdo', 'cerdo', 7800.00, 8300.00, 'kg', 100, true, 'https://santelmomarket.com/cdn/shop/files/Bondiola-de-Cerdo-Kg-1-6025.jpg?v=1719522792&width=1400', true, 0.5, 0.5, true, 15, false, 0, '[]'::jsonb) 
-ON CONFLICT (id) DO UPDATE SET precio = EXCLUDED.precio, imagen_url = EXCLUDED.imagen_url, activo = true;
-
-SELECT setval('catalogo_id_seq', (SELECT COALESCE(MAX(id), 1) FROM catalogo));
-
--- DATA BANNERS
-INSERT INTO banners_publicidad (id, titulo, subtitulo, imagen_url, enlace, activo, orden) 
-VALUES (1, '¡Promo Asado Fin de Semana!', 'Los mejores cortes para tu parrilla con hasta 20% de descuento', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787865020/smv3jqaihner01b9s9ma.jpg', '/', true, 1) 
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO banners_publicidad (id, titulo, subtitulo, imagen_url, enlace, activo, orden) 
-VALUES (2, 'Cortes Seleccionados - 100% Calidad Premium', 'Novillo pesado y ternera de primera selección garantizada', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787865062/diejnvhkquijesu7uxss.png', '/', true, 2) 
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO banners_publicidad (id, titulo, subtitulo, imagen_url, enlace, activo, orden) 
-VALUES (3, 'Club Valette: Acumulá puntos y canjeá descuentos', 'Registrate y ganá puntos con cada pedido para canjear en tus compras', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1787730523/zrhuld2zctmfgtz4mnes.jpg', '/club', true, 3) 
-ON CONFLICT (id) DO NOTHING;
-
-SELECT setval('banners_publicidad_id_seq', (SELECT COALESCE(MAX(id), 1) FROM banners_publicidad));
+INSERT INTO sucursales (id, nombre, slug, direccion, ciudad, latitud, longitud, telefono, horario_atencion, activa, creado_en, actualizado_en) VALUES (1, 'Luis Guillon', 'luis-guillon', 'Av. Luciano Valette 1696', 'Luis Guillon', NULL, NULL, '1135534033', 'Lun a sáb 7 a 15hs', true, '"2026-08-30T14:35:11.718Z"'::jsonb, '"2026-08-30T14:35:11.718Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('sucursales', 'id'), (SELECT COALESCE(MAX(id), 1) FROM sucursales));
 
 -- DATA EMPLEADOS
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (1, 1, 'Carlos Gómez', NULL, NULL, 'cortador', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (2, 1, 'Martín Benítez', NULL, NULL, 'cortador', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (3, 1, 'Lucía Fernández', NULL, NULL, 'cajero', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (4, 1, 'Esteban Romero', NULL, NULL, 'encargado', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (5, 1, 'Matias Rivarola', NULL, NULL, 'cortador', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO empleados (id, sucursal_id, nombre, apellido, pin_hash, rol, activo) VALUES (7, 1, 'Administrador Valette', NULL, NULL, 'admin', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO empleados (id, nombre, rol, sucursal_id, activo, creado_en, apodo, telefono, email, password) VALUES (1, 'Juan Nuñez', 'admin', 1, true, '"2026-08-31T01:10:50.275Z"'::jsonb, 'Nuni', '1128353615', 'juancnunz.contacto@gmail.com', '587b18e1954ddd828fe0a5986987324a:10000:7a0f9bf6a73a223310af9793a0af4c8851d5b743cba7bae5c8f893d1cf3a691c63970ebea2b1fc5bfffd41c08a6ceb20f1155d4720174325260d8660434b0cec') ON CONFLICT DO NOTHING;
+INSERT INTO empleados (id, nombre, rol, sucursal_id, activo, creado_en, apodo, telefono, email, password) VALUES (4, 'Juan Pablo Nahunek', 'encargado', 1, true, '"2026-08-31T06:42:46.157Z"'::jsonb, 'Juan', '1153079702', 'juanpn@gmail.com', 'cf7b35582a07b9ac9a664a0eb4d2e177:10000:e41aee953c3e01e21a1793b79355393a7667b920132dbc36aac8c784f37713e9ec9f1ac895dc08a1085ac4c9c551a18f3a813fcd21f782576be8fd0bad674a53') ON CONFLICT DO NOTHING;
+INSERT INTO empleados (id, nombre, rol, sucursal_id, activo, creado_en, apodo, telefono, email, password) VALUES (5, 'Matias perez', 'cortador', 1, true, '"2026-08-31T06:49:18.754Z"'::jsonb, 'Mati', '1122334455', NULL, NULL) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('empleados', 'id'), (SELECT COALESCE(MAX(id), 1) FROM empleados));
 
-SELECT setval('empleados_id_seq', (SELECT COALESCE(MAX(id), 1) FROM empleados));
+-- DATA CLIENTES
+INSERT INTO clientes (id, nombre, telefono, email, direccion_default, puntos_acumulados, creado_en, actualizado_en, usuario, password, google_id, avatar_url, perfil_completo, referral_code, referido_por, reset_token, reset_token_expires) VALUES (1, 'Juan Nuñez', '1128353615', 'juancnunz.contacto@gmail.com', 'J. Tarulli 1474, Luis Guillón, Provincia de Buenos Aires', 400, '"2026-08-30T14:32:56.659Z"'::jsonb, '"2026-08-31T17:58:11.673Z"'::jsonb, 'nuniromerook', 'a9079fe973f6e75d014cf1f54e935339:10000:54e8a623127bf5fef81b56f5da83aaf89d0a2fb4a8f4f94a97cfcfd103ff5b97a5383cf297c466de8a5f987d27b162c5b00eb13abd4ff6a014538e25b39596aa', NULL, NULL, true, '19243', NULL, NULL, NULL) ON CONFLICT DO NOTHING;
+INSERT INTO clientes (id, nombre, telefono, email, direccion_default, puntos_acumulados, creado_en, actualizado_en, usuario, password, google_id, avatar_url, perfil_completo, referral_code, referido_por, reset_token, reset_token_expires) VALUES (2, 'Prueba', '1100000000', 'prueba@gmail.com', 'Av. del Libertador 3910, Moreno, Provincia de Buenos Aires', 115, '"2026-08-30T14:38:36.320Z"'::jsonb, '"2026-08-30T14:53:21.319Z"'::jsonb, 'prueba', 'ef3fce7927f1973989c5993c95c7d068:10000:ba8d35583710e197513742959abeb627fbe9cfa63f5504f5fa2acf5030120cf06761e6d35f905e5f79a1367257291fe53c7caba93cf2a89299b6b8a58155ee2b', NULL, NULL, true, '64428', 1, NULL, NULL) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('clientes', 'id'), (SELECT COALESCE(MAX(id), 1) FROM clientes));
+
+-- DATA CATALOGO
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (1, 'Asado', 'asado', 'Nuestra tira de asado se destaca por su **excelente calidad**, ofreciendo el equilibrio perfecto entre carne y grasa para asegurar una terneza y un sabor inigualables a las brasas. Ideal para cocinar a fuego lento y compartir.
+
+## Información de compra:
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), tambien tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+> 🔥 **Ideal para:** Parrilla, horno o plancha
+> ❄️ Conservación: Mantener refrigerado entre 0° y 4°C. para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788090412/jt0xwnwpjv2nk2u9cidq.webp', 'kg', 350, '15', '32', '"2026-08-30T14:49:26.361Z"'::jsonb, '"2026-08-31T00:06:06.902Z"'::jsonb, true, true, true, 15, '12900', '0') ON CONFLICT DO NOTHING;
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (5, 'Tocino', 'tocino', 'Nuestro **tocino de cerdo** de primera calidad es el aliado perfecto para aportar un sabor intenso y una textura extra jugosa a todas tus preparaciones. Ya sea para mechar carnes más magras al horno, enriquecer guisos tradicionales o potenciar el blend de tus hamburguesas caseras, este tocino te garantiza un resultado increíble.
+
+## Información de compra:
+
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), también tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+
+> 🔥 **Ideal para:** Mechar carnes al horno, saborizar guisados o sumar jugosidad a preparaciones con carne picada.
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'cerdo', 'cerdo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788185623/mdajbcv0w8vap25qfffs.jpg', 'kg', 548, '8', '57', '"2026-08-31T17:13:52.785Z"'::jsonb, '"2026-08-31T17:13:52.785Z"'::jsonb, true, false, false, 0, '1500', '0') ON CONFLICT DO NOTHING;
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (4, 'Hamburguesas de Pollo', 'hamburguesas-de-pollo', 'Nuestras **hamburguesas de pollo** están elaboradas diariamente con carne seleccionada de la mejor calidad. Son la opción perfecta para una comida rápida, rica y más liviana. Súper prácticas para tener siempre a mano y disfrutar en familia, ya sea al plato con guarnición o en un buen sándwich.
+
+## Información de compra:
+
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), también tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de nuestros elaborados.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+
+> 🔥 **Ideal para:** Plancha, horno o parrilla. ¡Súper rápidas de cocinar!
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o guardar directamente en el freezer.', 'pollo', 'preparados', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788130352/fvopylgwjah9gcmikky0.jpg', 'kg', 165, '17', '9', '"2026-08-31T01:52:41.886Z"'::jsonb, '"2026-08-31T17:18:15.063Z"'::jsonb, true, true, true, 10, '6500', '0') ON CONFLICT DO NOTHING;
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (2, 'Matambre', 'matambre', 'Nuestro matambre de novillo se destaca por su **excelente calidad y frescura**. Es un corte clásico y súper versátil, ideal para prepararlo tiernizado a la parrilla (el clásico matambre a la pizza), al horno, o para armar el tradicional matambre arrollado. De sabor intenso y muy rendidor.
+
+## Información de compra:
+
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), también tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+
+> 🔥 **Ideal para:** Parrilla (a la pizza), horno o arrollado.
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788129846/zvnnxetrjoi8boowdaih.jpg', 'kg', 245, '20', '18', '"2026-08-31T01:44:24.880Z"'::jsonb, '"2026-08-31T17:18:31.654Z"'::jsonb, true, true, true, 30, '14500', '0') ON CONFLICT DO NOTHING;
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (6, 'Bife Ancho', 'bife-ancho', 'Nuestro **bife ancho de novillo** es un corte premium que se destaca por su excelente marmoleo, lo que le aporta una terneza y un sabor inconfundibles. Ideal para los amantes de la buena carne, es el protagonista indiscutido de cualquier asado o comida especial.
+
+## Información de compra:
+
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), también tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+
+> 🔥 **Ideal para:** Hacer a la parrilla, a la plancha o a la sartén de hierro. Un buen sellado a fuego fuerte es clave para retener todos sus jugos.
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788185742/xllryjpxjvfhgoblss5z.jpg', 'kg', 205, '20', '13', '"2026-08-31T17:17:19.802Z"'::jsonb, '"2026-08-31T17:44:15.879Z"'::jsonb, true, false, true, 25, '13700', '0') ON CONFLICT DO NOTHING;
+INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (3, 'Pollo Entero', 'pollo-entero', 'Nuestro pollo entero de primera calidad se destaca por su **frescura y excelente rinde**. Es el comodín perfecto para tus comidas familiares: ideal para hacerlo entero al horno con papas, a la parrilla, o para trozar y aprovechar en distintos platos. Carne tierna, jugosa y de origen rigurosamente seleccionado.
+
+## Información de compra:
+
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria (retirando en sucursal), también tarjetas de débito y billeteras virtuales.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura y la cadena de frío.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+
+> 🔥 **Ideal para:** Horno, parrilla, estofados o para trozar.
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 48hs o congelar inmediatamente.', 'pollo', 'pollo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788130102/tiwz9f0kyuznopv59jqr.webp', 'u', 205, '20', '13', '"2026-08-31T01:48:27.175Z"'::jsonb, '"2026-08-31T17:18:53.276Z"'::jsonb, true, true, false, 0, '4500', '0') ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('catalogo', 'id'), (SELECT COALESCE(MAX(id), 1) FROM catalogo));
+
+-- DATA CATALOGO_PROMOS
+INSERT INTO catalogo_promos (id, catalogo_id, cantidad_kg, precio_promocional, activa, creado_en) VALUES (1, 6, '2', '16000', true, '"2026-08-31T17:44:10.375Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('catalogo_promos', 'id'), (SELECT COALESCE(MAX(id), 1) FROM catalogo_promos));
+
+-- DATA PEDIDOS
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (1, 2, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '12900', '12900', NULL, NULL, '"2026-08-30T14:53:21.319Z"'::jsonb, '"2026-08-30T14:55:11.658Z"'::jsonb, NULL) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (2, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '32900', '32900', NULL, NULL, '"2026-08-31T06:46:54.359Z"'::jsonb, '"2026-08-31T06:51:11.985Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (3, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '4500', '4500', NULL, NULL, '"2026-08-31T07:01:43.840Z"'::jsonb, '"2026-08-31T07:43:15.427Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (4, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '38400', '38400', NULL, NULL, '"2026-08-31T07:45:59.393Z"'::jsonb, '"2026-08-31T07:48:23.399Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (5, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '12900', '12900', NULL, NULL, '"2026-08-31T07:49:25.762Z"'::jsonb, '"2026-08-31T07:53:08.122Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (6, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '73900', '73900', NULL, NULL, '"2026-08-31T08:15:12.888Z"'::jsonb, '"2026-08-31T08:25:50.145Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (8, 1, 1, 'web', 'retiro_sucursal', NULL, 'entregado', NULL, 'efectivo', false, '27400', '27400', NULL, NULL, '"2026-08-31T17:58:11.673Z"'::jsonb, '"2026-08-31T18:01:00.923Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+INSERT INTO pedidos (id, cliente_id, sucursal_id, canal, tipo_entrega, fecha_entrega_programada, estado_local, estado_envio_pedidosya, medio_pago, pago_confirmado, monto_total_estimado, monto_total_final, direccion_entrega, notas, creado_en, actualizado_en, cortador_id) VALUES (7, 1, 1, 'web', 'retiro_sucursal', NULL, 'en_corte', NULL, 'efectivo', false, '86800', NULL, NULL, NULL, '"2026-08-31T17:54:22.750Z"'::jsonb, '"2026-08-31T19:23:40.721Z"'::jsonb, 5) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('pedidos', 'id'), (SELECT COALESCE(MAX(id), 1) FROM pedidos));
+
+-- DATA PEDIDO_ITEMS
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (1, 1, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-30T14:53:21.319Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (2, 2, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-31T06:46:54.359Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (3, 2, 3, '3', '4500', '13500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T06:46:54.359Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (4, 2, 4, '1', '6500', '6500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T06:46:54.359Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (5, 3, 3, '1', '4500', '4500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:01:43.840Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (6, 4, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:45:59.393Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (7, 4, 4, '1', '6500', '6500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:45:59.393Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (8, 4, 3, '1', '4500', '4500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:45:59.393Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (9, 4, 2, '1', '14500', '14500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:45:59.393Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (10, 5, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-31T07:49:25.762Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (11, 6, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-31T08:15:12.888Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (12, 6, 4, '2', '6500', '13000', NULL, NULL, 'pendiente', NULL, '"2026-08-31T08:15:12.888Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (13, 6, 2, '3', '14500', '43500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T08:15:12.888Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (14, 6, 3, '1', '4500', '4500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T08:15:12.888Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (15, 7, 1, '2', '12900', '25800', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:54:22.750Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (16, 7, 4, '2', '6500', '13000', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:54:22.750Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (17, 7, 2, '3', '14500', '43500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:54:22.750Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (18, 7, 3, '1', '4500', '4500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:54:22.750Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (19, 8, 1, '1', '12900', '12900', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:58:11.673Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO pedido_items (id, pedido_id, catalogo_id, cantidad_kg_solicitada, precio_por_kg_congelado, precio_estimado, peso_real, precio_final, estado_item, cortador_id, creado_en) VALUES (20, 8, 2, '1', '14500', '14500', NULL, NULL, 'pendiente', NULL, '"2026-08-31T17:58:11.673Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('pedido_items', 'id'), (SELECT COALESCE(MAX(id), 1) FROM pedido_items));
+
+-- DATA CARRITOS
+INSERT INTO carritos (id, sesion_id, cliente_id, creado_en, actualizado_en) VALUES (2, 'cliente_2', 2, '"2026-08-30T14:38:40.344Z"'::jsonb, '"2026-08-31T08:08:20.253Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO carritos (id, sesion_id, cliente_id, creado_en, actualizado_en) VALUES (1, 'cliente_1', 1, '"2026-08-30T14:32:58.511Z"'::jsonb, '"2026-09-01T01:02:03.926Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('carritos', 'id'), (SELECT COALESCE(MAX(id), 1) FROM carritos));
+
+-- DATA CARRITO_ITEMS
+INSERT INTO carrito_items (id, carrito_id, catalogo_id, cantidad_kg, precio_al_agregar, promo_precio_al_agregar, creado_en, actualizado_en) VALUES (95, 1, 1, '1', '12900', NULL, '"2026-09-01T01:02:03.926Z"'::jsonb, '"2026-09-01T01:02:03.926Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO carrito_items (id, carrito_id, catalogo_id, cantidad_kg, precio_al_agregar, promo_precio_al_agregar, creado_en, actualizado_en) VALUES (96, 1, 4, '2', '6500', NULL, '"2026-09-01T01:02:03.926Z"'::jsonb, '"2026-09-01T01:02:03.926Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO carrito_items (id, carrito_id, catalogo_id, cantidad_kg, precio_al_agregar, promo_precio_al_agregar, creado_en, actualizado_en) VALUES (97, 1, 2, '3', '14500', NULL, '"2026-09-01T01:02:03.926Z"'::jsonb, '"2026-09-01T01:02:03.926Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO carrito_items (id, carrito_id, catalogo_id, cantidad_kg, precio_al_agregar, promo_precio_al_agregar, creado_en, actualizado_en) VALUES (98, 1, 3, '1', '4500', NULL, '"2026-09-01T01:02:03.926Z"'::jsonb, '"2026-09-01T01:02:03.926Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('carrito_items', 'id'), (SELECT COALESCE(MAX(id), 1) FROM carrito_items));
+
+-- DATA CLIENTE_FAVORITOS
+INSERT INTO cliente_favoritos (id, cliente_id, catalogo_id, creado_en) VALUES (6, 2, 1, '"2026-08-31T00:46:09.867Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO cliente_favoritos (id, cliente_id, catalogo_id, creado_en) VALUES (15, 2, 2, '"2026-08-31T03:16:56.243Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO cliente_favoritos (id, cliente_id, catalogo_id, creado_en) VALUES (24, 1, 2, '"2026-08-31T06:03:45.023Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO cliente_favoritos (id, cliente_id, catalogo_id, creado_en) VALUES (78, 1, 1, '"2026-08-31T17:52:29.303Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('cliente_favoritos', 'id'), (SELECT COALESCE(MAX(id), 1) FROM cliente_favoritos));
+
+-- DATA NOTIFICACIONES
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (2, 2, 1, 1, '¡Pedido #1 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/1/confirmacion', true, 'entregado', '"2026-08-30T11:55:12.187Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (1, 2, NULL, 1, '¡Sumaste 15 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #1. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-30T11:53:24.022Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (4, NULL, 1, NULL, 'Puntos asegurados!', 'Decenas de productos con oportunidades!', 'sistema', 'megaphone', '/ofertas', false, NULL, '"2026-08-30T12:03:48.723Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (21, 1, 1, 8, '¡Pedido #8 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/8/confirmacion', true, 'entregado', '"2026-08-31T15:01:01.487Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (22, NULL, NULL, NULL, 'Hay promo para gonza', 'Holi gonza hay promo', 'sistema', 'megaphone', '/ofertas', true, NULL, '"2026-08-31T15:12:26.268Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (14, 1, 1, 5, '¡Pedido #5 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/5/confirmacion', true, 'entregado', '"2026-08-31T04:53:08.652Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (15, 1, NULL, 6, '¡Sumaste 55 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #6. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T05:15:14.999Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (9, 1, 1, 2, '¡Pedido #2 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/2/confirmacion', true, 'entregado', '"2026-08-31T03:51:12.518Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (10, 1, 1, 3, '¡Pedido #3 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/3/confirmacion', true, 'entregado', '"2026-08-31T04:43:15.957Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (11, 1, NULL, 4, '¡Sumaste 55 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #4. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T04:46:02.563Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (3, NULL, NULL, NULL, 'Ahora es mas fácil ganar puntos!', 'Tenemos mas de 50 productos disponibles con puntos de regalo, para que puedas canjearlo por emocionantes recompensas!', 'sistema', 'sparkles', '/', true, NULL, '"2026-08-30T12:01:17.877Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (5, NULL, NULL, NULL, 'Puntos asegurados!', 'Decenas de productos con oportunidades!', 'promocion', 'tag', '/ofertas', true, NULL, '"2026-08-30T12:04:49.417Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (6, NULL, NULL, NULL, 'Interesante', 'ajajajajaja', 'sistema', 'megaphone', '/ofertas', true, NULL, '"2026-08-30T12:06:10.236Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (7, NULL, NULL, NULL, 'Llego el asado fresco para el finde!', 'Aprovecha los cortes seleccionados por tiempo limitado!', 'sistema', 'megaphone', '/', true, NULL, '"2026-08-30T12:08:54.953Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (17, NULL, NULL, NULL, 'Gracias a todos por apoyarnos!', 'Por tu aporte estamos regalando 1 punto.', 'sistema', 'megaphone', '/ofertas', true, NULL, '"2026-08-31T05:40:42.462Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (18, 1, NULL, 7, '¡Sumaste 55 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #7. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T14:54:26.013Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (20, 1, NULL, 8, '¡Sumaste 45 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #8. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T14:58:14.618Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (19, 1, 1, 7, 'Pedido #7 en preparación 🔪', 'Nuestros cortadores están preparando y pesando tus cortes.', 'pedido', 'package', '/pedido/7/confirmacion', true, 'en_corte', '"2026-08-31T16:23:41.281Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (8, 1, NULL, 2, '¡Sumaste 25 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #2. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T03:46:56.288Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (12, 1, 1, 4, '¡Pedido #4 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/4/confirmacion', true, 'entregado', '"2026-08-31T04:48:23.931Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (13, 1, NULL, 5, '¡Sumaste 15 Puntos Valette! ⭐', 'Acreditamos tus puntos por la compra del pedido #5. Consultá tu saldo en tu perfil.', 'puntos', 'sparkles', '/perfil?tab=puntos', true, NULL, '"2026-08-31T04:49:27.336Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO notificaciones (id, cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, leida, estado_pedido, creada_en) VALUES (16, 1, 1, 6, '¡Pedido #6 entregado! 🎉', '¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.', 'pedido', 'check', '/pedido/6/confirmacion', true, 'entregado', '"2026-08-31T05:25:50.675Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('notificaciones', 'id'), (SELECT COALESCE(MAX(id), 1) FROM notificaciones));
+
+-- DATA PUSH_SUBSCRIPTIONS
+INSERT INTO push_subscriptions (id, cliente_id, endpoint, keys, creada_en) VALUES (1, 1, 'https://web.push.apple.com/QBvbvxda1oKoOXjgR5g6yoSafTzIFbM-VGEaG50hasuQq52uka59Pk2kdaubovsbIvtavBdMygh8iaKT0CenCKFc0Lk-NvX6F4rq7p8dpV6n9bgHR3qkGEipC5gc3nrwmRpeKBpMJV33bjooN-f23e9hKs8pTHDeo6_EzXiUcs8', '{"auth":"OoV2InyxsC9saLNav33o2w","p256dh":"BOlm3_5oMUxzVWsCkS_mWVtYt0znBSUqGlwoBJ4Npy5Yztvyvuc1Av6q6JDidNjls3g2PWi6WzbqAppV6716S1k"}'::jsonb, '"2026-08-31T05:07:33.226Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO push_subscriptions (id, cliente_id, endpoint, keys, creada_en) VALUES (5, 1, 'https://fcm.googleapis.com/fcm/send/ffgfYmLtu70:APA91bGgZqXM8kicNUwW-YI4cGUD7fZsoHRUfx_4AC6OAz9VcHtxAoarJ19QuAr-9gDhWRU1LwPKY0lJIlWTvM_V-nzDc8yHFmH-TTN9QlsImQrldSjBFcIwOu-O7-hgyacBfVDY8kRw', '{"auth":"ha7xDMvgEn2QA9jHjBhaHw","p256dh":"BPRzBwkziV_7z2zLoRdHpLU4VT0eatCKb-jxeKkWr-zc-s8jy2UwRKS5t5FIoQqu3YoWMGcgFaMVRHsxuifQ4D0"}'::jsonb, '"2026-08-31T05:14:04.810Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO push_subscriptions (id, cliente_id, endpoint, keys, creada_en) VALUES (11, NULL, 'https://web.push.apple.com/QAZysuae_yzpe6CUrMA4BCU9sAK2_ZmIfgykLeesjTvdz4QXHujszcfAZFre7TpQfddfg19WnuhuwjVTYqdFmNTOocm2c2IfH-vsL5eGDS4b0N08fx8cadXuVrwkU7xB3qlx6Uzu8c8CUHPghHY6kkrPb2WhAN1N1Yo4Cjzdols', '{"auth":"jzVLgTovJdW0ht048yezdw","p256dh":"BOcH1JDcrq_kNG00bbmSK_Qj4SEfiUOqv-0sqNQPdnaINbpJXbDb6dHPI5uJJ1z6DAZDT3xpPkaCt1utd0w4Ag8"}'::jsonb, '"2026-08-31T22:06:22.993Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO push_subscriptions (id, cliente_id, endpoint, keys, creada_en) VALUES (2, 1, 'https://web.push.apple.com/QAk3X28deXkBg0iMXIEwUZY2mB0kQxfhXtRr3mDBloDJWusYtWIeePGuLo-TXiAKAhprSiCa8IgfgqJiGTybGsx7KGiBxv9GhJYoqiy5FzkVQ767QfT_TqDSUMJUxOPkPOAp17z7IKl0Ev22ktJ1c4yCxNDFrOqIG3S2oM8ypEI', '{"auth":"0XZjWN8IQ0g9l9mi9z1l-w","p256dh":"BBmQvyLt4Fh1apbpvab8Vbd9LF1r5-iOD9LxuMKGUId8vJX2jsPIKjeGs0SHTTIguNgmwC89k36LKetfplZ_iR8"}'::jsonb, '"2026-08-31T05:26:13.555Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO push_subscriptions (id, cliente_id, endpoint, keys, creada_en) VALUES (6, 1, 'https://fcm.googleapis.com/fcm/send/cKfQfFBGj-E:APA91bEUJEjky_f0Hls59EsGQaCnFbV7-66EYjoysdCKPvA5a1SN7bD3QB26sb8d8o3NS97JZsC42MBgteG4Fry95GHX1s8NxYVlDvcU4VSCpi_Idl-jqPZbg1yEcsm8otlKtF3tLmNy', '{"auth":"SA3TKr6edVpqQVUagOkiiQ","p256dh":"BA0gPYLOM6Y4BOpqxLM5gBfxOMJQ3lLnKhmltFrAgxNKzVS26hVLITW4EnKfzhNZ86KirFBH85JrrH09THk6wyI"}'::jsonb, '"2026-08-31T05:26:18.332Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('push_subscriptions', 'id'), (SELECT COALESCE(MAX(id), 1) FROM push_subscriptions));
+
+-- DATA BANNERS_PUBLICIDAD
+INSERT INTO banners_publicidad (id, titulo, imagen_desktop_url, imagen_mobile_url, enlace_url, orden, activo, impresiones, clics, creado_en, subtitulo, badge_texto, badge_color, boton_texto) VALUES (2, 'Cortes Seleccionados - 100% Calidad Premium', 'https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=3480&auto=format&fit=crop', 'https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=1280&auto=format&fit=crop', '/vacuno', 2, true, 435, 11, '"2026-08-28T09:55:09.767Z"'::jsonb, '', '', 'rojo', 'Ver más') ON CONFLICT DO NOTHING;
+INSERT INTO banners_publicidad (id, titulo, imagen_desktop_url, imagen_mobile_url, enlace_url, orden, activo, impresiones, clics, creado_en, subtitulo, badge_texto, badge_color, boton_texto) VALUES (3, 'Club Valette: Acumulá puntos y canjeá descuentos', 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=3480&auto=format&fit=crop', 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=1280&auto=format&fit=crop', '/productos', 3, true, 404, 9, '"2026-08-28T09:55:09.767Z"'::jsonb, '', '', 'rojo', 'Ver más') ON CONFLICT DO NOTHING;
+INSERT INTO banners_publicidad (id, titulo, imagen_desktop_url, imagen_mobile_url, enlace_url, orden, activo, impresiones, clics, creado_en, subtitulo, badge_texto, badge_color, boton_texto) VALUES (1, '¡Promo Asado Fin de Semana!', 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=3480&auto=format&fit=crop', 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1280&auto=format&fit=crop', '/productos?q=asado', 1, true, 466, 21, '"2026-08-28T09:55:09.767Z"'::jsonb, '', 'OFERTA EXCLUSIVA WEB', 'rojo', 'Ver promo') ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('banners_publicidad', 'id'), (SELECT COALESCE(MAX(id), 1) FROM banners_publicidad));
+
+-- DATA PUNTOS_HISTORIAL
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (1, 1, 'bienvenida', 50, 'Bono por completar el perfil al registrarse', NULL, '"2026-08-30T14:32:56.659Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (2, 2, 'bienvenida', 50, 'Bono por completar el perfil al registrarse', NULL, '"2026-08-30T14:38:36.320Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (3, 2, 'referido_recibido', 50, 'Bonus por usar el código de referido: 19243', NULL, '"2026-08-30T14:38:36.320Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (4, 1, 'referido_dado', 100, 'Tu referido @prueba se registró con tu código', NULL, '"2026-08-30T14:38:36.320Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (5, 2, 'compra', 15, 'Puntos ganados por el pedido #1', 1, '"2026-08-30T14:53:23.811Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (6, 1, 'compra', 25, 'Puntos ganados por el pedido #2', 2, '"2026-08-31T06:46:56.109Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (7, 1, 'compra', 55, 'Puntos ganados por el pedido #4', 4, '"2026-08-31T07:46:02.381Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (8, 1, 'compra', 15, 'Puntos ganados por el pedido #5', 5, '"2026-08-31T07:49:27.160Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (9, 1, 'compra', 55, 'Puntos ganados por el pedido #6', 6, '"2026-08-31T08:15:14.816Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (10, 1, 'compra', 55, 'Puntos ganados por el pedido #7', 7, '"2026-08-31T17:54:25.826Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO puntos_historial (id, cliente_id, tipo, puntos, descripcion, pedido_id, creado_en) VALUES (11, 1, 'compra', 45, 'Puntos ganados por el pedido #8', 8, '"2026-08-31T17:58:14.432Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('puntos_historial', 'id'), (SELECT COALESCE(MAX(id), 1) FROM puntos_historial));
+
+-- DATA METRICAS_VISITAS
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (1, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:23:14.332Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (2, '/ingresar', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:26:44.459Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (3, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:27:10.217Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (4, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:27:46.062Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (5, '/ingresar', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:28:21.981Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (6, '/perfil', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:33:00.706Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (7, '/perfil?tab=datos', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:33:06.812Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (8, '/perfil?tab=puntos', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:33:27.773Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (9, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:33:33.831Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (10, '/', 'mobile', 'ses_dcwptusuem', '"2026-08-30T14:35:52.553Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (11, '/ingresar', 'mobile', 'ses_dcwptusuem', '"2026-08-30T14:36:00.059Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (12, '/', 'mobile', 'ses_i75kra3ojb', '"2026-08-30T14:36:31.710Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (13, '/ingresar', 'mobile', 'ses_i75kra3ojb', '"2026-08-30T14:37:43.896Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (14, '/perfil', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:38:20.209Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (15, '/perfil?tab=puntos', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:38:23.361Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (16, '/perfil', 'mobile', 'ses_i75kra3ojb', '"2026-08-30T14:38:41.354Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (17, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:38:58.366Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (18, '/perfil', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:39:01.234Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (19, '/perfil?tab=puntos', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:39:03.461Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (20, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:49:43.791Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (21, '/vacuno/asado', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T14:49:51.392Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (22, '/', 'mobile', 'ses_mvno168kxl', '"2026-08-30T14:50:48.513Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (23, '/', 'mobile', 'ses_mvno168kxl', '"2026-08-30T14:50:50.473Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (24, '/perfil?tab=datos', 'mobile', 'ses_mvno168kxl', '"2026-08-30T14:50:52.391Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (25, '/', 'mobile', 'ses_mvno168kxl', '"2026-08-30T14:51:22.351Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (26, '/vacuno/asado', 'mobile', 'ses_mvno168kxl', '"2026-08-30T14:51:39.848Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (27, '/', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:52:23.975Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (28, '/ingresar', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:52:34.639Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (29, '/', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:52:52.602Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (30, '/checkout', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:53:15.583Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (31, '/pedido/1/confirmacion', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:53:25.219Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (32, '/', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:55:07.408Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (33, '/pedido/1/confirmacion', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:55:26.774Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (34, '/perfil', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:56:00.005Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (35, '/perfil?tab=datos', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:56:05.184Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (36, '/perfil?tab=puntos', 'mobile', 'ses_rrznt3b1mw', '"2026-08-30T14:56:06.035Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (37, '/', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T14:56:26.628Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (38, '/perfil?tab=puntos', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T14:56:33.998Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (39, '/', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T14:57:15.447Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (40, '/', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T14:59:58.523Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (41, '/ingresar', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T15:00:03.151Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (42, '/', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T15:00:24.836Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (43, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T15:02:12.430Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (44, '/ofertas', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T15:05:30.061Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (45, '/', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T15:05:41.603Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (46, '/ofertas', 'mobile', 'ses_hn7chv0cit', '"2026-08-30T15:05:44.248Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (47, '/ofertas', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T15:05:57.057Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (48, '/', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T15:06:29.914Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (49, '/ofertas', 'mobile', 'ses_2abpneg1e3', '"2026-08-30T15:06:31.328Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (50, '/', 'mobile', 'ses_a6kak0chu5', '"2026-08-30T15:06:39.572Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (51, '/', 'mobile', 'ses_hbem8fwqm', '"2026-08-30T15:07:28.147Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (52, '/', 'mobile', 'ses_ppjp0l2fnn', '"2026-08-30T15:07:51.944Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (53, '/ofertas', 'mobile', 'ses_a6kak0chu5', '"2026-08-30T15:10:03.032Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (54, '/', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:04.231Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (55, '/ofertas', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:15.987Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (56, '/', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:17.608Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (57, '/perfil', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:19.475Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (58, '/pedido/1/confirmacion', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:22.802Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (59, '/perfil', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:44.151Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (60, '/perfil?tab=datos', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:45.982Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (61, '/perfil?tab=puntos', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:11:57.644Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (62, '/', 'mobile', 'ses_zsy2v986ec', '"2026-08-30T15:12:35.539Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (63, '/', 'mobile', 'ses_hmwunx59d1', '"2026-08-30T15:13:18.553Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (64, '/perfil', 'mobile', 'ses_hmwunx59d1', '"2026-08-30T15:13:36.161Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (65, '/', 'mobile', 'ses_hmwunx59d1', '"2026-08-30T15:13:57.437Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (66, '/', 'mobile', 'ses_guh5xgerc7', '"2026-08-30T15:14:06.213Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (67, '/', 'desktop', 'ses_mcpjullfg3', '"2026-08-30T23:25:03.733Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (68, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:28:55.451Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (69, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:29:14.614Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (70, '/ingresar', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:29:16.481Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (71, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:29:44.644Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (72, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:29:52.192Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (73, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:32:24.245Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (74, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:32:25.152Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (75, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:32:27.941Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (76, '/perfil', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:33:59.227Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (77, '/perfil?tab=datos', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:01.260Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (78, '/perfil?tab=puntos', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:06.505Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (79, '/perfil?tab=pedidos', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:20.626Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (80, '/perfil?tab=puntos', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:21.625Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (81, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:23.329Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (82, '/vacuno', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:33.252Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (83, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:34:41.284Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (84, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-30T23:38:35.563Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (85, '/', 'desktop', 'ses_gsbihrjgie', '"2026-08-30T23:39:07.299Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (86, '/', 'mobile', 'ses_q7979o903z', '"2026-08-31T00:03:14.178Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (87, '/vacuno/asado', 'mobile', 'ses_q7979o903z', '"2026-08-31T00:03:16.761Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (88, '/', 'mobile', 'ses_q7979o903z', '"2026-08-31T00:04:26.628Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (89, '/vacuno/asado', 'mobile', 'ses_q7979o903z', '"2026-08-31T00:04:29.076Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (90, '/', 'mobile', 'ses_mkm36q0xyu', '"2026-08-31T00:08:42.984Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (91, '/vacuno/asado', 'mobile', 'ses_mkm36q0xyu', '"2026-08-31T00:08:45.505Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (92, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:11:29.097Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (93, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:11:30.100Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (94, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:19:18.082Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (95, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:19:43.741Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (96, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:19:48.278Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (97, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:19:53.191Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (98, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:19:57.211Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (99, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:20:03.359Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (100, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:20:05.228Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (101, '/', 'mobile', 'ses_mkm36q0xyu', '"2026-08-31T00:22:07.368Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (102, '/', 'mobile', 'ses_whofmnp0ja', '"2026-08-31T00:22:15.706Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (103, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:23:43.979Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (104, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:34:10.948Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (105, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:34:11.393Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (106, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:34:11.456Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (107, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:34:12.179Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (108, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:35:30.664Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (109, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:35:31.714Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (110, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:35:35.915Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (111, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:35:42.408Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (112, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:35:47.391Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (113, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:36:03.802Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (118, '/perfil', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:47:07.658Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (119, '/perfil', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:47:13.301Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (114, '/productos?q=asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:36:39.047Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (115, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:36:54.581Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (116, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:45:50.008Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (117, '/', 'mobile', 'ses_v79b64z7it', '"2026-08-31T00:46:09.840Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (120, '/perfil?tab=datos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:47:25.570Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (121, '/perfil?tab=puntos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:47:28.505Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (122, '/favoritos', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:47:50.015Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (123, '/', 'mobile', 'ses_5nqak4o93i', '"2026-08-31T00:48:22.215Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (124, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T00:49:57.960Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (125, '/productos', 'mobile', 'ses_3updd8nipj', '"2026-08-31T00:53:12.530Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (126, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T00:53:13.021Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (127, '/productos?q=asado', 'mobile', 'ses_3updd8nipj', '"2026-08-31T00:53:51.742Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (128, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T00:53:52.017Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (129, '/categorias', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:58:32.647Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (130, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T00:58:36.438Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (131, '/productos?q=asado', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:00:07.642Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (132, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:00:42.437Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (133, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:00:56.731Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (134, '/productos', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:01:15.802Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (135, '/favoritos', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:01:31.871Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (136, '/', 'mobile', 'ses_3updd8nipj', '"2026-08-31T01:01:40.226Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (137, '/vacuno/asado', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T01:40:13.460Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (138, '/vacuno/matambre', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T01:44:48.938Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (139, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T01:48:51.036Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (140, '/pollo/pollo-entero', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T01:48:58.084Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (141, '/', 'desktop', 'ses_5nqak4o93i', '"2026-08-31T01:53:12.304Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (142, '/', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:57:01.450Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (143, '/preparados/hamburguesas-de-pollo', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:57:07.823Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (144, '/pollo/pollo-entero', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:57:40.903Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (145, '/vacuno/asado', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:58:10.338Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (146, '/vacuno/matambre', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:58:30.740Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (147, '/perfil', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:58:44.715Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (148, '/perfil?tab=puntos', 'mobile', 'ses_pwn358zyy5', '"2026-08-31T01:58:49.935Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (149, '/', 'mobile', 'ses_3jiz0hrbw1', '"2026-08-31T02:09:30.360Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (150, '/', 'mobile', 'ses_g7qvl7okit', '"2026-08-31T02:12:10.666Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (151, '/', 'mobile', 'ses_7df3634yuu', '"2026-08-31T03:02:45.952Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (152, '/vacuno/asado', 'mobile', 'ses_7df3634yuu', '"2026-08-31T03:09:25.127Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (153, '/perfil', 'mobile', 'ses_7df3634yuu', '"2026-08-31T03:16:55.657Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (154, '/favoritos', 'mobile', 'ses_7df3634yuu', '"2026-08-31T03:17:15.574Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (155, '/', 'mobile', 'ses_7df3634yuu', '"2026-08-31T03:17:21.286Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (156, '/', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:15:47.356Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (157, '/', 'mobile', 'ses_7sg24ab3fi', '"2026-08-31T05:42:02.172Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (158, '/ingresar', 'mobile', 'ses_7sg24ab3fi', '"2026-08-31T05:42:07.733Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (159, '/', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:43:44.195Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (160, '/', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:46:53.521Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (161, '/', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T05:47:02.258Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (162, '/ingresar', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T05:47:04.955Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (163, '/ingresar', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:47:59.956Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (164, '/ingresar', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:48:01.956Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (165, '/ingresar', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:55:02.589Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (166, '/', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T05:59:06.586Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (167, '/ingresar', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T05:59:09.090Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (168, '/ingresar', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:59:31.668Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (169, '/', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:59:33.235Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (170, '/ingresar', 'desktop', 'ses_wsykeuyled', '"2026-08-31T05:59:33.290Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (171, '/restablecer-password?token=ad3bf877e455b482349dfa9c2e7d92d64c92c9e288ccd0337a1d8af6fe1439a8', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:01:10.643Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (172, '/perfil', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:01:41.101Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (173, '/perfil?tab=datos', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:01:50.580Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (174, '/perfil?tab=datos', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:02:00.285Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (175, '/', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:02:13.977Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (176, '/', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:03:01.206Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (177, '/favoritos', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:03:18.442Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (178, '/favoritos', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:03:20.646Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (179, '/', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:03:39.732Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (180, '/favoritos', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:03:47.885Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (181, '/productos?q=asado', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:04:14.844Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (182, '/productos', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:04:20.500Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (183, '/productos', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:18:00.903Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (184, '/vacuno', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T06:18:16.120Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (185, '/', 'desktop', 'ses_4njonl2xec', '"2026-08-31T06:39:19.719Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (186, '/preparados/hamburguesas-de-pollo', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:45:51.968Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (187, '/checkout', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:46:46.502Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (188, '/pedido/2/confirmacion', 'mobile', 'ses_k85fc9hktz', '"2026-08-31T06:46:57.922Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (189, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:51:31.500Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (190, '/pedido/2/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:51:49.765Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (191, '/perfil?tab=compras', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:52:18.905Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (192, '/perfil?tab=pedidos', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:52:24.417Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (193, '/perfil?tab=datos', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:52:30.047Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (194, '/perfil?tab=puntos', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T06:52:42.491Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (195, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:01:30.075Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (196, '/checkout', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:01:37.504Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (197, '/pedido/3/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:01:48.336Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (198, '/vacuno', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T07:41:38.599Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (199, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:42:50.731Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (200, '/pedido/3/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:43:11.377Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (201, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:44:34.198Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (202, '/pedido/3/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:44:35.684Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (203, '/vacuno', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T07:45:15.934Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (204, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:45:42.578Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (205, '/checkout', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:45:54.578Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (206, '/pedido/4/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:46:04.914Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (207, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:46:46.913Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (208, '/pedido/4/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:47:12.297Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (209, '/', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:48:35.741Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (210, '/checkout', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:49:23.287Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (211, '/pedido/5/confirmacion', 'mobile', 'ses_no5fvufj2n', '"2026-08-31T07:49:28.699Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (212, '/', 'mobile', 'ses_t74u96ugis', '"2026-08-31T07:50:12.679Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (213, '/', 'mobile', 'ses_rn1hbzxomw', '"2026-08-31T07:50:18.973Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (214, '/pedido/5/confirmacion', 'mobile', 'ses_rn1hbzxomw', '"2026-08-31T07:51:02.535Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (215, '/', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:52:01.702Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (216, '/', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:52:03.505Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (217, '/ingresar', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:52:14.220Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (218, '/', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:52:39.681Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (219, '/pedido/5/confirmacion', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:53:20.116Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (220, '/perfil?tab=compras', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:08.507Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (221, '/perfil?tab=pedidos', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:11.170Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (222, '/pedido/2/confirmacion', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:17.902Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (223, '/perfil?tab=pedidos', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:21.216Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (224, '/perfil?tab=puntos', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:25.748Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (225, '/favoritos', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:30.833Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (226, '/', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T07:56:36.497Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (227, '/', 'mobile', 'ses_8g1nyq133k', '"2026-08-31T08:07:32.961Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (228, '/vacuno/asado', 'mobile', 'ses_mf6hzr72tw', '"2026-08-31T08:08:14.863Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (229, '/', 'mobile', 'ses_mf6hzr72tw', '"2026-08-31T08:08:17.038Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (230, '/', 'mobile', 'ses_mf6hzr72tw', '"2026-08-31T08:08:19.187Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (231, '/vacuno', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T08:10:46.785Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (232, '/', 'mobile', 'ses_qovgksf8ba', '"2026-08-31T08:10:55.363Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (233, '/ingresar', 'mobile', 'ses_qovgksf8ba', '"2026-08-31T08:10:59.341Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (234, '/', 'mobile', 'ses_qovgksf8ba', '"2026-08-31T08:11:21.237Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (235, '/', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:12:25.336Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (236, '/ingresar', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:12:25.815Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (237, '/', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:12:51.094Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (238, '/checkout', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:13:20.237Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (239, '/', 'desktop', 'ses_zn8vfe0c4c', '"2026-08-31T08:14:03.706Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (240, '/vacuno', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T08:14:08.126Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (241, '/', 'desktop', 'ses_pd6b0vk1x3', '"2026-08-31T08:14:12.657Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (242, '/', 'desktop', 'ses_i1ck8pa4yz', '"2026-08-31T08:14:42.373Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (243, '/ingresar', 'desktop', 'ses_i1ck8pa4yz', '"2026-08-31T08:14:48.955Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (244, '/', 'desktop', 'ses_i1ck8pa4yz', '"2026-08-31T08:14:58.649Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (245, '/favoritos', 'desktop', 'ses_i1ck8pa4yz', '"2026-08-31T08:15:05.201Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (246, '/', 'desktop', 'ses_i1ck8pa4yz', '"2026-08-31T08:15:08.272Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (247, '/pedido/6/confirmacion', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:15:16.264Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (248, '/', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T08:15:41.824Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (249, '/pedido/6/confirmacion', 'mobile', 'ses_l0q38vgwro', '"2026-08-31T08:23:12.875Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (250, '/pedido/6/confirmacion', 'mobile', 'ses_9zdl989n01', '"2026-08-31T08:23:50.084Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (251, '/', 'mobile', 'ses_w8v6r4422d', '"2026-08-31T08:26:13.095Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (252, '/pedido/6/confirmacion', 'mobile', 'ses_gqj2zhvx9g', '"2026-08-31T08:26:18.210Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (253, '/', 'mobile', 'ses_ob5yh2oldy', '"2026-08-31T08:37:48.120Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (254, '/', 'mobile', 'ses_ob5yh2oldy', '"2026-08-31T08:37:50.594Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (255, '/', 'mobile', 'ses_ny70ka0fpj', '"2026-08-31T08:38:22.229Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (256, '/ingresar', 'mobile', 'ses_ny70ka0fpj', '"2026-08-31T08:38:26.005Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (257, '/', 'mobile', 'ses_ny70ka0fpj', '"2026-08-31T08:38:58.569Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (258, '/', 'mobile', 'ses_z6c2m8pxf3', '"2026-08-31T09:25:23.522Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (259, '/', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:41:29.896Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (260, '/favoritos', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:05.043Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (261, '/', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:21.436Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (262, '/productos', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:27.229Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (263, '/', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:28.697Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (264, '/productos?q=asado', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:30.563Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (265, '/', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:34.909Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (266, '/productos?q=hamb', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:43.001Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (267, '/', 'mobile', 'ses_8xqeitc4ds', '"2026-08-31T14:42:49.910Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (268, '/', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T16:27:06.733Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (269, '/', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T17:09:31.411Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (270, '/', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T17:17:29.918Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (271, '/', 'mobile', 'ses_pds1y6g5v8', '"2026-08-31T17:17:59.136Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (272, '/productos?q=hamb', 'mobile', 'ses_pds1y6g5v8', '"2026-08-31T17:30:33.710Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (273, '/', 'mobile', 'ses_pds1y6g5v8', '"2026-08-31T17:30:35.808Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (274, '/productos?q=Hamb', 'mobile', 'ses_pds1y6g5v8', '"2026-08-31T17:30:40.115Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (275, '/', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:30:45.607Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (276, '/productos?q=Hamburgue', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:30:49.475Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (277, '/', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:39:26.859Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (278, '/favoritos', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:40:16.275Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (279, '/', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:40:18.636Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (280, '/embutidos', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:40:52.405Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (281, '/', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:40:54.423Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (282, '/pollo', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:40:56.206Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (283, '/preparados/hamburguesas-de-pollo', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:41:11.707Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (284, '/pollo', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:42:46.557Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (285, '/', 'mobile', 'ses_0lbmtlfqcb', '"2026-08-31T17:42:47.087Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (286, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:44:39.899Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (287, '/vacuno/bife-ancho', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:44:54.210Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (288, '/vacuno', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:45:08.723Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (289, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:45:13.401Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (290, '/perfil?tab=datos', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:45:27.437Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (291, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:46:08.109Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (292, '/vacuno/asado', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:52:16.316Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (293, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:52:33.607Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (294, '/vacuno/asado', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:52:51.006Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (295, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:07.280Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (296, '/vacuno/bife-ancho', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:20.388Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (297, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:28.725Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (298, '/perfil?tab=datos', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:41.527Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (299, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:45.858Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (300, '/vacuno/asado', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:53:54.628Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (301, '/checkout', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:54:08.859Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (302, '/pedido/7/confirmacion', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:54:27.433Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (303, '/checkout', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:56:25.511Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (304, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:56:25.846Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (305, '/vacuno/asado', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:56:25.939Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (306, '/vacuno/asado', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:56:42.525Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (307, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:01.402Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (308, '/vacuno/matambre', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:04.507Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (309, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:10.311Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (310, '/productos?q=Asa', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:36.148Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (311, '/', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:42.646Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (312, '/productos?q=Asa', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:57:49.611Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (313, '/checkout', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:01.592Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (314, '/pedido/8/confirmacion', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:15.865Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (315, '/perfil', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:42.908Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (316, '/favoritos', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:45.111Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (317, '/perfil', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:48.510Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (318, '/pedido/8/confirmacion', 'mobile', 'ses_xr1rywhq74', '"2026-08-31T17:58:59.811Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (319, '/', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T18:14:42.373Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (320, '/perfil', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T18:14:56.790Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (321, '/perfil?tab=puntos', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T18:14:59.021Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (322, '/', 'mobile', 'ses_qox5ah3zj5', '"2026-08-31T18:59:25.849Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (323, '/vacuno/bife-ancho', 'mobile', 'ses_qox5ah3zj5', '"2026-08-31T19:00:05.360Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (324, '/perfil?tab=puntos', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T19:17:58.205Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (325, '/', 'desktop', 'ses_s698u0v7pt', '"2026-08-31T19:17:58.604Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (326, '/', 'mobile', 'ses_39ms0j4s6j', '"2026-08-31T19:42:01.752Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (327, '/', 'mobile', 'ses_tl6hhxgomi', '"2026-08-31T20:07:53.049Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (328, '/', 'mobile', 'ses_85rxfeut4f', '"2026-08-31T21:04:55.255Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (329, '/', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:02:04.017Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (330, '/vacuno/matambre', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:03:46.717Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (331, '/', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:03:47.955Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (332, '/pollo/pollo-entero', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:03:51.227Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (333, '/', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:04:07.144Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (334, '/ofertas', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:04:22.485Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (335, '/perfil', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:04:59.657Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (336, '/perfil?tab=puntos', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:05:35.770Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (337, '/perfil', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:06:10.686Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (338, '/', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:06:18.827Z"'::jsonb) ON CONFLICT DO NOTHING;
+INSERT INTO metricas_visitas (id, ruta, dispositivo, sesion_id, creado_en) VALUES (339, '/ingresar', 'mobile', 'ses_1cediuof6p', '"2026-09-01T01:06:26.981Z"'::jsonb) ON CONFLICT DO NOTHING;
+SELECT setval(pg_get_serial_sequence('metricas_visitas', 'id'), (SELECT COALESCE(MAX(id), 1) FROM metricas_visitas));
+
