@@ -3,6 +3,42 @@ const pool = require("./db");
 
 const SITE_URL = "https://abastecedoravalette.digital";
 
+// Función para limpiar Markdown y HTML para Meta Tags y Snippets
+const cleanTextForMeta = (text, maxLength = 160) => {
+  if (!text) return "";
+  let clean = text
+    .replace(/<[^>]*>/g, "") // Eliminar HTML tags
+    .replace(/^#+\s+/gm, "") // Encabezados Markdown (# Título)
+    .replace(/(\*\*|__)(.*?)\1/g, "$2") // Negritas (**texto** -> texto)
+    .replace(/(\*|_)(.*?)\1/g, "$2") // Cursivas (*texto* -> texto)
+    .replace(/^\s*>\s+/gm, "") // Citas (> texto)
+    .replace(/^\s*[-*+]\s+/gm, "") // Listas desordenadas (- item)
+    .replace(/^\s*\d+\.\s+/gm, "") // Listas ordenadas (1. item)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Enlaces [texto](url) -> texto
+    .replace(/`{1,3}[^`]*`{1,3}/g, "") // Bloques de código
+    .replace(/&[a-z]+;/gi, " ") // Entidades HTML básicas
+    .replace(/\s+/g, " ") // Colapsar saltos de línea y espacios
+    .trim();
+
+  if (maxLength && clean.length > maxLength) {
+    const truncated = clean.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(" ");
+    clean = (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated) + "...";
+  }
+
+  return clean;
+};
+
+// Escapar caracteres para atributos HTML seguros
+const escapeHtmlAttr = (str = "") => {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+};
+
 // Schema.org base de la carnicería (ButcherShop)
 const getButcherShopSchema = (sucursal) => {
   return {
@@ -22,19 +58,20 @@ const getButcherShopSchema = (sucursal) => {
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": -34.8143, // coords dummy
+      "latitude": -34.8143,
       "longitude": -58.4552
     }
   };
 };
 
 const getProductSchema = (product) => {
+  const plainDesc = cleanTextForMeta(product.descripcion || product.nombre_producto, 300);
   return {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.nombre_producto,
     "image": product.imagen_url || `${SITE_URL}/logo192.png`,
-    "description": product.descripcion || product.nombre_producto,
+    "description": plainDesc,
     "sku": product.slug,
     "offers": {
       "@type": "Offer",
@@ -70,7 +107,7 @@ const renderSeoHtml = async (req, res) => {
   let schemas = [getButcherShopSchema(sucursal)];
   
   // Buscar si es una ruta de producto: /categoria/slug o /especie/slug
-  const pathParts = requestPath.split('/').filter(Boolean);
+  const pathParts = requestPath.split('?')[0].split('/').filter(Boolean);
   if (pathParts.length === 2) {
     const slug = pathParts[1];
     try {
@@ -78,7 +115,8 @@ const renderSeoHtml = async (req, res) => {
       if (prodRes.rows.length > 0) {
         const product = prodRes.rows[0];
         title = `${product.nombre_producto} | Abastecedora Valette`;
-        description = product.descripcion || `Comprá ${product.nombre_producto} al mejor precio en Abastecedora Valette.`;
+        const cleanedProductDesc = cleanTextForMeta(product.descripcion, 160);
+        description = cleanedProductDesc || `Comprá ${product.nombre_producto} al mejor precio en Abastecedora Valette.`;
         image = product.imagen_url || image;
         schemas.push(getProductSchema(product));
       }
@@ -87,16 +125,21 @@ const renderSeoHtml = async (req, res) => {
     }
   }
 
+  const safeTitle = escapeHtmlAttr(title);
+  const safeDescription = escapeHtmlAttr(description);
+  const safeImage = escapeHtmlAttr(image);
+  const safeUrl = escapeHtmlAttr(`${SITE_URL}${requestPath}`);
+
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
-  <meta name="description" content="${description}">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${image}">
-  <meta property="og:url" content="${SITE_URL}${requestPath}">
+  <title>${safeTitle}</title>
+  <meta name="description" content="${safeDescription}">
+  <meta property="og:title" content="${safeTitle}">
+  <meta property="og:description" content="${safeDescription}">
+  <meta property="og:image" content="${safeImage}">
+  <meta property="og:url" content="${safeUrl}">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   
@@ -105,9 +148,9 @@ const renderSeoHtml = async (req, res) => {
   </script>
 </head>
 <body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-  <img src="${image}" alt="${title}" />
+  <h1>${safeTitle}</h1>
+  <p>${safeDescription}</p>
+  <img src="${safeImage}" alt="${safeTitle}" />
 </body>
 </html>`;
 
