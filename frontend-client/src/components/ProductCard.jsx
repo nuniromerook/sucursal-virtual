@@ -111,19 +111,16 @@ const ProductCard = ({ product }) => {
 
         {/* Info del Producto */}
         <div className="mt-2.5 flex flex-col gap-1">
-          <h3 className="flex ">
+          <h3
+            className={`flex text-sm ${
+              product.destacar ? "text-amber-600" : "text-neutral-900"
+            }`}
+          >
             <Link
               to={`/${categoriaSlug}/${productSlug}`}
               className="flex items-center gap-0.5"
               title="Producto destacado"
             >
-              {product.destacar && (
-                <Flame className="size-4 fill-amber-400 text-amber-500 shrink-0" />
-              )}
-              <span
-                aria-hidden="true"
-                className="text-sm font-bold text-neutral-900 line-clamp-1 group-hover:text-main-blue transition-colors"
-              />
               {name}
             </Link>
           </h3>
