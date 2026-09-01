@@ -516,9 +516,10 @@ export default function Comandas() {
                         {puedeGestionar && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setModalAsignacion({ open: true, pedido })
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModalAsignacion({ open: true, pedido });
+                            }}
                             className="text-xs text-blue-700 hover:text-blue-900 underline cursor-pointer font-medium"
                           >
                             Cambiar
@@ -567,6 +568,7 @@ export default function Comandas() {
                           href={`https://wa.me/${pedido.cliente_telefono.replace(/[^0-9]/g, "")}`}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
                           title="Contactar por WhatsApp"
                         >
@@ -657,9 +659,10 @@ export default function Comandas() {
                         <div className="mt-3">
                           <button
                             type="button"
-                            onClick={() =>
-                              setModalAsignacion({ open: true, pedido })
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModalAsignacion({ open: true, pedido });
+                            }}
                             className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
                           >
                             <Scissors className="size-4" />

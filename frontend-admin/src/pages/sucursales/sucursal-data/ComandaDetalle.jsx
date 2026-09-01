@@ -149,8 +149,13 @@ export default function ComandaDetalle() {
 
   const fetchCortadores = useCallback(async () => {
     if (!esEncargado) return;
+    const targetSucursal = slug || pedido?.sucursal_id;
+    if (!targetSucursal) return;
+
     try {
-      const res = await fetch(`${VITE_API_URL}/empleados`);
+      const res = await fetch(
+        `${VITE_API_URL}/sucursales/${targetSucursal}/empleados`,
+      );
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -160,12 +165,11 @@ export default function ComandaDetalle() {
     } catch (err) {
       console.error("Error al cargar cortadores:", err);
     }
-  }, [esEncargado]);
+  }, [esEncargado, slug, pedido?.sucursal_id]);
 
   useEffect(() => {
     setNavbarTitle(`Comanda #${id}`);
     fetchPedido();
-    fetchCortadores();
 
     return () => {
       if (pedido?.sucursal_id) {
@@ -173,6 +177,10 @@ export default function ComandaDetalle() {
       }
     };
   }, [id, setNavbarTitle]);
+
+  useEffect(() => {
+    fetchCortadores();
+  }, [fetchCortadores]);
 
   // Escuchar cambios de estado en tiempo real vía Socket.io
   useEffect(() => {

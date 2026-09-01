@@ -243,7 +243,7 @@ export default function Checkout() {
         }),
       };
 
-      const res = await fetch(`${VITE_API_URL}/pedidos`, {
+      const res = await fetch(`${API_URL}/pedidos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
