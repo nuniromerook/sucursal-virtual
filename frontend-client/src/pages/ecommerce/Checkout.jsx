@@ -512,6 +512,16 @@ export default function Checkout() {
                       ))}
                     </div>
                   )}
+
+                  <TimeSlotSelector
+                    sucursal={sucursalSeleccionada}
+                    selectedDate={selectedDate}
+                    selectedSlot={selectedSlot}
+                    onSelectSlot={(date, slot) => {
+                      setSelectedDate(date);
+                      setSelectedSlot(slot);
+                    }}
+                  />
                 </div>
               ) : (
                 <div className="pt-3 border-t border-neutral-100 space-y-3">
