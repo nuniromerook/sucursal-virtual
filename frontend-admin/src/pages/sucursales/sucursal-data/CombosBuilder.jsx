@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Trash2, Package, Sparkles, Percent, Save } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import {
+  Plus,
+  Search,
+  Trash2,
+  Package,
+  Sparkles,
+  Percent,
+  Save,
+} from "lucide-react";
+import { VITE_API_URL } from "../../../config/api";
 import { formatMoney } from "../../../utils/formatters";
 
 export default function CombosBuilder() {
@@ -14,7 +22,7 @@ export default function CombosBuilder() {
   useEffect(() => {
     const fetchCatalog = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalogo`);
+        const res = await fetch(`${VITE_API_URL}/catalogo`);
         if (res.ok) {
           const data = await res.json();
           setProductos(data);
@@ -32,23 +40,28 @@ export default function CombosBuilder() {
   };
 
   const updateItemQty = (id, delta) => {
-    setItems(items.map((i) => {
-      if (i.producto.id === id) {
-        return { ...i, cantidad: Math.max(0.5, Number(i.cantidad) + delta) };
-      }
-      return i;
-    }));
+    setItems(
+      items.map((i) => {
+        if (i.producto.id === id) {
+          return { ...i, cantidad: Math.max(0.5, Number(i.cantidad) + delta) };
+        }
+        return i;
+      }),
+    );
   };
 
   const removeItem = (id) => {
     setItems(items.filter((i) => i.producto.id !== id));
   };
 
-  const subtotalOriginal = items.reduce((acc, item) => acc + (Number(item.producto.precio) * item.cantidad), 0);
+  const subtotalOriginal = items.reduce(
+    (acc, item) => acc + Number(item.producto.precio) * item.cantidad,
+    0,
+  );
   const totalConDescuento = subtotalOriginal * (1 - descuentoGlobal / 100);
 
-  const filteredProducts = productos.filter((p) => 
-    p.nombre_producto.toLowerCase().includes(search.toLowerCase())
+  const filteredProducts = productos.filter((p) =>
+    p.nombre_producto.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -60,7 +73,8 @@ export default function CombosBuilder() {
             Creador de Combos
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Armá promociones agrupando productos. El descuento se calcula automáticamente.
+            Armá promociones agrupando productos. El descuento se calcula
+            automáticamente.
           </p>
         </div>
         <button className="flex items-center gap-2 bg-main-blue hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-sm">
@@ -78,7 +92,7 @@ export default function CombosBuilder() {
             </h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar carne, pollo, cerdo..."
                 value={search}
@@ -89,15 +103,29 @@ export default function CombosBuilder() {
           </div>
           <div className="overflow-y-auto flex-1 p-2 space-y-1">
             {filteredProducts.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-2 hover:bg-neutral-50 rounded-lg group transition-colors">
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-2 hover:bg-neutral-50 rounded-lg group transition-colors"
+              >
                 <div className="flex items-center gap-3">
-                  <img src={p.imagen_url || "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=200"} className="size-10 rounded-md object-cover" alt="" />
+                  <img
+                    src={
+                      p.imagen_url ||
+                      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=200"
+                    }
+                    className="size-10 rounded-md object-cover"
+                    alt=""
+                  />
                   <div>
-                    <p className="text-sm font-bold text-neutral-900">{p.nombre_producto}</p>
-                    <p className="text-xs text-neutral-500">{formatMoney(p.precio)} / {p.unidad_medida}</p>
+                    <p className="text-sm font-bold text-neutral-900">
+                      {p.nombre_producto}
+                    </p>
+                    <p className="text-xs text-neutral-500">
+                      {formatMoney(p.precio)} / {p.unidad_medida}
+                    </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => addItem(p)}
                   className="size-8 rounded-full bg-blue-50 text-main-blue flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-main-blue hover:text-white"
                 >
@@ -117,8 +145,10 @@ export default function CombosBuilder() {
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Nombre del Combo</label>
-                <input 
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                  Nombre del Combo
+                </label>
+                <input
                   type="text"
                   placeholder="Ej: Combo Asado Familiar"
                   value={comboName}
@@ -127,10 +157,12 @@ export default function CombosBuilder() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Descuento Global (%)</label>
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                  Descuento Global (%)
+                </label>
                 <div className="relative">
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
-                  <input 
+                  <input
                     type="number"
                     min="0"
                     max="100"
@@ -141,8 +173,10 @@ export default function CombosBuilder() {
                 </div>
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Descripción corta</label>
-                <input 
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                  Descripción corta
+                </label>
+                <input
                   type="text"
                   placeholder="Ej: Ideal para 4 personas, incluye chorizo y morcilla."
                   value={comboDesc}
@@ -159,36 +193,70 @@ export default function CombosBuilder() {
                 Productos en el Combo ({items.length})
               </h2>
             </div>
-            
+
             <div className="overflow-y-auto flex-1 p-4 space-y-3">
               {items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-50">
                   <Package className="size-12 mb-2 text-neutral-400" />
-                  <p className="text-sm font-medium text-neutral-500">Agregá productos desde el catálogo</p>
+                  <p className="text-sm font-medium text-neutral-500">
+                    Agregá productos desde el catálogo
+                  </p>
                 </div>
               ) : (
                 items.map((item) => (
-                  <div key={item.producto.id} className="flex items-center justify-between border border-neutral-200 p-3 rounded-xl bg-white shadow-sm">
+                  <div
+                    key={item.producto.id}
+                    className="flex items-center justify-between border border-neutral-200 p-3 rounded-xl bg-white shadow-sm"
+                  >
                     <div className="flex items-center gap-3">
-                      <img src={item.producto.imagen_url || "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=200"} className="size-12 rounded-md object-cover" alt="" />
+                      <img
+                        src={
+                          item.producto.imagen_url ||
+                          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=200"
+                        }
+                        className="size-12 rounded-md object-cover"
+                        alt=""
+                      />
                       <div>
-                        <p className="text-sm font-bold text-neutral-900">{item.producto.nombre_producto}</p>
-                        <p className="text-xs text-neutral-500">{formatMoney(item.producto.precio)} / {item.producto.unidad_medida}</p>
+                        <p className="text-sm font-bold text-neutral-900">
+                          {item.producto.nombre_producto}
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          {formatMoney(item.producto.precio)} /{" "}
+                          {item.producto.unidad_medida}
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-6">
                       <div className="flex items-center gap-3">
-                        <button onClick={() => updateItemQty(item.producto.id, -0.5)} className="size-7 rounded bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center font-bold text-neutral-600">-</button>
-                        <span className="w-10 text-center font-bold text-sm">{item.cantidad} {item.producto.unidad_medida}</span>
-                        <button onClick={() => updateItemQty(item.producto.id, 0.5)} className="size-7 rounded bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center font-bold text-neutral-600">+</button>
-                      </div>
-                      
-                      <div className="w-24 text-right">
-                        <p className="font-bold text-neutral-900">{formatMoney(item.producto.precio * item.cantidad)}</p>
+                        <button
+                          onClick={() => updateItemQty(item.producto.id, -0.5)}
+                          className="size-7 rounded bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center font-bold text-neutral-600"
+                        >
+                          -
+                        </button>
+                        <span className="w-10 text-center font-bold text-sm">
+                          {item.cantidad} {item.producto.unidad_medida}
+                        </span>
+                        <button
+                          onClick={() => updateItemQty(item.producto.id, 0.5)}
+                          className="size-7 rounded bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center font-bold text-neutral-600"
+                        >
+                          +
+                        </button>
                       </div>
 
-                      <button onClick={() => removeItem(item.producto.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <div className="w-24 text-right">
+                        <p className="font-bold text-neutral-900">
+                          {formatMoney(item.producto.precio * item.cantidad)}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => removeItem(item.producto.id)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -200,9 +268,14 @@ export default function CombosBuilder() {
             {/* Totalizador Footer */}
             <div className="border-t border-neutral-200 bg-neutral-900 p-5 text-white flex items-end justify-between">
               <div>
-                <p className="text-sm text-neutral-400 mb-1">Resumen del Combo</p>
+                <p className="text-sm text-neutral-400 mb-1">
+                  Resumen del Combo
+                </p>
                 <p className="text-xs text-neutral-400">
-                  Subtotal regular: <span className="line-through">{formatMoney(subtotalOriginal)}</span>
+                  Subtotal regular:{" "}
+                  <span className="line-through">
+                    {formatMoney(subtotalOriginal)}
+                  </span>
                 </p>
               </div>
               <div className="text-right">

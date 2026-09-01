@@ -18,8 +18,12 @@ import {
 } from "lucide-react";
 import { useCart, calculateItemPrice } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { API_URL } from "../../config/api";
-import { formatPrecio, formatCantidad, formatPrecioPorUnidad } from "../../utils/formatters";
+import { VITE_API_URL } from "../../config/api";
+import {
+  formatPrecio,
+  formatCantidad,
+  formatPrecioPorUnidad,
+} from "../../utils/formatters";
 import TimeSlotSelector from "../../components/TimeSlotSelector";
 
 export default function Checkout() {
@@ -76,11 +80,11 @@ export default function Checkout() {
   // Dirección formal estructurada para detección exacta en Maps
   const [direccionForm, setDireccionForm] = useState({
     calleNumero: "", // Ej: "J. Tarulli 1474"
-    pisoDepto: "",   // Ej: "Piso 2 Depto B"
+    pisoDepto: "", // Ej: "Piso 2 Depto B"
     localidad: "Luis Guillón",
     partido: "Esteban Echeverría",
     provincia: "Provincia de Buenos Aires",
-    notas: "",       // Ej: "Timbre blanco, portón negro"
+    notas: "", // Ej: "Timbre blanco, portón negro"
   });
 
   // Costo de envío
@@ -94,10 +98,12 @@ export default function Checkout() {
   useEffect(() => {
     const fetchSucursales = async () => {
       try {
-        const res = await fetch(`${API_URL}/sucursales`);
+        const res = await fetch(`${VITE_API_URL}/sucursales`);
         if (res.ok) {
           const data = await res.json();
-          const activas = Array.isArray(data) ? data.filter((s) => s.activa !== false) : [];
+          const activas = Array.isArray(data)
+            ? data.filter((s) => s.activa !== false)
+            : [];
           setSucursales(activas);
           if (activas.length > 0) {
             setSucursalId(activas[0].id.toString());
@@ -143,7 +149,8 @@ export default function Checkout() {
           No hay productos en tu carrito
         </h2>
         <p className="text-neutral-500 mb-6">
-          Agregá cortes de carne y aprovechá nuestras promociones antes de finalizar tu pedido.
+          Agregá cortes de carne y aprovechá nuestras promociones antes de
+          finalizar tu pedido.
         </p>
         <Link
           to="/"
@@ -157,7 +164,7 @@ export default function Checkout() {
   }
 
   const sucursalSeleccionada = sucursales.find(
-    (s) => s.id.toString() === sucursalId
+    (s) => s.id.toString() === sucursalId,
   );
 
   const granTotal = totalEstimado + costoEnvio;
@@ -171,22 +178,33 @@ export default function Checkout() {
       return;
     }
     if (!cliente.telefono.trim()) {
-      setErrorMsg("Por favor, ingresá tu número de teléfono / WhatsApp de contacto.");
+      setErrorMsg(
+        "Por favor, ingresá tu número de teléfono / WhatsApp de contacto.",
+      );
       return;
     }
 
-    if (tipoEntrega !== "retiro_sucursal" && !direccionForm.calleNumero.trim()) {
-      setErrorMsg("Por favor, ingresá la calle y altura para el envío a domicilio.");
+    if (
+      tipoEntrega !== "retiro_sucursal" &&
+      !direccionForm.calleNumero.trim()
+    ) {
+      setErrorMsg(
+        "Por favor, ingresá la calle y altura para el envío a domicilio.",
+      );
       return;
     }
 
     if (!sucursalId) {
-      setErrorMsg("Por favor, seleccioná la sucursal de origen para preparar tu pedido.");
+      setErrorMsg(
+        "Por favor, seleccioná la sucursal de origen para preparar tu pedido.",
+      );
       return;
     }
 
     if (!selectedDate || !selectedSlot) {
-      setErrorMsg("Por favor, seleccioná el día y el horario para recibir/retirar tu pedido.");
+      setErrorMsg(
+        "Por favor, seleccioná el día y el horario para recibir/retirar tu pedido.",
+      );
       return;
     }
 
@@ -196,16 +214,22 @@ export default function Checkout() {
       const payload = {
         cliente: {
           nombre: cliente.nombre.trim().replace(/\s*\(@[^)]+\)/g, ""),
-          usuario: cliente.usuario ? cliente.usuario.trim().replace(/^@/, "") : null,
+          usuario: cliente.usuario
+            ? cliente.usuario.trim().replace(/^@/, "")
+            : null,
           telefono: cliente.telefono.trim(),
           email: cliente.email ? cliente.email.trim() : null,
-          direccion: tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
+          direccion:
+            tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
         },
         sucursal_id: Number(sucursalId),
         tipo_entrega: tipoEntrega,
-        fecha_entrega_programada: new Date(selectedDate.toDateString() + " " + selectedSlot.split(" - ")[0]).toISOString(),
+        fecha_entrega_programada: new Date(
+          selectedDate.toDateString() + " " + selectedSlot.split(" - ")[0],
+        ).toISOString(),
         medio_pago: medioPago,
-        direccion_entrega: tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
+        direccion_entrega:
+          tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
         notas: direccionForm.notas ? direccionForm.notas.trim() : null,
         monto_total_estimado: granTotal,
         items: cartItems.map((item) => {
@@ -219,7 +243,7 @@ export default function Checkout() {
         }),
       };
 
-      const res = await fetch(`${API_URL}/pedidos`, {
+      const res = await fetch(`${VITE_API_URL}/pedidos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -228,7 +252,9 @@ export default function Checkout() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || data.detalles || "Error al crear el pedido");
+        throw new Error(
+          data.error || data.detalles || "Error al crear el pedido",
+        );
       }
 
       // Vaciar carrito
@@ -238,7 +264,10 @@ export default function Checkout() {
       navigate(`/pedido/${data.pedido.id}/confirmacion`);
     } catch (err) {
       console.error("Error al procesar el pedido:", err);
-      setErrorMsg(err.message || "Ocurrió un error al procesar tu pedido. Intentá nuevamente.");
+      setErrorMsg(
+        err.message ||
+          "Ocurrió un error al procesar tu pedido. Intentá nuevamente.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -260,7 +289,8 @@ export default function Checkout() {
               Finalizar Compra
             </h1>
             <p className="text-xs sm:text-sm text-neutral-500">
-              Completá los datos para coordinar el fraccionado y la entrega de tus cortes
+              Completá los datos para coordinar el fraccionado y la entrega de
+              tus cortes
             </p>
           </div>
         </div>
@@ -272,7 +302,10 @@ export default function Checkout() {
           </div>
         )}
 
-        <form onSubmit={handleSubmitPedido} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <form
+          onSubmit={handleSubmitPedido}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+        >
           {/* COLUMNA IZQUIERDA: Formulario */}
           <div className="lg:col-span-7 space-y-6">
             {/* SECCIÓN 1: DATOS DE CONTACTO */}
@@ -296,7 +329,9 @@ export default function Checkout() {
                     required
                     placeholder="Ej. Juan Pérez"
                     value={cliente.nombre}
-                    onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
+                    onChange={(e) =>
+                      setCliente({ ...cliente, nombre: e.target.value })
+                    }
                     className={inputClassnames}
                   />
                 </div>
@@ -310,7 +345,9 @@ export default function Checkout() {
                     required
                     placeholder="Ej. 11 2345-6789"
                     value={cliente.telefono}
-                    onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
+                    onChange={(e) =>
+                      setCliente({ ...cliente, telefono: e.target.value })
+                    }
                     className={inputClassnames}
                   />
                   <p className="text-xs text-neutral-400 mt-1">
@@ -319,14 +356,14 @@ export default function Checkout() {
                 </div>
 
                 <div>
-                  <label className={inputLabel}>
-                    Email (Opcional)
-                  </label>
+                  <label className={inputLabel}>Email (Opcional)</label>
                   <input
                     type="email"
                     placeholder="juan@email.com"
                     value={cliente.email}
-                    onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
+                    onChange={(e) =>
+                      setCliente({ ...cliente, email: e.target.value })
+                    }
                     className={inputClassnames}
                   />
                 </div>
@@ -339,7 +376,9 @@ export default function Checkout() {
                     type="text"
                     placeholder="@usuario_instagram"
                     value={cliente.usuario}
-                    onChange={(e) => setCliente({ ...cliente, usuario: e.target.value })}
+                    onChange={(e) =>
+                      setCliente({ ...cliente, usuario: e.target.value })
+                    }
                     className={inputClassnames}
                   />
                 </div>
@@ -397,7 +436,9 @@ export default function Checkout() {
                   </div>
                   <div>
                     <p className="text-xs font-bold">PedidosYa Envíos</p>
-                    <p className="text-[11px] opacity-75">Entrega rápida (30-45 min)</p>
+                    <p className="text-[11px] opacity-75">
+                      Entrega rápida (30-45 min)
+                    </p>
                   </div>
                 </button>
 
@@ -418,7 +459,9 @@ export default function Checkout() {
                   </div>
                   <div>
                     <p className="text-xs font-bold">Logística Propia</p>
-                    <p className="text-[11px] opacity-75">Furgón refrigerado Valette</p>
+                    <p className="text-[11px] opacity-75">
+                      Furgón refrigerado Valette
+                    </p>
                   </div>
                 </button>
               </div>
@@ -430,7 +473,9 @@ export default function Checkout() {
                     Seleccioná la sucursal de retiro:
                   </label>
                   {loadingSucursales ? (
-                    <p className="text-xs text-neutral-400">Cargando sucursales...</p>
+                    <p className="text-xs text-neutral-400">
+                      Cargando sucursales...
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {sucursales.map((sucursal) => (
@@ -454,7 +499,9 @@ export default function Checkout() {
                             <p className="font-bold text-neutral-900">
                               {sucursal.nombre} ({sucursal.ciudad})
                             </p>
-                            <p className="text-neutral-500">{sucursal.direccion}</p>
+                            <p className="text-neutral-500">
+                              {sucursal.direccion}
+                            </p>
                             {sucursal.horario_atencion && (
                               <p className="text-[11px] text-neutral-400 mt-0.5">
                                 Horario: {sucursal.horario_atencion}
@@ -471,7 +518,8 @@ export default function Checkout() {
                   <div className="flex items-center gap-2 text-xs text-blue-900 bg-blue-50 p-2.5 rounded-lg border border-blue-200">
                     <MapPin className="size-4 shrink-0 text-main-blue" />
                     <span>
-                      Ingresá tu dirección con formato formal para geolocalización precisa.
+                      Ingresá tu dirección con formato formal para
+                      geolocalización precisa.
                     </span>
                   </div>
 
@@ -486,67 +534,74 @@ export default function Checkout() {
                         placeholder="Ej. J. Tarulli 1474"
                         value={direccionForm.calleNumero}
                         onChange={(e) =>
-                          setDireccionForm({ ...direccionForm, calleNumero: e.target.value })
+                          setDireccionForm({
+                            ...direccionForm,
+                            calleNumero: e.target.value,
+                          })
                         }
                         className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className={inputLabel}>
-                        Piso / Depto
-                      </label>
+                      <label className={inputLabel}>Piso / Depto</label>
                       <input
                         type="text"
                         placeholder="Ej. Piso 2B"
                         value={direccionForm.pisoDepto}
                         onChange={(e) =>
-                          setDireccionForm({ ...direccionForm, pisoDepto: e.target.value })
+                          setDireccionForm({
+                            ...direccionForm,
+                            pisoDepto: e.target.value,
+                          })
                         }
                         className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className={inputLabel}>
-                        Localidad / Barrio
-                      </label>
+                      <label className={inputLabel}>Localidad / Barrio</label>
                       <input
                         type="text"
                         placeholder="Luis Guillón"
                         value={direccionForm.localidad}
                         onChange={(e) =>
-                          setDireccionForm({ ...direccionForm, localidad: e.target.value })
+                          setDireccionForm({
+                            ...direccionForm,
+                            localidad: e.target.value,
+                          })
                         }
                         className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className={inputLabel}>
-                        Partido / Ciudad
-                      </label>
+                      <label className={inputLabel}>Partido / Ciudad</label>
                       <input
                         type="text"
                         placeholder="Esteban Echeverría"
                         value={direccionForm.partido}
                         onChange={(e) =>
-                          setDireccionForm({ ...direccionForm, partido: e.target.value })
+                          setDireccionForm({
+                            ...direccionForm,
+                            partido: e.target.value,
+                          })
                         }
                         className={inputClassnames}
                       />
                     </div>
 
                     <div>
-                      <label className={inputLabel}>
-                        Provincia
-                      </label>
+                      <label className={inputLabel}>Provincia</label>
                       <input
                         type="text"
                         placeholder="Provincia de Buenos Aires"
                         value={direccionForm.provincia}
                         onChange={(e) =>
-                          setDireccionForm({ ...direccionForm, provincia: e.target.value })
+                          setDireccionForm({
+                            ...direccionForm,
+                            provincia: e.target.value,
+                          })
                         }
                         className={inputClassnames}
                       />
@@ -561,7 +616,10 @@ export default function Checkout() {
                       placeholder="Ej. Dejar en recepción / Portón gris / Tocar timbre 2"
                       value={direccionForm.notas}
                       onChange={(e) =>
-                        setDireccionForm({ ...direccionForm, notas: e.target.value })
+                        setDireccionForm({
+                          ...direccionForm,
+                          notas: e.target.value,
+                        })
                       }
                       rows={2}
                       className="w-full p-2.5 rounded-lg border border-neutral-300 text-sm focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue mb-4 resize-none"
@@ -585,9 +643,7 @@ export default function Checkout() {
                     </select>
                   </div>
 
-
-                  
-                  <TimeSlotSelector 
+                  <TimeSlotSelector
                     sucursal={sucursalSeleccionada}
                     selectedDate={selectedDate}
                     selectedSlot={selectedSlot}
@@ -597,7 +653,7 @@ export default function Checkout() {
                     }}
                   />
 
-                  {calculandoEnvio && (null)}
+                  {calculandoEnvio && null}
                 </div>
               )}
             </div>
@@ -639,7 +695,8 @@ export default function Checkout() {
                       </span>
                     </div>
                     <p className="text-neutral-500 mt-0.5">
-                      Tarjetas de débito, crédito o dinero en cuenta de Mercado Pago.
+                      Tarjetas de débito, crédito o dinero en cuenta de Mercado
+                      Pago.
                     </p>
                   </div>
                 </label>
@@ -670,7 +727,8 @@ export default function Checkout() {
                       </span>
                     </div>
                     <p className="text-neutral-500 mt-0.5">
-                      Abonás con el importe exacto luego de corroborar el pesaje en balanza.
+                      Abonás con el importe exacto luego de corroborar el pesaje
+                      en balanza.
                     </p>
                   </div>
                 </label>
@@ -697,7 +755,11 @@ export default function Checkout() {
                       <span>Transferencia Bancaria / QR en Sucursal</span>
                     </div>
                     <p className="text-neutral-500 mt-0.5">
-                      Alias: <strong className="text-neutral-800">VALETTE.CARNES</strong> (Se verifica con comprobante al retirar).
+                      Alias:{" "}
+                      <strong className="text-neutral-800">
+                        VALETTE.CARNES
+                      </strong>{" "}
+                      (Se verifica con comprobante al retirar).
                     </p>
                   </div>
                 </label>
@@ -722,10 +784,13 @@ export default function Checkout() {
                     <div className="flex-1 text-xs">
                       <div className="flex items-center gap-2 font-bold text-neutral-900">
                         <CreditCard className="size-4 text-neutral-700" />
-                        <span>Tarjeta con Posnet (en sucursal o al recibir)</span>
+                        <span>
+                          Tarjeta con Posnet (en sucursal o al recibir)
+                        </span>
                       </div>
                       <p className="text-neutral-500 mt-0.5">
-                        Llevamos el posnet inalámbrico o pagás directo en el mostrador.
+                        Llevamos el posnet inalámbrico o pagás directo en el
+                        mostrador.
                       </p>
                     </div>
                   </label>
@@ -738,7 +803,8 @@ export default function Checkout() {
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm sticky top-24 space-y-4">
               <h2 className="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-3">
-                Resumen del Pedido ({totalItems} {totalItems === 1 ? "corte" : "cortes"})
+                Resumen del Pedido ({totalItems}{" "}
+                {totalItems === 1 ? "corte" : "cortes"})
               </h2>
 
               {/* Lista de productos */}
@@ -746,14 +812,24 @@ export default function Checkout() {
                 {cartItems.map((item) => {
                   const calc = calculateItemPrice(item);
                   return (
-                    <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
+                    <div
+                      key={item.id}
+                      className="py-2.5 flex items-center justify-between text-xs"
+                    >
                       <div className="min-w-0 pr-2">
                         <p className="font-bold text-neutral-800 truncate">
                           {item.nombre_producto}
                         </p>
                         <p className="text-neutral-500">
-                          {formatCantidad(item.cantidad_kg, item.unidad_medida || "kg")} •{" "}
-                          {formatPrecioPorUnidad(item.precio, item.unidad_medida || "kg")}
+                          {formatCantidad(
+                            item.cantidad_kg,
+                            item.unidad_medida || "kg",
+                          )}{" "}
+                          •{" "}
+                          {formatPrecioPorUnidad(
+                            item.precio,
+                            item.unidad_medida || "kg",
+                          )}
                         </p>
                         {calc.hasPromo && (
                           <span className="text-[10px] text-emerald-700 font-semibold">
@@ -776,7 +852,9 @@ export default function Checkout() {
                     <Sparkles className="size-4 text-amber-600" />
                     <span>Puntos que acumulás:</span>
                   </div>
-                  <span className="text-amber-800 font-bold">+{totalPuntos} pts</span>
+                  <span className="text-amber-800 font-bold">
+                    +{totalPuntos} pts
+                  </span>
                 </div>
               )}
 
@@ -817,8 +895,9 @@ export default function Checkout() {
               <div className="p-3 bg-neutral-50 rounded-lg text-[11px] text-neutral-500 leading-relaxed flex items-start gap-2 border border-neutral-200/60">
                 <Info className="size-4 text-main-blue shrink-0 mt-0.5" />
                 <span>
-                  Los cortes vacunos, de cerdo y pollo se fraccionan artesanalmente en sucursal.
-                  El importe exacto final puede variar levemente según el pesaje de balanza.
+                  Los cortes vacunos, de cerdo y pollo se fraccionan
+                  artesanalmente en sucursal. El importe exacto final puede
+                  variar levemente según el pesaje de balanza.
                 </span>
               </div>
 
@@ -830,7 +909,9 @@ export default function Checkout() {
               >
                 <ShieldCheck className="size-5" />
                 <span>
-                  {isSubmitting ? "Procesando pedido..." : "Confirmar y Realizar Pedido"}
+                  {isSubmitting
+                    ? "Procesando pedido..."
+                    : "Confirmar y Realizar Pedido"}
                 </span>
               </button>
             </div>

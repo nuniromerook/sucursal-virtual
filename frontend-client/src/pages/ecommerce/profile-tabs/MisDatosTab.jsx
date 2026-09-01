@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 
 const PROVINCIAS_ARG = ["Provincia de Buenos Aires"];
 
@@ -181,7 +181,7 @@ export default function MisDatosTab() {
 
     setIsUpdatingPassword(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/password`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

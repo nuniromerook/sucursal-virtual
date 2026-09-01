@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search, Layers, RefreshCw, Filter } from "lucide-react";
 
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import { useAppContext } from "../context/AppContext";
 import BasicDropdown from "../components/ui/BasicDropdown";
 import ProductCardAdmin from "../components/ProductCardAdmin";
@@ -62,7 +62,10 @@ const sortProducts = (list, sortBy) => {
 
   switch (sortBy) {
     case "favoritos_desc":
-      sorted.sort((a, b) => Number(b.total_favoritos || 0) - Number(a.total_favoritos || 0));
+      sorted.sort(
+        (a, b) =>
+          Number(b.total_favoritos || 0) - Number(a.total_favoritos || 0),
+      );
       break;
     case "nombre_asc":
       sorted.sort((a, b) =>
@@ -99,8 +102,8 @@ const Catalogo = () => {
     setIsLoading(true);
     try {
       const [catRes, favRankingRes] = await Promise.all([
-        fetch(`${API_URL}/catalogo`),
-        fetch(`${API_URL}/catalogo/favoritos/ranking`).catch(() => null),
+        fetch(`${VITE_API_URL}/catalogo`),
+        fetch(`${VITE_API_URL}/catalogo/favoritos/ranking`).catch(() => null),
       ]);
 
       const data = await catRes.json();
@@ -154,7 +157,9 @@ const Catalogo = () => {
         (product.categoria || "").toLowerCase() === categoryFilter ||
         (product.especie || "").toLowerCase() === categoryFilter;
 
-      return matchesSearch && matchesCat && matchesQuickFilter(product, quickFilter);
+      return (
+        matchesSearch && matchesCat && matchesQuickFilter(product, quickFilter)
+      );
     });
 
     return sortProducts(filtered, sortBy);
@@ -178,7 +183,8 @@ const Catalogo = () => {
               </span>
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Gestión global de cortes, precios por kilo, promociones y estados de la tienda.
+              Gestión global de cortes, precios por kilo, promociones y estados
+              de la tienda.
             </p>
           </div>
         </div>
@@ -191,7 +197,9 @@ const Catalogo = () => {
             title="Refrescar catálogo"
             className="p-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer bg-neutral-50 border-neutral-200 hover:bg-neutral-100 text-neutral-700"
           >
-            <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </button>
 
           <Link
@@ -276,14 +284,21 @@ const Catalogo = () => {
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-neutral-200 p-3 rounded-lg h-64" />
+            <div
+              key={i}
+              className="animate-pulse bg-white border border-neutral-200 p-3 rounded-lg h-64"
+            />
           ))}
         </div>
       ) : visibleProducts.length === 0 ? (
         <div className="text-center py-16 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
           <Layers className="size-12 mx-auto mb-3 opacity-40 stroke-1 text-neutral-400" />
-          <h3 className="font-bold text-base text-neutral-800">No se encontraron productos</h3>
-          <p className="text-xs opacity-60 mt-1">Probá con otro término de búsqueda o cambiá el filtro.</p>
+          <h3 className="font-bold text-base text-neutral-800">
+            No se encontraron productos
+          </h3>
+          <p className="text-xs opacity-60 mt-1">
+            Probá con otro término de búsqueda o cambiá el filtro.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { io } from "socket.io-client";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 const SocketContext = createContext(null);
 
@@ -94,7 +94,7 @@ export const SocketContextProvider = ({ children }) => {
   const socketRef = useRef(null);
 
   // Obtener URL base del backend (removiendo /api si lo tuviese)
-  const socketUrl = API_URL.replace(/\/api$/, "");
+  const socketUrl = VITE_API_URL.replace(/\/api$/, "");
 
   useEffect(() => {
     if (!socketRef.current) {

@@ -1,6 +1,12 @@
 // frontend/src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { API_URL } from "../config/api";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { VITE_API_URL } from "../config/api";
 
 export const AuthContext = createContext();
 
@@ -35,7 +41,7 @@ export function AuthContextProvider({ children }) {
           JSON.stringify({
             token: authState.token,
             user: authState.user,
-          })
+          }),
         );
       } else {
         localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -52,7 +58,7 @@ export function AuthContextProvider({ children }) {
     if (!authState.token) return null;
 
     try {
-      const res = await fetch(`${API_URL}/clientes/perfil`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/perfil`, {
         headers: {
           Authorization: `Bearer ${authState.token}`,
         },
@@ -85,7 +91,7 @@ export function AuthContextProvider({ children }) {
   const login = async (identificador, password) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/login`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identificador, password }),
@@ -115,7 +121,7 @@ export function AuthContextProvider({ children }) {
   const register = async (userData) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/registro`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/registro`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
@@ -149,7 +155,7 @@ export function AuthContextProvider({ children }) {
   const loginWithGoogle = async (googlePayload) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/google`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(googlePayload),
@@ -185,7 +191,7 @@ export function AuthContextProvider({ children }) {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/perfil`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/perfil`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +228,7 @@ export function AuthContextProvider({ children }) {
   const restablecerPassword = async (resetToken, newPassword) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/restablecer-password`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/restablecer-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: resetToken, newPassword }),

@@ -1,6 +1,12 @@
 // frontend-client/src/context/FavoritesContext.jsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { API_URL } from "../config/api";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { VITE_API_URL } from "../config/api";
 import { useAuth } from "./AuthContext";
 
 const FavoritesContext = createContext(null);
@@ -37,17 +43,20 @@ export function FavoritesContextProvider({ children }) {
         // 1. Sincronizar los que tenga guardados localmente antes de loguear
         const localFavs = favoriteIds;
         if (localFavs.length > 0) {
-          const syncRes = await fetch(`${API_URL}/catalogo/favoritos/sincronizar`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          const syncRes = await fetch(
+            `${VITE_API_URL}/catalogo/favoritos/sincronizar`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({
+                cliente_id: user.id,
+                ids: localFavs,
+              }),
             },
-            body: JSON.stringify({
-              cliente_id: user.id,
-              ids: localFavs,
-            }),
-          });
+          );
           if (syncRes.ok) {
             const syncData = await syncRes.json();
             if (Array.isArray(syncData.favoritos)) {
@@ -58,7 +67,9 @@ export function FavoritesContextProvider({ children }) {
         }
 
         // 2. Si no había locales o falló sync, consultar los favoritos del cliente
-        const res = await fetch(`${API_URL}/catalogo/favoritos/cliente/${user.id}`);
+        const res = await fetch(
+          `${VITE_API_URL}/catalogo/favoritos/cliente/${user.id}`,
+        );
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.favoritos)) {
@@ -81,14 +92,16 @@ export function FavoritesContextProvider({ children }) {
 
       setFavoriteIds((prev) => {
         const isFav = prev.includes(idNum);
-        const next = isFav ? prev.filter((id) => id !== idNum) : [...prev, idNum];
+        const next = isFav
+          ? prev.filter((id) => id !== idNum)
+          : [...prev, idNum];
         return next;
       });
 
       // Si está logueado, persistir en PostgreSQL
       if (isAuthenticated && user?.id) {
         try {
-          await fetch(`${API_URL}/catalogo/${idNum}/favorito`, {
+          await fetch(`${VITE_API_URL}/catalogo/${idNum}/favorito`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -101,7 +114,7 @@ export function FavoritesContextProvider({ children }) {
         }
       }
     },
-    [isAuthenticated, user?.id, token]
+    [isAuthenticated, user?.id, token],
   );
 
   const isFavorite = useCallback(
@@ -109,7 +122,7 @@ export function FavoritesContextProvider({ children }) {
       if (!productId) return false;
       return favoriteIds.includes(Number(productId));
     },
-    [favoriteIds]
+    [favoriteIds],
   );
 
   // Limpia IDs de productos que ya no existen en el catálogo
@@ -146,7 +159,9 @@ export function FavoritesContextProvider({ children }) {
 export function useFavorites() {
   const context = useContext(FavoritesContext);
   if (!context) {
-    throw new Error("useFavorites debe usarse dentro de un FavoritesContextProvider");
+    throw new Error(
+      "useFavorites debe usarse dentro de un FavoritesContextProvider",
+    );
   }
   return context;
 }

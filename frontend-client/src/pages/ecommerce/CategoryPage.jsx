@@ -11,7 +11,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { API_URL } from "../../config/api";
+import { VITE_API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
 import BasicDropdown from "../../components/ui/BasicDropdown";
 import { useSocket } from "../../context/SocketContext";
@@ -139,7 +139,7 @@ export default function CategoryPage() {
       setIsLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${API_URL}/catalogo?activo=true`);
+        const res = await fetch(`${VITE_API_URL}/catalogo?activo=true`);
         if (!res.ok) throw new Error("Error al consultar productos");
         const data = await res.json();
         const validList = Array.isArray(data) ? data : [];
@@ -214,7 +214,12 @@ export default function CategoryPage() {
         const hasDiscount = anterior > 0 && anterior > actual;
         const hasPromos = Array.isArray(prod.promos) && prod.promos.length > 0;
         const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
-        return hasDiscount || hasPromos || hasDescuentoPorcentaje || prod.en_oferta === true;
+        return (
+          hasDiscount ||
+          hasPromos ||
+          hasDescuentoPorcentaje ||
+          prod.en_oferta === true
+        );
       }
       if (target === "favoritos") {
         return favoriteIds.includes(prod.id);
@@ -275,7 +280,15 @@ export default function CategoryPage() {
     }
 
     return result;
-  }, [categoryProducts, filtroOfertas, filtroPuntos, filtroCombos, filtroFavoritos, favoriteIds, orden]);
+  }, [
+    categoryProducts,
+    filtroOfertas,
+    filtroPuntos,
+    filtroCombos,
+    filtroFavoritos,
+    favoriteIds,
+    orden,
+  ]);
 
   // Conteo exacto dentro de la categoría
   const totalOfertas = useMemo(
@@ -409,7 +422,10 @@ export default function CategoryPage() {
                 setFiltroFavoritos(false);
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                !filtroOfertas && !filtroPuntos && !filtroCombos && !filtroFavoritos
+                !filtroOfertas &&
+                !filtroPuntos &&
+                !filtroCombos &&
+                !filtroFavoritos
                   ? "bg-main-blue text-white shadow-2xs"
                   : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
               }`}
@@ -427,7 +443,9 @@ export default function CategoryPage() {
                     : "bg-amber-50 text-amber-800 border border-amber-200/60 hover:bg-amber-100"
                 }`}
               >
-                <Star className={`size-3 ${filtroFavoritos ? "fill-white text-white" : "fill-amber-400 text-amber-400"}`} />
+                <Star
+                  className={`size-3 ${filtroFavoritos ? "fill-white text-white" : "fill-amber-400 text-amber-400"}`}
+                />
                 <span>Favoritos ({totalFavoritosCount})</span>
               </button>
             )}
@@ -517,15 +535,15 @@ export default function CategoryPage() {
               {queryParam
                 ? `No encontramos cortes para "${queryParam}"`
                 : currentKey === "favoritos" || filtroFavoritos
-                ? "Aún no guardaste productos como favoritos"
-                : "No encontramos cortes con los filtros seleccionados"}
+                  ? "Aún no guardaste productos como favoritos"
+                  : "No encontramos cortes con los filtros seleccionados"}
             </h3>
             <p className="text-xs text-neutral-500 mt-1 mb-4">
               {queryParam
                 ? "Revisá la ortografía o probá con términos más generales como 'asado', 'vacio' o 'pollo'."
                 : currentKey === "favoritos" || filtroFavoritos
-                ? "Hacé clic en la estrella ⭐ de cualquier producto para tenerlo siempre a mano acá."
-                : `Probá limpiando los filtros para ver todos los productos de ${meta.title.toLowerCase()}.`}
+                  ? "Hacé clic en la estrella ⭐ de cualquier producto para tenerlo siempre a mano acá."
+                  : `Probá limpiando los filtros para ver todos los productos de ${meta.title.toLowerCase()}.`}
             </p>
             {queryParam ? (
               <button

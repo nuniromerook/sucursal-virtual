@@ -6,7 +6,7 @@ import SearchInput from "../../components/SearchInput";
 import { categories } from "../../assets/assets.js";
 import ProductCard from "../../components/ProductCard.jsx";
 import BannerCarousel from "../../components/BannerCarousel.jsx";
-import { API_URL } from "../../config/api.js";
+import { VITE_API_URL } from "../../config/api.js";
 import { useSocket } from "../../context/SocketContext";
 import { Sparkles, Flame, Tag, ArrowRight, Layers } from "lucide-react";
 
@@ -22,7 +22,7 @@ export default function Home() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalogo?activo=true`);
+        const res = await fetch(`${VITE_API_URL}/catalogo?activo=true`);
         if (!res.ok) throw new Error(`Error: ${res.status}`);
 
         const productos = await res.json();

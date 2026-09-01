@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { API_URL } from "../../config/api";
+import { VITE_API_URL } from "../../config/api";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -76,7 +76,7 @@ export default function Auth() {
     setCheckingReferral(true);
     referralTimerRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/clientes/referido/validar`, {
+        const res = await fetch(`${VITE_API_URL}/clientes/referido/validar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ codigo: codigoReferido }),
@@ -99,7 +99,9 @@ export default function Auth() {
 
     try {
       const res = await login(loginData.identificador, loginData.password);
-      toast.success(`¡Bienvenido de nuevo${res.user?.nombre ? `, ${res.user.nombre}` : ""}!`);
+      toast.success(
+        `¡Bienvenido de nuevo${res.user?.nombre ? `, ${res.user.nombre}` : ""}!`,
+      );
       navigate(from, { replace: true });
     } catch (err) {
       setErrorMsg(err.message || "Error al iniciar sesión.");
@@ -142,16 +144,22 @@ export default function Auth() {
     setSuccessMsg("");
 
     try {
-      const res = await fetch(`${API_URL}/clientes/solicitar-recuperacion`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
+      const res = await fetch(
+        `${VITE_API_URL}/clientes/solicitar-recuperacion`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail }),
+        },
+      );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al solicitar recuperación.");
+      if (!res.ok)
+        throw new Error(data.error || "Error al solicitar recuperación.");
 
       setForgotSent(true);
-      setSuccessMsg(data.message || "Te enviamos un correo con las instrucciones.");
+      setSuccessMsg(
+        data.message || "Te enviamos un correo con las instrucciones.",
+      );
       toast.success("Correo enviado exitosamente.");
     } catch (err) {
       setErrorMsg(err.message || "Error al enviar correo de recuperación.");
@@ -201,15 +209,15 @@ export default function Auth() {
             {mode === "login"
               ? "Hola de nuevo!"
               : mode === "register"
-              ? "Creá tu cuenta"
-              : "Recuperar Contraseña"}
+                ? "Creá tu cuenta"
+                : "Recuperar Contraseña"}
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
             {mode === "login"
               ? "Ingresá a tu cuenta para gestionar pedidos y sumar puntos"
               : mode === "register"
-              ? "Registrate en Abastecedora Valette y sumá puntos con tus compras"
-              : "Ingresá tu correo para recibir un enlace de recuperación seguro"}
+                ? "Registrate en Abastecedora Valette y sumá puntos con tus compras"
+                : "Ingresá tu correo para recibir un enlace de recuperación seguro"}
           </p>
         </div>
 
@@ -266,7 +274,10 @@ export default function Auth() {
 
         {/* Formulario FORGOT PASSWORD */}
         {mode === "forgot" ? (
-          <form onSubmit={handleForgotSubmit} className="space-y-4 animate-in fade-in">
+          <form
+            onSubmit={handleForgotSubmit}
+            className="space-y-4 animate-in fade-in"
+          >
             <div>
               <label className={inputLabel}>
                 Tu correo electrónico registrado
@@ -289,7 +300,11 @@ export default function Auth() {
               disabled={isSendingForgot}
               className="w-full py-3 rounded-xl bg-main-blue hover:bg-main-blue/95 text-white font-bold shadow transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              <span>{isSendingForgot ? "Enviando enlace..." : "Enviar Enlace de Recuperación"}</span>
+              <span>
+                {isSendingForgot
+                  ? "Enviando enlace..."
+                  : "Enviar Enlace de Recuperación"}
+              </span>
               <ArrowRight className="size-3.5" />
             </button>
 

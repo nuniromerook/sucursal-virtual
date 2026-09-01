@@ -16,7 +16,7 @@ import {
   ExternalLink,
   Plus,
 } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 
 const ICONOS_DISPONIBLES = [
   { value: "bell", label: "Campana", icon: Bell },
@@ -57,10 +57,14 @@ export default function NotificacionesSucursal() {
     if (!sucursal?.id) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/notificaciones?sucursal_id=${sucursal.id}`);
+      const res = await fetch(
+        `${VITE_API_URL}/notificaciones?sucursal_id=${sucursal.id}`,
+      );
       if (res.ok) {
         const data = await res.json();
-        setNotificaciones(Array.isArray(data.notificaciones) ? data.notificaciones : []);
+        setNotificaciones(
+          Array.isArray(data.notificaciones) ? data.notificaciones : [],
+        );
       }
     } catch (err) {
       console.error("Error al cargar historial de notificaciones:", err);
@@ -88,7 +92,7 @@ export default function NotificacionesSucursal() {
         sucursal_id: form.alcance === "sucursal" ? sucursal.id : null,
       };
 
-      const res = await fetch(`${API_URL}/notificaciones`, {
+      const res = await fetch(`${VITE_API_URL}/notificaciones`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -138,7 +142,8 @@ export default function NotificacionesSucursal() {
               Gestión de Notificaciones & Anuncios
             </h1>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Emití comunicados, avisos de stock y promociones en tiempo real a los clientes de {sucursal?.nombre}.
+              Emití comunicados, avisos de stock y promociones en tiempo real a
+              los clientes de {sucursal?.nombre}.
             </p>
           </div>
         </div>
@@ -302,7 +307,11 @@ export default function NotificacionesSucursal() {
               className="w-full py-2.5 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               <Send className="size-3.5" />
-              <span>{isSending ? "Emitiendo en tiempo real..." : "Emitir Notificación en Vivo"}</span>
+              <span>
+                {isSending
+                  ? "Emitiendo en tiempo real..."
+                  : "Emitir Notificación en Vivo"}
+              </span>
             </button>
           </form>
         </div>
@@ -330,7 +339,9 @@ export default function NotificacionesSucursal() {
             ) : notificaciones.length === 0 ? (
               <div className="text-center py-12 text-neutral-400">
                 <Bell className="size-10 mx-auto mb-2 stroke-1 opacity-50" />
-                <p className="text-xs font-medium">No se han emitido notificaciones aún.</p>
+                <p className="text-xs font-medium">
+                  No se han emitido notificaciones aún.
+                </p>
               </div>
             ) : (
               notificaciones.map((n) => (
@@ -352,7 +363,9 @@ export default function NotificacionesSucursal() {
                         })}
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-600 mt-0.5">{n.mensaje}</p>
+                    <p className="text-xs text-neutral-600 mt-0.5">
+                      {n.mensaje}
+                    </p>
                     <div className="flex items-center gap-2 mt-1.5 text-[10px] text-neutral-500">
                       <span className="bg-neutral-100 px-2 py-0.5 rounded font-bold capitalize">
                         {n.tipo}

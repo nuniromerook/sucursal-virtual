@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Star, Tag, Edit2 } from "lucide-react";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 const DUMMY_IMAGE =
   "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800";
@@ -25,7 +25,8 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
     ? Math.round(100 - (price / previousPriceRaw) * 100)
     : 0;
 
-  const earnsPoints = Boolean(product.gana_puntos) && Number(product.puntos) > 0;
+  const earnsPoints =
+    Boolean(product.gana_puntos) && Number(product.puntos) > 0;
   const isActivo = Boolean(product.activo);
 
   const promos = Array.isArray(product.promos) ? product.promos : [];
@@ -38,7 +39,7 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
 
     setIsToggling(true);
     try {
-      const res = await fetch(`${API_URL}/catalogo/${product.id}/estado`, {
+      const res = await fetch(`${VITE_API_URL}/catalogo/${product.id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activo: !isActivo }),
@@ -59,7 +60,9 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
     <Link
       to={`/catalogo/editar/${product.slug}`}
       className={`group flex flex-col h-full rounded-lg border bg-white shadow-2xs transition-all hover:border-main-blue/60 hover:shadow-xs ${
-        isActivo ? "border-neutral-200/80" : "border-neutral-200 opacity-60 bg-neutral-50/50"
+        isActivo
+          ? "border-neutral-200/80"
+          : "border-neutral-200 opacity-60 bg-neutral-50/50"
       }`}
     >
       <div className="relative w-full aspect-square shrink-0 overflow-hidden bg-neutral-100 rounded-t-lg">
@@ -127,8 +130,12 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
           {tienePromo && (
             <div className="mt-1.5 flex flex-col bg-emerald-50/70 border border-emerald-100 rounded px-2 py-1">
               {promos.map((promo) => (
-                <p key={promo.id} className="text-xs font-black text-emerald-800">
-                  {Number(promo.cantidad_kg)} {product.unidad_medida} x {formatPrecio(Number(promo.precio_promocional))}
+                <p
+                  key={promo.id}
+                  className="text-xs font-black text-emerald-800"
+                >
+                  {Number(promo.cantidad_kg)} {product.unidad_medida} x{" "}
+                  {formatPrecio(Number(promo.precio_promocional))}
                 </p>
               ))}
             </div>

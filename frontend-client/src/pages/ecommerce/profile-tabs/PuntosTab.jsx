@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 
 export default function PuntosTab() {
   const { user, token } = useAuth();
@@ -27,7 +27,7 @@ export default function PuntosTab() {
     if (!token) return;
     setLoadingPuntos(true);
     try {
-      const res = await fetch(`${API_URL}/clientes/puntos/historial`, {
+      const res = await fetch(`${VITE_API_URL}/clientes/puntos/historial`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

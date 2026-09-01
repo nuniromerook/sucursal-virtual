@@ -1,7 +1,7 @@
 // frontend/src/context/SocketContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import { useAuth } from "./AuthContext";
 import { useRef } from "react";
 
@@ -15,7 +15,7 @@ export const SocketContextProvider = ({ children }) => {
   const [catalogoVersion, setCatalogoVersion] = useState(0);
   const socketRef = useRef(null);
 
-  const socketUrl = API_URL.replace(/\/api$/, "");
+  const socketUrl = VITE_API_URL.replace(/\/api$/, "");
 
   useEffect(() => {
     if (!socketRef.current) {
@@ -45,7 +45,10 @@ export const SocketContextProvider = ({ children }) => {
       });
 
       socketRef.current.on("catalogo_actualizado", (data) => {
-        console.log("🥩 [Ecommerce Socket] Catálogo actualizado en vivo:", data);
+        console.log(
+          "🥩 [Ecommerce Socket] Catálogo actualizado en vivo:",
+          data,
+        );
         setCatalogoVersion((prev) => prev + 1);
       });
 

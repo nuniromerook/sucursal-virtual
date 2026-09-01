@@ -1,7 +1,7 @@
 // frontend/src/hooks/useAnalytics.js
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 export function useAnalytics() {
   const location = useLocation();
@@ -22,7 +22,7 @@ export function useAnalytics() {
     const dispositivo = window.innerWidth < 768 ? "mobile" : "desktop";
 
     // Enviar visita de forma asíncrona no bloqueante
-    fetch(`${API_URL}/analytics/visita`, {
+    fetch(`${VITE_API_URL}/analytics/visita`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Input from "../../components/ui/Input";
 import ButtonLoader from "../../components/ui/ButtonLoader";
 import { useAppContext } from "../../context/AppContext";
-import { API_URL } from "../../config/api";
+import { VITE_API_URL } from "../../config/api";
 import { Store } from "lucide-react";
 
 const SucursalEditor = () => {
@@ -62,7 +62,7 @@ const SucursalEditor = () => {
     try {
       const { slugTouched, ...payload } = formValues;
 
-      const res = await fetch(`${API_URL}/sucursales`, {
+      const res = await fetch(`${VITE_API_URL}/sucursales`, {
         method: "POST",
         body: JSON.stringify(payload),
         headers: { "Content-Type": "application/json" },

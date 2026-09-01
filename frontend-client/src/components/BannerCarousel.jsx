@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 const BADGE_COLORS = {
   rojo: "bg-main-red text-white border-red-400/50 shadow-red-900/30",
@@ -33,7 +33,7 @@ export default function BannerCarousel() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const res = await fetch(`${API_URL}/banners`);
+        const res = await fetch(`${VITE_API_URL}/banners`);
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setBanners(data);
@@ -78,13 +78,13 @@ export default function BannerCarousel() {
       try {
         if (!sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, "1");
-          fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, {
+          fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
             method: "POST",
           }).catch(() => {});
         }
       } catch {
         // Fallback si sessionStorage está deshabilitado
-        fetch(`${API_URL}/banners/${currentBanner.id}/impresion`, {
+        fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
           method: "POST",
         }).catch(() => {});
       }
@@ -96,9 +96,9 @@ export default function BannerCarousel() {
   const handleBannerClick = (banner) => {
     if (!banner) return;
     // Registrar clic en el backend
-    fetch(`${API_URL}/banners/${banner.id}/click`, { method: "POST" }).catch(
-      () => {},
-    );
+    fetch(`${VITE_API_URL}/banners/${banner.id}/click`, {
+      method: "POST",
+    }).catch(() => {});
 
     if (banner.enlace_url) {
       if (banner.enlace_url.startsWith("http")) {

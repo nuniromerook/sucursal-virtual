@@ -1,7 +1,7 @@
 // frontend-client/src/components/RelatedProducts.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { Sparkles, Flame, ChefHat, ArrowRight } from "lucide-react";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import ProductCard from "./ProductCard";
 
 const PARRILLA_KEYWORDS = [
@@ -73,10 +73,10 @@ function calculateAffinityScore(target, candidate) {
 
   // 3. Afinidad de Asado / Parrilla
   const isTargetParrilla = PARRILLA_KEYWORDS.some(
-    (kw) => targetName.includes(kw) || targetDesc.includes(kw)
+    (kw) => targetName.includes(kw) || targetDesc.includes(kw),
   );
   const isCandParrilla = PARRILLA_KEYWORDS.some(
-    (kw) => candName.includes(kw) || candDesc.includes(kw)
+    (kw) => candName.includes(kw) || candDesc.includes(kw),
   );
   if (isTargetParrilla && isCandParrilla) {
     score += 45;
@@ -84,10 +84,10 @@ function calculateAffinityScore(target, candidate) {
 
   // 4. Afinidad de Milanesas / Minutas
   const isTargetMilanesa = MILANESA_KEYWORDS.some(
-    (kw) => targetName.includes(kw) || targetDesc.includes(kw)
+    (kw) => targetName.includes(kw) || targetDesc.includes(kw),
   );
   const isCandMilanesa = MILANESA_KEYWORDS.some(
-    (kw) => candName.includes(kw) || candDesc.includes(kw)
+    (kw) => candName.includes(kw) || candDesc.includes(kw),
   );
   if (isTargetMilanesa && isCandMilanesa) {
     score += 40;
@@ -95,10 +95,10 @@ function calculateAffinityScore(target, candidate) {
 
   // 5. Afinidad de Guisos / Horno
   const isTargetGuiso = GUISO_KEYWORDS.some(
-    (kw) => targetName.includes(kw) || targetDesc.includes(kw)
+    (kw) => targetName.includes(kw) || targetDesc.includes(kw),
   );
   const isCandGuiso = GUISO_KEYWORDS.some(
-    (kw) => candName.includes(kw) || candDesc.includes(kw)
+    (kw) => candName.includes(kw) || candDesc.includes(kw),
   );
   if (isTargetGuiso && isCandGuiso) {
     score += 35;
@@ -118,7 +118,7 @@ export default function RelatedProducts({ currentProduct }) {
   useEffect(() => {
     const fetchCatalog = async () => {
       try {
-        const res = await fetch(`${API_URL}/catalogo?activo=true`);
+        const res = await fetch(`${VITE_API_URL}/catalogo?activo=true`);
         if (res.ok) {
           const data = await res.json();
           setCatalogo(Array.isArray(data) ? data : []);

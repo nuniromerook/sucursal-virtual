@@ -8,7 +8,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 export const CartContext = createContext();
 
@@ -25,17 +25,29 @@ export const calculateItemPrice = (item) => {
   const promos = Array.isArray(item.promos) ? item.promos : [];
 
   if (qty <= 0 || unitPrice <= 0) {
-    return { total: 0, regularTotal: 0, ahorro: 0, hasPromo: false, appliedPromo: null };
+    return {
+      total: 0,
+      regularTotal: 0,
+      ahorro: 0,
+      hasPromo: false,
+      appliedPromo: null,
+    };
   }
 
   // 1. Coincidencia exacta con un tramo promocional
   const exactPromo = promos.find(
-    (p) => Number(p.cantidad_kg) === qty && p.activa !== false
+    (p) => Number(p.cantidad_kg) === qty && p.activa !== false,
   );
   if (exactPromo) {
     const promoTotal = Number(exactPromo.precio_promocional);
     const ahorro = Math.max(0, regularTotal - promoTotal);
-    return { total: promoTotal, regularTotal, ahorro, hasPromo: ahorro > 0, appliedPromo: exactPromo };
+    return {
+      total: promoTotal,
+      regularTotal,
+      ahorro,
+      hasPromo: ahorro > 0,
+      appliedPromo: exactPromo,
+    };
   }
 
   // 2. Combinación de tramos descendentes para cantidades mayores
@@ -62,7 +74,13 @@ export const calculateItemPrice = (item) => {
   if (remainingQty > 0) computedTotal += remainingQty * unitPrice;
 
   const ahorro = Math.max(0, regularTotal - computedTotal);
-  return { total: computedTotal, regularTotal, ahorro, hasPromo: ahorro > 0, appliedPromo: promoApplied };
+  return {
+    total: computedTotal,
+    regularTotal,
+    ahorro,
+    hasPromo: ahorro > 0,
+    appliedPromo: promoApplied,
+  };
 };
 
 export function CartContextProvider({ children }) {
@@ -114,7 +132,7 @@ export function CartContextProvider({ children }) {
 
       setIsSyncing(true);
       try {
-        const res = await fetch(`${API_URL}/carritos/sincronizar`, {
+        const res = await fetch(`${VITE_API_URL}/carritos/sincronizar`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -143,7 +161,7 @@ export function CartContextProvider({ children }) {
         setIsSyncing(false);
       }
     },
-    [cartItems]
+    [cartItems],
   );
 
   /**
@@ -154,7 +172,7 @@ export function CartContextProvider({ children }) {
     const token = tokenRef.current;
     if (!token) return;
 
-    fetch(`${API_URL}/carritos/mi-carrito/item/${catalogoId}`, {
+    fetch(`${VITE_API_URL}/carritos/mi-carrito/item/${catalogoId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -173,7 +191,7 @@ export function CartContextProvider({ children }) {
     const token = tokenRef.current;
     if (!token) return;
 
-    fetch(`${API_URL}/carritos/mi-carrito`, {
+    fetch(`${VITE_API_URL}/carritos/mi-carrito`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
@@ -190,19 +208,25 @@ export function CartContextProvider({ children }) {
     await sincronizarCarrito(token);
   }, [sincronizarCarrito]);
 
-
   // ─── Operaciones de carrito ────────────────────────────────────────────
 
   const addToCart = (product, cantidadKg = 1) => {
     const qtyToAdd = Number(cantidadKg) > 0 ? Number(cantidadKg) : 1;
 
     setCartItems((prevItems) => {
-      const existingIndex = prevItems.findIndex((item) => item.id === product.id);
+      const existingIndex = prevItems.findIndex(
+        (item) => item.id === product.id,
+      );
 
       if (existingIndex > -1) {
         const updated = [...prevItems];
-        const newQty = (Number(updated[existingIndex].cantidad_kg) || 0) + qtyToAdd;
-        updated[existingIndex] = { ...updated[existingIndex], ...product, cantidad_kg: newQty };
+        const newQty =
+          (Number(updated[existingIndex].cantidad_kg) || 0) + qtyToAdd;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...product,
+          cantidad_kg: newQty,
+        };
         // Persistir en background
         persistItemChange(product.id, newQty);
         return updated;
@@ -239,8 +263,8 @@ export function CartContextProvider({ children }) {
     }
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === productId ? { ...item, cantidad_kg: qty } : item
-      )
+        item.id === productId ? { ...item, cantidad_kg: qty } : item,
+      ),
     );
     persistItemChange(productId, qty);
   };
@@ -254,7 +278,7 @@ export function CartContextProvider({ children }) {
           return { ...item, cantidad_kg: newQty };
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -279,7 +303,9 @@ export function CartContextProvider({ children }) {
   };
 
   const removeFromCart = (productId) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+    setCartItems((prevItems) =>
+      prevItems.filter((item) => item.id !== productId),
+    );
     persistItemChange(productId, 0);
   };
 
@@ -315,7 +341,12 @@ export function CartContextProvider({ children }) {
 
       const qty = Number(item.cantidad_kg) || 0;
       const unidad = (item.unidad_medida || "kg").toLowerCase().trim();
-      if (unidad === "u" || unidad === "unidad" || unidad === "unidades" || unidad === "unid.") {
+      if (
+        unidad === "u" ||
+        unidad === "unidad" ||
+        unidad === "unidades" ||
+        unidad === "unid."
+      ) {
         totalUnidades += qty;
       } else {
         totalKg += qty;
@@ -329,12 +360,17 @@ export function CartContextProvider({ children }) {
     // Resumen combinado ej: "1 kg y 2 u" o "2 kg" o "5 u"
     const resumenPartes = [];
     if (totalKg > 0) {
-      resumenPartes.push(totalKg % 1 === 0 ? `${Math.round(totalKg)} kg` : `${totalKg.toLocaleString("es-AR")} kg`);
+      resumenPartes.push(
+        totalKg % 1 === 0
+          ? `${Math.round(totalKg)} kg`
+          : `${totalKg.toLocaleString("es-AR")} kg`,
+      );
     }
     if (totalUnidades > 0) {
       resumenPartes.push(`${totalUnidades} u`);
     }
-    const resumenCantidad = resumenPartes.length > 0 ? resumenPartes.join(" y ") : "0 kg";
+    const resumenCantidad =
+      resumenPartes.length > 0 ? resumenPartes.join(" y ") : "0 kg";
 
     return {
       subtotal,

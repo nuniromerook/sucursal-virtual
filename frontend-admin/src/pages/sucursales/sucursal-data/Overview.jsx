@@ -17,7 +17,7 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 import BasicDropdown from "../../../components/ui/BasicDropdown";
 import { useSocket } from "../../../context/SocketContext";
 
@@ -41,7 +41,7 @@ export default function Overview() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `${API_URL}/sucursales/${sucursal.id}/metricas?rango=${rango}`
+        `${VITE_API_URL}/sucursales/${sucursal.id}/metricas?rango=${rango}`,
       );
       const data = await res.json();
       setMetricas(data);
@@ -63,12 +63,17 @@ export default function Overview() {
     }
   }, [ultimoPedido, sucursal?.id]);
 
-  const vol = metricas?.volumen_kg || { total: 0, vacuno: 0, cerdo: 0, pollo: 0, elaborados: 0 };
+  const vol = metricas?.volumen_kg || {
+    total: 0,
+    vacuno: 0,
+    cerdo: 0,
+    pollo: 0,
+    elaborados: 0,
+  };
   const totalVol = vol.total || 1; // Evitar división por cero
 
   return (
     <div className="flex flex-col gap-6">
-
       {/* ─── Header de Información de la Sucursal ─── */}
       <div className="bg-white rounded-xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -120,11 +125,12 @@ export default function Overview() {
 
       {/* ─── Tarjetas de Cierre de Caja & KPIs Financieros ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        
         {/* Facturación */}
         <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Cierre de Caja</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Cierre de Caja
+            </span>
             <div className="size-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <DollarSign className="size-4" />
             </div>
@@ -142,7 +148,9 @@ export default function Overview() {
         {/* Volumen en Kg */}
         <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Carne Despachada</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Carne Despachada
+            </span>
             <div className="size-7 rounded-lg bg-blue-50 text-main-blue flex items-center justify-center">
               <Package className="size-4" />
             </div>
@@ -160,7 +168,9 @@ export default function Overview() {
         {/* Pedidos */}
         <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Pedidos</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Pedidos
+            </span>
             <div className="size-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
               <ShoppingBag className="size-4" />
             </div>
@@ -170,7 +180,8 @@ export default function Overview() {
               {metricas?.pedidos_total || 0}
             </p>
             <p className="text-[11px] text-neutral-400 mt-0.5">
-              {metricas?.pedidos_completados || 0} entregados · {metricas?.pedidos_pendientes || 0} en curso
+              {metricas?.pedidos_completados || 0} entregados ·{" "}
+              {metricas?.pedidos_pendientes || 0} en curso
             </p>
           </div>
         </div>
@@ -178,7 +189,9 @@ export default function Overview() {
         {/* Ticket Promedio */}
         <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Ticket Promedio</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Ticket Promedio
+            </span>
             <div className="size-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <TrendingUp className="size-4" />
             </div>
@@ -192,7 +205,6 @@ export default function Overview() {
             </p>
           </div>
         </div>
-
       </div>
 
       {/* ─── Desglose de Volumen por Especie ─── */}
@@ -200,7 +212,7 @@ export default function Overview() {
         <h3 className="font-bold text-sm text-neutral-900 mb-4">
           Volumen Despachado por Especie
         </h3>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Vacuno */}
           <div className="bg-neutral-50/70 p-3.5 rounded-xl border border-neutral-200/60">
@@ -211,7 +223,9 @@ export default function Overview() {
             <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-red-600 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (vol.vacuno / totalVol) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (vol.vacuno / totalVol) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -225,7 +239,9 @@ export default function Overview() {
             <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-rose-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (vol.cerdo / totalVol) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (vol.cerdo / totalVol) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -239,7 +255,9 @@ export default function Overview() {
             <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-amber-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (vol.pollo / totalVol) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (vol.pollo / totalVol) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -253,7 +271,9 @@ export default function Overview() {
             <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (vol.elaborados / totalVol) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (vol.elaborados / totalVol) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -262,7 +282,6 @@ export default function Overview() {
 
       {/* ─── Inteligencia Comercial: Cortes Ganadores y Estancados ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         {/* 🏆 Cortes Ganadores (Top 5) */}
         <div className="bg-white rounded-xl p-5 sm:p-6 border border-neutral-200/80 shadow-2xs flex flex-col justify-between">
           <div>
@@ -283,7 +302,10 @@ export default function Overview() {
             ) : (
               <ul className="divide-y divide-neutral-100">
                 {metricas?.cortes_ganadores?.map((corte, idx) => (
-                  <li key={corte.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <li
+                    key={corte.id}
+                    className="py-2.5 flex items-center justify-between gap-3"
+                  >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="size-5 rounded-full bg-neutral-100 font-black text-[11px] text-neutral-600 flex items-center justify-center shrink-0">
                         {idx + 1}
@@ -327,7 +349,10 @@ export default function Overview() {
             ) : (
               <ul className="divide-y divide-neutral-100">
                 {metricas?.cortes_estancados?.map((corte) => (
-                  <li key={corte.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <li
+                    key={corte.id}
+                    className="py-2.5 flex items-center justify-between gap-3"
+                  >
                     <span className="text-xs font-semibold text-neutral-700 truncate">
                       {corte.nombre_producto}
                     </span>
@@ -340,9 +365,7 @@ export default function Overview() {
             )}
           </div>
         </div>
-
       </div>
-
     </div>
   );
 }

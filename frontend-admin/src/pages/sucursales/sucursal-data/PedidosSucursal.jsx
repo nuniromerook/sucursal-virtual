@@ -21,7 +21,7 @@ import {
   Navigation,
   Sparkles,
 } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 import { useSocket } from "../../../context/SocketContext";
 
 const ESTADOS = [
@@ -57,8 +57,8 @@ export default function PedidosSucursal() {
     setIsLoading(true);
     try {
       const [resPedidos, resEmpleados] = await Promise.all([
-        fetch(`${API_URL}/sucursales/${sucursal.id}/pedidos`),
-        fetch(`${API_URL}/sucursales/${sucursal.id}/empleados`),
+        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`),
+        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/empleados`),
       ]);
 
       const dataPedidos = await resPedidos.json();
@@ -114,7 +114,7 @@ export default function PedidosSucursal() {
   const handleCambiarEstado = async (pedidoId, nuevoEstado, extraData = {}) => {
     setActualizandoId(pedidoId);
     try {
-      const res = await fetch(`${API_URL}/pedidos/${pedidoId}/estado`, {
+      const res = await fetch(`${VITE_API_URL}/pedidos/${pedidoId}/estado`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ estado: nuevoEstado, ...extraData }),
@@ -400,7 +400,11 @@ export default function PedidosSucursal() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-bold truncate leading-tight text-neutral-900">
-                          {pedido.cliente_nombre ? pedido.cliente_nombre.replace(/\s*\(@[^)]+\)/g, "").trim() : "Cliente Valette"}
+                          {pedido.cliente_nombre
+                            ? pedido.cliente_nombre
+                                .replace(/\s*\(@[^)]+\)/g, "")
+                                .trim()
+                            : "Cliente Valette"}
                         </p>
                         {pedido.cliente_usuario && (
                           <span className="text-[11px] font-bold text-main-blue bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200/60">

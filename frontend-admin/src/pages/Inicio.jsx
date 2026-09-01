@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { useSocket } from "../context/SocketContext";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import BasicDropdown from "../components/ui/BasicDropdown";
 
 const PERIODOS_DROPDOWN = [
@@ -62,7 +62,7 @@ export default function Inicio() {
     setIsLoadingComanda(true);
     const slug = ped.sucursal_slug || "luis-guillon";
     try {
-      const res = await fetch(`${API_URL}/pedidos/${ped.id}`);
+      const res = await fetch(`${VITE_API_URL}/pedidos/${ped.id}`);
       if (res.ok) {
         const data = await res.json();
         setSelectedComanda({
@@ -89,9 +89,9 @@ export default function Inicio() {
     setIsLoading(true);
     try {
       const [resDash, resAnalytics, resFavs] = await Promise.all([
-        fetch(`${API_URL}/dashboard/resumen?rango=${rango}`),
-        fetch(`${API_URL}/analytics/resumen?rango=${rango}`),
-        fetch(`${API_URL}/catalogo/favoritos/ranking`),
+        fetch(`${VITE_API_URL}/dashboard/resumen?rango=${rango}`),
+        fetch(`${VITE_API_URL}/analytics/resumen?rango=${rango}`),
+        fetch(`${VITE_API_URL}/catalogo/favoritos/ranking`),
       ]);
 
       const [dataDash, dataAnalytics, dataFavs] = await Promise.all([
@@ -674,7 +674,9 @@ export default function Inicio() {
                 <span className="text-base font-black text-main-blue">
                   Comanda #{selectedComanda.id}
                 </span>
-                {estadoBadge(selectedComanda.estado_local || selectedComanda.estado)}
+                {estadoBadge(
+                  selectedComanda.estado_local || selectedComanda.estado,
+                )}
               </div>
               <button
                 type="button"
@@ -690,7 +692,9 @@ export default function Inicio() {
               <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 space-y-1.5 text-xs">
                 <div className="flex items-center gap-2 font-bold text-neutral-900">
                   <User className="size-3.5 text-main-blue" />
-                  <span>{selectedComanda.cliente_nombre || "Cliente Valette"}</span>
+                  <span>
+                    {selectedComanda.cliente_nombre || "Cliente Valette"}
+                  </span>
                 </div>
                 {selectedComanda.cliente_telefono && (
                   <div className="flex items-center gap-2 text-neutral-600">
@@ -701,12 +705,21 @@ export default function Inicio() {
                 {selectedComanda.direccion_entrega && (
                   <div className="flex items-center gap-2 text-neutral-600">
                     <MapPin className="size-3.5 text-main-red" />
-                    <span className="truncate">{selectedComanda.direccion_entrega}</span>
+                    <span className="truncate">
+                      {selectedComanda.direccion_entrega}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-200/60 text-[11px] text-neutral-400">
-                  <span>Sucursal: <strong>{selectedComanda.sucursal_nombre || "Valette"}</strong></span>
-                  <span className="capitalize">{selectedComanda.tipo_entrega?.replace("_", " ")}</span>
+                  <span>
+                    Sucursal:{" "}
+                    <strong>
+                      {selectedComanda.sucursal_nombre || "Valette"}
+                    </strong>
+                  </span>
+                  <span className="capitalize">
+                    {selectedComanda.tipo_entrega?.replace("_", " ")}
+                  </span>
                 </div>
               </div>
 
@@ -717,20 +730,28 @@ export default function Inicio() {
                 </h4>
                 <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-xl overflow-hidden">
                   {selectedComanda.items?.map((it, idx) => (
-                    <div key={idx} className="p-3 bg-white flex items-center justify-between gap-3 text-xs">
+                    <div
+                      key={idx}
+                      className="p-3 bg-white flex items-center justify-between gap-3 text-xs"
+                    >
                       <div className="min-w-0">
                         <p className="font-extrabold text-neutral-900 truncate">
                           {it.nombre_producto}
                         </p>
                         {it.fraccion && (
                           <p className="text-[11px] text-neutral-500">
-                            Corte: <span className="font-semibold text-neutral-700">{it.fraccion}</span>
+                            Corte:{" "}
+                            <span className="font-semibold text-neutral-700">
+                              {it.fraccion}
+                            </span>
                           </p>
                         )}
                       </div>
                       <div className="text-right shrink-0">
                         <span className="font-black text-neutral-900 block">
-                          {Number(it.cantidad_kg_solicitada || it.cantidad || 1)}{" "}
+                          {Number(
+                            it.cantidad_kg_solicitada || it.cantidad || 1,
+                          )}{" "}
                           {it.unidad_medida || "kg"}
                         </span>
                         <span className="text-[11px] text-neutral-400">
@@ -748,7 +769,11 @@ export default function Inicio() {
                   Total Comanda
                 </span>
                 <span className="text-base font-black">
-                  {formatMoney(selectedComanda.monto_total_final || selectedComanda.monto_total_estimado || selectedComanda.monto)}
+                  {formatMoney(
+                    selectedComanda.monto_total_final ||
+                      selectedComanda.monto_total_estimado ||
+                      selectedComanda.monto,
+                  )}
                 </span>
               </div>
             </div>

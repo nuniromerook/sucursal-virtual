@@ -12,7 +12,7 @@ import {
 import { formatPrecio } from "../utils/formatters";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 const DUMMY_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";

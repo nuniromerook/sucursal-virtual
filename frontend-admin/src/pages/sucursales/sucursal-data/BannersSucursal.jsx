@@ -18,7 +18,7 @@ import {
   ArrowRight,
   Layers,
 } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 import { uploadImageToCloudinary } from "../../../utils/cloudinary";
 import Input from "../../../components/ui/Input";
 import ButtonLoader from "../../../components/ui/ButtonLoader";
@@ -26,7 +26,11 @@ import ButtonLoader from "../../../components/ui/ButtonLoader";
 const BADGE_COLOR_OPTIONS = [
   { id: "rojo", label: "Rojo (Oferta)", bg: "bg-red-500 text-white" },
   { id: "dorado", label: "Dorado (Club)", bg: "bg-amber-500 text-white" },
-  { id: "amarillo", label: "Amarillo (Destacado)", bg: "bg-amber-400 text-neutral-900" },
+  {
+    id: "amarillo",
+    label: "Amarillo (Destacado)",
+    bg: "bg-amber-400 text-neutral-900",
+  },
   { id: "azul", label: "Azul (Institucional)", bg: "bg-main-blue text-white" },
   { id: "verde", label: "Verde (Descuento)", bg: "bg-emerald-600 text-white" },
   { id: "morado", label: "Morado (Especial)", bg: "bg-purple-600 text-white" },
@@ -59,10 +63,10 @@ export default function BannersSucursal() {
   const loadBanners = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/banners/admin`);
+      const res = await fetch(`${VITE_API_URL}/banners/admin`);
       if (!res.ok) {
         // Fallback a /banners si admin no estuviera disponible
-        const fallback = await fetch(`${API_URL}/banners`);
+        const fallback = await fetch(`${VITE_API_URL}/banners`);
         const fbData = await fallback.json();
         setBanners(Array.isArray(fbData) ? fbData : []);
         return;
@@ -83,9 +87,18 @@ export default function BannersSucursal() {
   // Métricas acumuladas
   const totalBanners = banners.length;
   const activeBanners = banners.filter((b) => b.activo).length;
-  const totalImpresiones = banners.reduce((acc, b) => acc + (Number(b.impresiones) || 0), 0);
-  const totalClics = banners.reduce((acc, b) => acc + (Number(b.clics) || 0), 0);
-  const globalCtr = totalImpresiones > 0 ? ((totalClics / totalImpresiones) * 100).toFixed(1) : "0.0";
+  const totalImpresiones = banners.reduce(
+    (acc, b) => acc + (Number(b.impresiones) || 0),
+    0,
+  );
+  const totalClics = banners.reduce(
+    (acc, b) => acc + (Number(b.clics) || 0),
+    0,
+  );
+  const globalCtr =
+    totalImpresiones > 0
+      ? ((totalClics / totalImpresiones) * 100).toFixed(1)
+      : "0.0";
 
   // Abrir modal para crear
   const handleOpenCreate = () => {
@@ -114,14 +127,16 @@ export default function BannersSucursal() {
   // Toggle activo directo en tarjeta
   const handleToggleActivo = async (banner) => {
     try {
-      const res = await fetch(`${API_URL}/banners/${banner.id}/estado`, {
+      const res = await fetch(`${VITE_API_URL}/banners/${banner.id}/estado`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activo: !banner.activo }),
       });
       if (res.ok) {
         setBanners((prev) =>
-          prev.map((b) => (b.id === banner.id ? { ...b, activo: !b.activo } : b))
+          prev.map((b) =>
+            b.id === banner.id ? { ...b, activo: !b.activo } : b,
+          ),
         );
       }
     } catch (err) {
@@ -131,9 +146,14 @@ export default function BannersSucursal() {
 
   // Eliminar banner
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que querés eliminar este banner publicitario?")) return;
+    if (
+      !window.confirm("¿Seguro que querés eliminar este banner publicitario?")
+    )
+      return;
     try {
-      const res = await fetch(`${API_URL}/banners/${id}`, { method: "DELETE" });
+      const res = await fetch(`${VITE_API_URL}/banners/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         setBanners((prev) => prev.filter((b) => b.id !== id));
       }
@@ -176,7 +196,9 @@ export default function BannersSucursal() {
     setErrorMsg(null);
 
     const isEdit = Boolean(editingBanner.id);
-    const url = isEdit ? `${API_URL}/banners/${editingBanner.id}` : `${API_URL}/banners`;
+    const url = isEdit
+      ? `${VITE_API_URL}/banners/${editingBanner.id}`
+      : `${VITE_API_URL}/banners`;
     const method = isEdit ? "PUT" : "POST";
 
     try {
@@ -214,7 +236,8 @@ export default function BannersSucursal() {
             Gestión de Banners Publicitarios
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Administrá los anuncios y promociones que rotan en la portada de la tienda.
+            Administrá los anuncios y promociones que rotan en la portada de la
+            tienda.
           </p>
         </div>
 
@@ -232,17 +255,24 @@ export default function BannersSucursal() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Banners Activos</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Banners Activos
+            </span>
             <ImageIcon className="size-4 text-main-blue" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-neutral-900">
-            {activeBanners} <span className="text-xs font-normal text-neutral-400">/ {totalBanners}</span>
+            {activeBanners}{" "}
+            <span className="text-xs font-normal text-neutral-400">
+              / {totalBanners}
+            </span>
           </p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Impresiones</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Impresiones
+            </span>
             <Eye className="size-4 text-purple-600" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-neutral-900">
@@ -252,7 +282,9 @@ export default function BannersSucursal() {
 
         <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Clics Directos</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Clics Directos
+            </span>
             <MousePointerClick className="size-4 text-emerald-600" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-neutral-900">
@@ -262,7 +294,9 @@ export default function BannersSucursal() {
 
         <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">CTR Promedio</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              CTR Promedio
+            </span>
             <TrendingUp className="size-4 text-amber-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-neutral-900">
@@ -283,7 +317,9 @@ export default function BannersSucursal() {
           </div>
         ) : banners.length === 0 ? (
           <div className="text-center p-10 bg-neutral-50 rounded-xl border border-dashed border-neutral-300">
-            <p className="text-sm font-bold text-neutral-700">No hay banners creados aún.</p>
+            <p className="text-sm font-bold text-neutral-700">
+              No hay banners creados aún.
+            </p>
             <button
               onClick={handleOpenCreate}
               className="mt-3 px-4 py-2 bg-main-blue text-white rounded-lg text-xs font-bold"
@@ -319,8 +355,9 @@ export default function BannersSucursal() {
                       {banner.badge_texto && (
                         <span
                           className={`w-fit px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mb-1.5 shadow ${
-                            BADGE_COLOR_OPTIONS.find((c) => c.id === banner.badge_color)?.bg ||
-                            "bg-main-red text-white"
+                            BADGE_COLOR_OPTIONS.find(
+                              (c) => c.id === banner.badge_color,
+                            )?.bg || "bg-main-red text-white"
                           }`}
                         >
                           {banner.badge_texto}
@@ -365,7 +402,9 @@ export default function BannersSucursal() {
                         <span className="text-[10px] font-bold text-neutral-400 block uppercase">
                           CTR
                         </span>
-                        <span className="font-extrabold text-amber-600">{ctr}%</span>
+                        <span className="font-extrabold text-amber-600">
+                          {ctr}%
+                        </span>
                       </div>
                     </div>
 
@@ -424,7 +463,9 @@ export default function BannersSucursal() {
             <div className="flex items-center justify-between p-5 border-b border-neutral-100 bg-neutral-50/50">
               <h3 className="font-extrabold text-base text-neutral-900 flex items-center gap-2">
                 <Sparkles className="size-4 text-main-blue" />
-                {editingBanner.id ? "Editar Banner Publicitario" : "Nuevo Banner para el Carrusel"}
+                {editingBanner.id
+                  ? "Editar Banner Publicitario"
+                  : "Nuevo Banner para el Carrusel"}
               </h3>
               <button
                 type="button"
@@ -435,7 +476,10 @@ export default function BannersSucursal() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+            >
               {errorMsg && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-bold text-red-700">
                   {errorMsg}
@@ -452,7 +496,10 @@ export default function BannersSucursal() {
                   value={editingBanner.titulo}
                   isRequired={true}
                   setOnChange={(e) =>
-                    setEditingBanner({ ...editingBanner, titulo: e.target.value })
+                    setEditingBanner({
+                      ...editingBanner,
+                      titulo: e.target.value,
+                    })
                   }
                 />
 
@@ -464,7 +511,10 @@ export default function BannersSucursal() {
                   value={editingBanner.subtitulo}
                   isRequired={false}
                   setOnChange={(e) =>
-                    setEditingBanner({ ...editingBanner, subtitulo: e.target.value })
+                    setEditingBanner({
+                      ...editingBanner,
+                      subtitulo: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -484,7 +534,10 @@ export default function BannersSucursal() {
                     value={editingBanner.badge_texto}
                     isRequired={false}
                     setOnChange={(e) =>
-                      setEditingBanner({ ...editingBanner, badge_texto: e.target.value })
+                      setEditingBanner({
+                        ...editingBanner,
+                        badge_texto: e.target.value,
+                      })
                     }
                   />
 
@@ -495,7 +548,10 @@ export default function BannersSucursal() {
                     <select
                       value={editingBanner.badge_color}
                       onChange={(e) =>
-                        setEditingBanner({ ...editingBanner, badge_color: e.target.value })
+                        setEditingBanner({
+                          ...editingBanner,
+                          badge_color: e.target.value,
+                        })
                       }
                       className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-neutral-800 focus:border-main-blue focus:outline-none"
                     >
@@ -519,7 +575,10 @@ export default function BannersSucursal() {
                   value={editingBanner.boton_texto}
                   isRequired={false}
                   setOnChange={(e) =>
-                    setEditingBanner({ ...editingBanner, boton_texto: e.target.value })
+                    setEditingBanner({
+                      ...editingBanner,
+                      boton_texto: e.target.value,
+                    })
                   }
                 />
 
@@ -531,7 +590,10 @@ export default function BannersSucursal() {
                   value={editingBanner.enlace_url}
                   isRequired={false}
                   setOnChange={(e) =>
-                    setEditingBanner({ ...editingBanner, enlace_url: e.target.value })
+                    setEditingBanner({
+                      ...editingBanner,
+                      enlace_url: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -567,7 +629,9 @@ export default function BannersSucursal() {
                   ) : (
                     <div className="flex items-center gap-2 text-neutral-600 text-xs font-bold">
                       <UploadCloud className="size-4 text-main-blue" />
-                      <span>O hacé clic acá para subir una imagen desde tu equipo</span>
+                      <span>
+                        O hacé clic acá para subir una imagen desde tu equipo
+                      </span>
                     </div>
                   )}
                   <input
@@ -591,7 +655,10 @@ export default function BannersSucursal() {
                   value={editingBanner.orden}
                   isRequired={false}
                   setOnChange={(e) =>
-                    setEditingBanner({ ...editingBanner, orden: parseInt(e.target.value) || 0 })
+                    setEditingBanner({
+                      ...editingBanner,
+                      orden: parseInt(e.target.value) || 0,
+                    })
                   }
                 />
 
@@ -600,7 +667,10 @@ export default function BannersSucursal() {
                     type="checkbox"
                     checked={editingBanner.activo}
                     onChange={(e) =>
-                      setEditingBanner({ ...editingBanner, activo: e.target.checked })
+                      setEditingBanner({
+                        ...editingBanner,
+                        activo: e.target.checked,
+                      })
                     }
                     className="size-4 rounded text-main-blue"
                   />

@@ -5,8 +5,8 @@ const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  if (import.meta.env.API_URL) {
-    return import.meta.env.API_URL;
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
@@ -20,4 +20,4 @@ const getApiUrl = () => {
   return "https://api.abastecedoravalette.digital";
 };
 
-export const API_URL = getApiUrl();
+export const VITE_API_URL = getApiUrl();

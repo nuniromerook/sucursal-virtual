@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import {
   ChevronDown,
   Home,
@@ -49,7 +49,7 @@ const Sidebar = () => {
   useEffect(() => {
     const loadSucursales = async () => {
       try {
-        const res = await fetch(`${API_URL}/sucursales`);
+        const res = await fetch(`${VITE_API_URL}/sucursales`);
         const data = await res.json();
 
         setSucursales(Array.isArray(data) ? data : []);
@@ -100,7 +100,10 @@ const Sidebar = () => {
             </li>
 
             <li>
-              <details open className="group [&_summary::-webkit-details-marker]:hidden">
+              <details
+                open
+                className="group [&_summary::-webkit-details-marker]:hidden"
+              >
                 <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
                   <p className="flex items-center gap-x-2 font-semibold">
                     <Store className={iconStyle} />
@@ -292,13 +295,18 @@ const Sidebar = () => {
                 }
 
                 if (newPassword.length < 4) {
-                  setPassError("La contraseña debe tener al menos 4 caracteres.");
+                  setPassError(
+                    "La contraseña debe tener al menos 4 caracteres.",
+                  );
                   return;
                 }
 
                 setIsChangingPass(true);
                 try {
-                  const res = await cambiarPassword(currentPassword, newPassword);
+                  const res = await cambiarPassword(
+                    currentPassword,
+                    newPassword,
+                  );
                   setPassSuccess(res.message || "¡Contraseña actualizada!");
                   setCurrentPassword("");
                   setNewPassword("");
@@ -307,7 +315,9 @@ const Sidebar = () => {
                     setModalSeguridadOpen(false);
                   }, 1500);
                 } catch (err) {
-                  setPassError(err.message || "Error al actualizar contraseña.");
+                  setPassError(
+                    err.message || "Error al actualizar contraseña.",
+                  );
                 } finally {
                   setIsChangingPass(false);
                 }

@@ -21,7 +21,7 @@ import {
   Sparkles,
   Maximize2,
 } from "lucide-react";
-import { API_URL } from "../../../config/api";
+import { VITE_API_URL } from "../../../config/api";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
 import { formatMoney } from "../../../utils/formatters";
@@ -39,7 +39,14 @@ const ESTADOS = [
 export default function Comandas() {
   const { slug } = useParams();
   const { user } = useAuth();
-  const { socket, isConnected, joinSucursal, leaveSucursal, reproducirSonidoComanda, ultimoPedido } = useSocket();
+  const {
+    socket,
+    isConnected,
+    joinSucursal,
+    leaveSucursal,
+    reproducirSonidoComanda,
+    ultimoPedido,
+  } = useSocket();
   const navigate = useNavigate();
 
   const [sucursal, setSucursal] = useState(null);
@@ -59,7 +66,10 @@ export default function Comandas() {
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const puedeGestionar = Boolean(
-    user && (user.rol === "admin" || user.rol === "administrador" || user.rol === "encargado")
+    user &&
+    (user.rol === "admin" ||
+      user.rol === "administrador" ||
+      user.rol === "encargado"),
   );
 
   // 1. Cargar datos de la sucursal y pedidos
@@ -68,7 +78,7 @@ export default function Comandas() {
     setIsLoading(true);
     try {
       // Obtener info de la sucursal
-      const resSuc = await fetch(`${API_URL}/sucursales/${slug}`);
+      const resSuc = await fetch(`${VITE_API_URL}/sucursales/${slug}`);
       const dataSuc = await resSuc.json();
       if (dataSuc.error) return;
       setSucursal(dataSuc);
@@ -80,8 +90,8 @@ export default function Comandas() {
 
       // Cargar pedidos y cortadores con carga
       const [resPed, resCort] = await Promise.all([
-        fetch(`${API_URL}/sucursales/${dataSuc.id}/pedidos`),
-        fetch(`${API_URL}/sucursales/${dataSuc.id}/cortadores-carga`),
+        fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/pedidos`),
+        fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/cortadores-carga`),
       ]);
 
       if (resPed.ok) {
@@ -126,7 +136,7 @@ export default function Comandas() {
     const handlePedidoActualizado = (pedido) => {
       if (sucursal?.id && Number(pedido.sucursal_id) === Number(sucursal.id)) {
         setPedidos((prev) =>
-          prev.map((p) => (p.id === pedido.id ? { ...p, ...pedido } : p))
+          prev.map((p) => (p.id === pedido.id ? { ...p, ...pedido } : p)),
         );
       }
     };
@@ -142,7 +152,11 @@ export default function Comandas() {
 
   // Escuchar cuando SocketContext reciba un nuevo pedido global
   useEffect(() => {
-    if (ultimoPedido && sucursal?.id && Number(ultimoPedido.sucursal_id) === Number(sucursal.id)) {
+    if (
+      ultimoPedido &&
+      sucursal?.id &&
+      Number(ultimoPedido.sucursal_id) === Number(sucursal.id)
+    ) {
       setPedidos((prev) => {
         if (prev.some((p) => p.id === ultimoPedido.id)) return prev;
         return [ultimoPedido, ...prev];
@@ -157,7 +171,7 @@ export default function Comandas() {
 
     try {
       const res = await fetch(
-        `${API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
+        `${VITE_API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -165,7 +179,7 @@ export default function Comandas() {
             cortador_id: cortador.id,
             estado: "en_corte",
           }),
-        }
+        },
       );
 
       const data = await res.json();
@@ -183,24 +197,28 @@ export default function Comandas() {
   // 4. Filtrar pedidos por estado
   const pedidosFiltrados = useMemo(() => {
     if (filtroEstado === "todos") return pedidos;
-    return pedidos.filter(
-      (p) => (p.estado || p.estado_local) === filtroEstado
-    );
+    return pedidos.filter((p) => (p.estado || p.estado_local) === filtroEstado);
   }, [pedidos, filtroEstado]);
 
   // Atajos de teclado para KDS
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ignorar si el usuario está escribiendo en un input o el modal está abierto
-      if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
+      if (
+        document.activeElement.tagName === "INPUT" ||
+        document.activeElement.tagName === "TEXTAREA"
+      )
+        return;
       if (modalAsignacion.open) return;
 
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         e.preventDefault();
-        setFocusedIndex(prev => Math.min(prev + 1, pedidosFiltrados.length - 1));
+        setFocusedIndex((prev) =>
+          Math.min(prev + 1, pedidosFiltrados.length - 1),
+        );
       } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
         e.preventDefault();
-        setFocusedIndex(prev => Math.max(prev - 1, 0));
+        setFocusedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter" && focusedIndex >= 0) {
         e.preventDefault();
         const pedido = pedidosFiltrados[focusedIndex];
@@ -239,7 +257,7 @@ export default function Comandas() {
       list = list.filter(
         (c) =>
           (c.nombre || "").toLowerCase().includes(q) ||
-          (c.apodo || "").toLowerCase().includes(q)
+          (c.apodo || "").toLowerCase().includes(q),
       );
     }
 
@@ -305,11 +323,26 @@ export default function Comandas() {
     if (!especie) return null;
     const esp = String(especie).toLowerCase().trim();
     const map = {
-      vacuno: { label: "VACUNO", color: "bg-red-50 text-red-700 border-red-200" },
-      cerdo: { label: "CERDO", color: "bg-rose-50 text-rose-700 border-rose-200" },
-      pollo: { label: "POLLO", color: "bg-amber-50 text-amber-800 border-amber-200" },
-      embutidos: { label: "EMBUTIDOS", color: "bg-orange-50 text-orange-800 border-orange-200" },
-      almacen: { label: "ALMACÉN", color: "bg-slate-50 text-slate-700 border-slate-200" },
+      vacuno: {
+        label: "VACUNO",
+        color: "bg-red-50 text-red-700 border-red-200",
+      },
+      cerdo: {
+        label: "CERDO",
+        color: "bg-rose-50 text-rose-700 border-rose-200",
+      },
+      pollo: {
+        label: "POLLO",
+        color: "bg-amber-50 text-amber-800 border-amber-200",
+      },
+      embutidos: {
+        label: "EMBUTIDOS",
+        color: "bg-orange-50 text-orange-800 border-orange-200",
+      },
+      almacen: {
+        label: "ALMACÉN",
+        color: "bg-slate-50 text-slate-700 border-slate-200",
+      },
     };
     const conf = map[esp];
     if (!conf) return null;
@@ -434,7 +467,8 @@ export default function Comandas() {
                 pedido.cortador_nombre ||
                 pedido.empleado_nombre;
               const items = Array.isArray(pedido.items) ? pedido.items : [];
-              const estadoActual = pedido.estado || pedido.estado_local || "solicitado";
+              const estadoActual =
+                pedido.estado || pedido.estado_local || "solicitado";
 
               return (
                 <div
@@ -444,7 +478,9 @@ export default function Comandas() {
                       ? "ring-2 ring-main-blue border-main-blue scale-[1.02] shadow-md"
                       : "border-neutral-200/80"
                   }`}
-                  onClick={() => navigate(`/admin/sucursales/${slug}/comandas/${pedido.id}`)}
+                  onClick={() =>
+                    navigate(`/admin/sucursales/${slug}/comandas/${pedido.id}`)
+                  }
                 >
                   <div>
                     {/* Header de la Comanda */}
@@ -460,7 +496,7 @@ export default function Comandas() {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: false,
-                            }
+                            },
                           )}{" "}
                           hs
                         </span>
@@ -584,7 +620,7 @@ export default function Comandas() {
                                 item.cantidad_kg ||
                                   item.cantidad_kg_solicitada ||
                                   item.cantidad ||
-                                  1
+                                  1,
                               )}{" "}
                               {item.unidad_medida || "kg"}
                             </span>
@@ -609,26 +645,28 @@ export default function Comandas() {
                             pedido.monto_total_final ||
                             pedido.monto_total_estimado ||
                             pedido.monto ||
-                            0
+                            0,
                         ).toLocaleString("es-AR")}
                       </span>
                     </div>
 
                     {/* Botón ¿Quién fracciona? -> Solo para Encargado / Admin */}
-                    {puedeGestionar && !cortadorAsignado && estadoActual === "solicitado" && (
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setModalAsignacion({ open: true, pedido })
-                          }
-                          className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
-                        >
-                          <Scissors className="size-4" />
-                          <span>Asignar Cortador</span>
-                        </button>
-                      </div>
-                    )}
+                    {puedeGestionar &&
+                      !cortadorAsignado &&
+                      estadoActual === "solicitado" && (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setModalAsignacion({ open: true, pedido })
+                            }
+                            className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
+                          >
+                            <Scissors className="size-4" />
+                            <span>Asignar Cortador</span>
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
               );
@@ -659,7 +697,9 @@ export default function Comandas() {
               </div>
               <button
                 type="button"
-                onClick={() => setModalAsignacion({ open: false, pedido: null })}
+                onClick={() =>
+                  setModalAsignacion({ open: false, pedido: null })
+                }
                 className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 cursor-pointer"
               >
                 <X className="size-5" />
@@ -731,8 +771,8 @@ export default function Comandas() {
                             isCurrent
                               ? "bg-main-blue text-white"
                               : isBusy
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                           }`}
                         >
                           {c.apodo
@@ -779,8 +819,8 @@ export default function Comandas() {
                         {actualizandoId === modalAsignacion.pedido.id
                           ? "Asignando..."
                           : isCurrent
-                          ? "Reasignar"
-                          : "Asignar"}
+                            ? "Reasignar"
+                            : "Asignar"}
                       </button>
                     </div>
                   );
@@ -791,7 +831,9 @@ export default function Comandas() {
             <div className="p-3.5 border-t border-neutral-100 bg-neutral-50 text-right">
               <button
                 type="button"
-                onClick={() => setModalAsignacion({ open: false, pedido: null })}
+                onClick={() =>
+                  setModalAsignacion({ open: false, pedido: null })
+                }
                 className="px-4 py-1.5 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-xs font-bold text-neutral-700 cursor-pointer"
               >
                 Cerrar

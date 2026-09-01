@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { API_URL } from "../../config/api";
+import { VITE_API_URL } from "../../config/api";
 import {
   formatPrecio,
   formatCantidad,
@@ -36,7 +36,7 @@ export default function OrderSuccess() {
   const fetchPedido = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/pedidos/${id}`, {
+      const res = await fetch(`${VITE_API_URL}/pedidos/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -85,7 +85,10 @@ export default function OrderSuccess() {
 
     const handlePedidoActualizado = (pedidoActualizado) => {
       if (Number(pedidoActualizado.id) === Number(id)) {
-        console.log("⚡ [OrderSuccess] Pedido actualizado en vivo:", pedidoActualizado);
+        console.log(
+          "⚡ [OrderSuccess] Pedido actualizado en vivo:",
+          pedidoActualizado,
+        );
         setPedido((prev) => ({
           ...prev,
           ...pedidoActualizado,
@@ -147,8 +150,13 @@ export default function OrderSuccess() {
   }
 
   // Determinar etapa del stepper según estado operativo
-  const estadoActual = (pedido.estado_local || pedido.estado || "solicitado").toLowerCase();
-  const isCancelado = estadoActual.includes("cancelado") || estadoActual.includes("rechazado");
+  const estadoActual = (
+    pedido.estado_local ||
+    pedido.estado ||
+    "solicitado"
+  ).toLowerCase();
+  const isCancelado =
+    estadoActual.includes("cancelado") || estadoActual.includes("rechazado");
 
   let stepActual = 1;
   if (estadoActual.includes("corte") || estadoActual.includes("preparacion")) {
@@ -159,14 +167,20 @@ export default function OrderSuccess() {
     estadoActual.includes("camino")
   ) {
     stepActual = 3;
-  } else if (estadoActual.includes("entregado") || estadoActual.includes("completado")) {
+  } else if (
+    estadoActual.includes("entregado") ||
+    estadoActual.includes("completado")
+  ) {
     stepActual = 4;
   }
 
-  const sucursalTel = (pedido.sucursal_telefono || "1123456789").replace(/\D/g, "");
+  const sucursalTel = (pedido.sucursal_telefono || "1123456789").replace(
+    /\D/g,
+    "",
+  );
   const mensajeWhatsApp = encodeURIComponent(
     `¡Hola Abastecedora Valette! 👋 Consulto por mi pedido #${pedido.id} a nombre de ${pedido.cliente_nombre}. ` +
-      `Estado actual: ${estadoActual}.`
+      `Estado actual: ${estadoActual}.`,
   );
   const whatsappUrl = `https://wa.me/549${sucursalTel}?text=${mensajeWhatsApp}`;
 
@@ -175,7 +189,6 @@ export default function OrderSuccess() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         {/* ─── Tarjeta de Comprobante y Seguimiento en Vivo ─── */}
         <div className="bg-white rounded-lg p-5 sm:p-7 border border-neutral-200/80 shadow-2xs space-y-6">
-          
           {/* Cabecera del comprobante */}
           <div className="text-center space-y-2 pb-2">
             <div
@@ -183,8 +196,8 @@ export default function OrderSuccess() {
                 isCancelado
                   ? "bg-red-50 text-red-600 border-red-200"
                   : stepActual === 4
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                  : "bg-blue-50 text-main-blue border-blue-200 animate-pulse"
+                    ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                    : "bg-blue-50 text-main-blue border-blue-200 animate-pulse"
               }`}
             >
               {isCancelado ? (
@@ -202,26 +215,28 @@ export default function OrderSuccess() {
                   isCancelado
                     ? "bg-red-50 text-red-800 border-red-200"
                     : stepActual === 4
-                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                    : "bg-blue-50 text-blue-800 border-blue-200"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-blue-50 text-blue-800 border-blue-200"
                 }`}
               >
                 {isCancelado
                   ? "Pedido Cancelado"
                   : stepActual === 4
-                  ? "Pedido Entregado"
-                  : "Seguimiento en Vivo"}
+                    ? "Pedido Entregado"
+                    : "Seguimiento en Vivo"}
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight mt-2">
                 {isCancelado
                   ? "Tu pedido no pudo completarse"
                   : stepActual === 4
-                  ? "¡Pedido completado con éxito!"
-                  : "¡Estamos preparando tu pedido!"}
+                    ? "¡Pedido completado con éxito!"
+                    : "¡Estamos preparando tu pedido!"}
               </h1>
               <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
                 Número de orden:{" "}
-                <strong className="text-main-blue font-black">#{pedido.id}</strong>
+                <strong className="text-main-blue font-black">
+                  #{pedido.id}
+                </strong>
               </p>
             </div>
           </div>
@@ -324,18 +339,23 @@ export default function OrderSuccess() {
                 <span className="font-bold text-neutral-900 shrink-0">
                   {stepActual === 1 && "1. Pedido Solicitado:"}
                   {stepActual === 2 && "2. Fraccionamiento en Curso:"}
-                  {stepActual === 3 && (pedido.tipo_entrega === "retiro_sucursal" ? "3. Listo en Mostrador:" : "3. En Tránsito:")}
+                  {stepActual === 3 &&
+                    (pedido.tipo_entrega === "retiro_sucursal"
+                      ? "3. Listo en Mostrador:"
+                      : "3. En Tránsito:")}
                   {stepActual === 4 && "4. Entrega Finalizada:"}
                 </span>
                 <p className="leading-relaxed">
-                  {stepActual === 1 && "Recibimos tu orden en la sucursal y está lista para ser asignada al sector de carnicería."}
-                  {stepActual === 2 && "Nuestros carniceros están seleccionando los cortes frescos, realizando el fraccionamiento artesanal y el pesaje final."}
-                  {stepActual === 3 && (
-                    pedido.tipo_entrega === "retiro_sucursal"
+                  {stepActual === 1 &&
+                    "Recibimos tu orden en la sucursal y está lista para ser asignada al sector de carnicería."}
+                  {stepActual === 2 &&
+                    "Nuestros carniceros están seleccionando los cortes frescos, realizando el fraccionamiento artesanal y el pesaje final."}
+                  {stepActual === 3 &&
+                    (pedido.tipo_entrega === "retiro_sucursal"
                       ? "Tus cortes ya fueron pesados, envasados y refrigerados. Podés acercarte a la sucursal a retirar tu compra."
-                      : "Tus cortes fueron empaquetados y el cadete ya está en camino a tu domicilio."
-                  )}
-                  {stepActual === 4 && "¡Pedido entregado con éxito! Que disfrutes tus cortes y muchas gracias por elegir Abastecedora Valette."}
+                      : "Tus cortes fueron empaquetados y el cadete ya está en camino a tu domicilio.")}
+                  {stepActual === 4 &&
+                    "¡Pedido entregado con éxito! Que disfrutes tus cortes y muchas gracias por elegir Abastecedora Valette."}
                 </p>
               </div>
             </div>
@@ -373,7 +393,9 @@ export default function OrderSuccess() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-neutral-400 block font-medium">Sucursal asignada:</span>
+                <span className="text-neutral-400 block font-medium">
+                  Sucursal asignada:
+                </span>
                 <span className="font-bold text-neutral-800">
                   {pedido.sucursal_nombre} ({pedido.sucursal_direccion})
                 </span>
@@ -381,7 +403,9 @@ export default function OrderSuccess() {
 
               {pedido.tipo_entrega !== "retiro_sucursal" && (
                 <div>
-                  <span className="text-neutral-400 block font-medium">Dirección de entrega:</span>
+                  <span className="text-neutral-400 block font-medium">
+                    Dirección de entrega:
+                  </span>
                   <span className="font-bold text-neutral-800">
                     {pedido.direccion_entrega || "A coordinar"}
                   </span>
@@ -389,22 +413,31 @@ export default function OrderSuccess() {
               )}
 
               <div>
-                <span className="text-neutral-400 block font-medium">Medio de pago:</span>
+                <span className="text-neutral-400 block font-medium">
+                  Medio de pago:
+                </span>
                 <span className="font-bold text-neutral-800 capitalize">
-                  {pedido.medio_pago ? pedido.medio_pago.replace("_", " ") : "Efectivo"}
+                  {pedido.medio_pago
+                    ? pedido.medio_pago.replace("_", " ")
+                    : "Efectivo"}
                 </span>
               </div>
 
               <div>
-                <span className="text-neutral-400 block font-medium">Fecha y Hora:</span>
+                <span className="text-neutral-400 block font-medium">
+                  Fecha y Hora:
+                </span>
                 <span className="font-bold text-neutral-800">
-                  {new Date(pedido.creado_en || Date.now()).toLocaleDateString("es-AR", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {new Date(pedido.creado_en || Date.now()).toLocaleDateString(
+                    "es-AR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
                 </span>
               </div>
             </div>
@@ -413,7 +446,8 @@ export default function OrderSuccess() {
           {/* ─── Detalle de Cortes Solicitados ─── */}
           <div className="space-y-3 text-left">
             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider border-b border-neutral-100 pb-2">
-              Desglose de Cortes ({Array.isArray(pedido.items) ? pedido.items.length : 0})
+              Desglose de Cortes (
+              {Array.isArray(pedido.items) ? pedido.items.length : 0})
             </h2>
 
             <div className="divide-y divide-neutral-100">
@@ -429,12 +463,12 @@ export default function OrderSuccess() {
                     <p className="text-xs text-neutral-500 mt-0.5">
                       {formatCantidad(
                         item.cantidad_kg_solicitada,
-                        item.unidad_medida || "kg"
+                        item.unidad_medida || "kg",
                       )}{" "}
                       •{" "}
                       {formatPrecioPorUnidad(
                         item.precio_por_kg_congelado,
-                        item.unidad_medida || "kg"
+                        item.unidad_medida || "kg",
                       )}
                     </p>
                   </div>
@@ -449,7 +483,9 @@ export default function OrderSuccess() {
             <div className="pt-3.5 mt-2 border-t border-neutral-200 flex justify-between items-baseline">
               <div>
                 <span className="font-black text-base sm:text-lg text-neutral-900">
-                  {pedido.monto_total_final ? "Monto Total Final" : "Total Estimado"}
+                  {pedido.monto_total_final
+                    ? "Monto Total Final"
+                    : "Total Estimado"}
                 </span>
                 <p className="text-[11px] text-neutral-400">
                   {pedido.monto_total_final
@@ -458,7 +494,9 @@ export default function OrderSuccess() {
                 </p>
               </div>
               <span className="font-black text-xl sm:text-2xl text-main-blue">
-                {formatPrecio(pedido.monto_total_final || pedido.monto_total_estimado)}
+                {formatPrecio(
+                  pedido.monto_total_final || pedido.monto_total_estimado,
+                )}
               </span>
             </div>
           </div>

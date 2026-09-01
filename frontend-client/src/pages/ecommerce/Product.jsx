@@ -11,7 +11,7 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import { API_URL } from "../../config/api";
+import { VITE_API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
@@ -38,7 +38,7 @@ export default function Product() {
       setIsLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${API_URL}/catalogo/${slug}`);
+        const res = await fetch(`${VITE_API_URL}/catalogo/${slug}`);
         if (!res.ok) throw new Error("Producto no encontrado");
 
         const data = await res.json();
@@ -230,10 +230,16 @@ export default function Product() {
                       ? "bg-amber-50 border-amber-300 text-amber-500 hover:bg-amber-100"
                       : "bg-white border-neutral-200 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-50"
                   }`}
-                  title={checkIsFavorite(productData.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
+                  title={
+                    checkIsFavorite(productData.id)
+                      ? "Quitar de favoritos"
+                      : "Guardar en favoritos"
+                  }
                   aria-label="Favorito"
                 >
-                  <Star className={`size-5 transition-transform active:scale-125 ${checkIsFavorite(productData.id) ? "fill-amber-400 text-amber-400" : ""}`} />
+                  <Star
+                    className={`size-5 transition-transform active:scale-125 ${checkIsFavorite(productData.id) ? "fill-amber-400 text-amber-400" : ""}`}
+                  />
                 </button>
               </div>
 
@@ -248,7 +254,7 @@ export default function Product() {
                   </p>
                 )}
               </div>
-              
+
               {(hasDiscount || promos.length > 0) && (
                 <UrgencyTimer endDate={new Date().setHours(23, 59, 59, 999)} />
               )}
@@ -375,7 +381,9 @@ export default function Product() {
                       className={`mt-6 flex w-full items-center justify-center gap-2 rounded-md px-8 py-3 text-base font-medium transition-colors ${!productData.en_stock ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-main-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"}`}
                     >
                       <ShoppingBag className="size-5" />
-                      {!productData.en_stock ? "Sin stock en esta sucursal" : "Agregar al carrito"}
+                      {!productData.en_stock
+                        ? "Sin stock en esta sucursal"
+                        : "Agregar al carrito"}
                     </button>
                   </>
                 )}

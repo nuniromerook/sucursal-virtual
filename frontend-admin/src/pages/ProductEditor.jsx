@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plus, Trash2, Image as ImageIcon, UploadCloud, Loader2, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Image as ImageIcon,
+  UploadCloud,
+  Loader2,
+  X,
+} from "lucide-react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
 import RichTextEditor from "../components/ui/RichTextEditor";
 import BasicDropdown from "../components/ui/BasicDropdown";
 import ButtonLoader from "../components/ui/ButtonLoader";
 import { useAppContext } from "../context/AppContext";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 import { uploadImageToCloudinary } from "../utils/cloudinary"; // Asumiendo el helper de arriba
 
 const EMPTY_FORM = {
@@ -83,7 +90,7 @@ const ProductEditor = () => {
 
       try {
         const res = await fetch(
-          `${API_URL}/catalogo/${slug}?incluir_promos_inactivas=true`,
+          `${VITE_API_URL}/catalogo/${slug}?incluir_promos_inactivas=true`,
         );
         const data = await res.json();
 
@@ -192,15 +199,18 @@ const ProductEditor = () => {
 
     if (isEditMode && productId) {
       try {
-        const res = await fetch(`${API_URL}/catalogo/${productId}/promos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cantidad_kg: parseFloat(newPromo.cantidad_kg),
-            precio_promocional: parseFloat(newPromo.precio_promocional),
-            activa: true,
-          }),
-        });
+        const res = await fetch(
+          `${VITE_API_URL}/catalogo/${productId}/promos`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cantidad_kg: parseFloat(newPromo.cantidad_kg),
+              precio_promocional: parseFloat(newPromo.precio_promocional),
+              activa: true,
+            }),
+          },
+        );
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Error al agregar promo");
@@ -230,7 +240,7 @@ const ProductEditor = () => {
     if (isEditMode && productId) {
       try {
         const res = await fetch(
-          `${API_URL}/catalogo/${productId}/promos/${promoId}`,
+          `${VITE_API_URL}/catalogo/${productId}/promos/${promoId}`,
           {
             method: "DELETE",
           },
@@ -262,8 +272,8 @@ const ProductEditor = () => {
     };
 
     const url = isEditMode
-      ? `${API_URL}/catalogo/${productId}`
-      : `${API_URL}/catalogo`;
+      ? `${VITE_API_URL}/catalogo/${productId}`
+      : `${VITE_API_URL}/catalogo`;
     const method = isEditMode ? "PUT" : "POST";
 
     try {
@@ -284,7 +294,7 @@ const ProductEditor = () => {
       // Si estábamos creando el producto, creamos los tramos de promo asociados
       if (!isEditMode && promos.length > 0) {
         for (const promo of promos) {
-          await fetch(`${API_URL}/catalogo/${data.id}/promos`, {
+          await fetch(`${VITE_API_URL}/catalogo/${data.id}/promos`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -316,7 +326,7 @@ const ProductEditor = () => {
     setFormError(null);
 
     try {
-      const res = await fetch(`${API_URL}/catalogo/${productId}`, {
+      const res = await fetch(`${VITE_API_URL}/catalogo/${productId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -355,7 +365,9 @@ const ProductEditor = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-black text-base sm:text-lg text-neutral-900 tracking-tight">
-                {isEditMode ? `Editar: ${formValues.nombre_producto || "Producto"}` : "Nuevo Producto en Catálogo"}
+                {isEditMode
+                  ? `Editar: ${formValues.nombre_producto || "Producto"}`
+                  : "Nuevo Producto en Catálogo"}
               </h1>
               {isEditMode && (
                 <span className="text-[11px] font-bold bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
@@ -364,7 +376,8 @@ const ProductEditor = () => {
               )}
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Cargá los detalles del corte, precios por kilo, datos nutricionales y promociones.
+              Cargá los detalles del corte, precios por kilo, datos
+              nutricionales y promociones.
             </p>
           </div>
         </div>
@@ -677,7 +690,9 @@ const ProductEditor = () => {
             {formValues.imagen_url && (
               <button
                 type="button"
-                onClick={() => setFormValues((prev) => ({ ...prev, imagen_url: "" }))}
+                onClick={() =>
+                  setFormValues((prev) => ({ ...prev, imagen_url: "" }))
+                }
                 className="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <X className="size-3.5" /> Quitar imagen
@@ -720,9 +735,13 @@ const ProductEditor = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className={`size-12 rounded-xl flex items-center justify-center transition-colors ${
-                    isDragging ? "bg-main-blue text-white" : "bg-neutral-100 text-neutral-600"
-                  }`}>
+                  <div
+                    className={`size-12 rounded-xl flex items-center justify-center transition-colors ${
+                      isDragging
+                        ? "bg-main-blue text-white"
+                        : "bg-neutral-100 text-neutral-600"
+                    }`}
+                  >
                     <UploadCloud className="size-6" />
                   </div>
                   <span className="mt-1 text-sm font-bold text-neutral-800">
@@ -777,9 +796,12 @@ const ProductEditor = () => {
 
       {isEditMode && (
         <div className="rounded-lg border border-red-200/80 bg-white p-5 sm:p-6 shadow-2xs">
-          <h2 className="font-bold text-sm text-neutral-900">Ajustes delicados</h2>
+          <h2 className="font-bold text-sm text-neutral-900">
+            Ajustes delicados
+          </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            Eliminar el producto eliminará todas sus variaciones y promociones. Se recomienda desactivar el producto en su lugar.
+            Eliminar el producto eliminará todas sus variaciones y promociones.
+            Se recomienda desactivar el producto en su lugar.
           </p>
           <button
             type="button"

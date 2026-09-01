@@ -3,8 +3,17 @@ import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useSocket } from "../../context/SocketContext";
-import { API_URL } from "../../config/api";
-import { Info, Bell, Users, Settings, Megaphone, Layers, Tv, Activity } from "lucide-react";
+import { VITE_API_URL } from "../../config/api";
+import {
+  Info,
+  Bell,
+  Users,
+  Settings,
+  Megaphone,
+  Layers,
+  Tv,
+  Activity,
+} from "lucide-react";
 
 const NavLinkTab = ({ to, text, icon: Icon, badge, end }) => {
   return (
@@ -44,7 +53,7 @@ const Sucursal = () => {
     const loadSucursal = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_URL}/sucursales/${sucursalSlug}`);
+        const res = await fetch(`${VITE_API_URL}/sucursales/${sucursalSlug}`);
         const data = await res.json();
 
         if (data.error) {
@@ -84,7 +93,7 @@ const Sucursal = () => {
       if (!sucursal?.id) return;
       try {
         const res = await fetch(
-          `${API_URL}/sucursales/${sucursal.id}/metricas?rango=hoy`,
+          `${VITE_API_URL}/sucursales/${sucursal.id}/metricas?rango=hoy`,
         );
         const data = await res.json();
         if (data.pedidos_pendientes !== undefined) {
@@ -134,12 +143,7 @@ const Sucursal = () => {
           end={true}
         />
 
-        <NavLinkTab
-          to="equipo"
-          text="Equipo"
-          icon={Users}
-          end={true}
-        />
+        <NavLinkTab to="equipo" text="Equipo" icon={Users} end={true} />
 
         <NavLinkTab
           to="rendimiento"
@@ -148,12 +152,7 @@ const Sucursal = () => {
           end={true}
         />
 
-        <NavLinkTab
-          to="ajustes"
-          text="Ajustes"
-          icon={Settings}
-          end={true}
-        />
+        <NavLinkTab to="ajustes" text="Ajustes" icon={Settings} end={true} />
       </div>
 
       {/* ─── Contenido Dinámico de la Pestaña ─── */}

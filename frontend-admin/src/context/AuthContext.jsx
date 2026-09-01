@@ -1,6 +1,6 @@
 // frontend-admin/src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { API_URL } from "../config/api";
+import { VITE_API_URL } from "../config/api";
 
 const AuthContext = createContext(null);
 const ADMIN_STORAGE_KEY = "valette_admin_auth";
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const res = await fetch(`${API_URL}/empleados/me`, {
+        const res = await fetch(`${VITE_API_URL}/empleados/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
           setUser(freshUser);
           localStorage.setItem(
             ADMIN_STORAGE_KEY,
-            JSON.stringify({ token, user: freshUser })
+            JSON.stringify({ token, user: freshUser }),
           );
         } else {
           // Token vencido o revocado
@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await fetch(`${API_URL}/empleados/login`, {
+    const res = await fetch(`${VITE_API_URL}/empleados/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -83,14 +83,14 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     localStorage.setItem(
       ADMIN_STORAGE_KEY,
-      JSON.stringify({ token: data.token, user: data.user })
+      JSON.stringify({ token: data.token, user: data.user }),
     );
 
     return data.user;
   };
 
   const recuperarConMasterPin = async (email, masterPin, newPassword) => {
-    const res = await fetch(`${API_URL}/empleados/recuperar-maestro`, {
+    const res = await fetch(`${VITE_API_URL}/empleados/recuperar-maestro`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, masterPin, newPassword }),
@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     localStorage.setItem(
       ADMIN_STORAGE_KEY,
-      JSON.stringify({ token: data.token, user: data.user })
+      JSON.stringify({ token: data.token, user: data.user }),
     );
 
     return data.user;
@@ -114,7 +114,7 @@ export function AuthProvider({ children }) {
   const cambiarPassword = async (currentPassword, newPassword) => {
     if (!token) throw new Error("No hay una sesión activa.");
 
-    const res = await fetch(`${API_URL}/empleados/cambiar-password`, {
+    const res = await fetch(`${VITE_API_URL}/empleados/cambiar-password`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
