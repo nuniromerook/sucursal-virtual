@@ -1,6 +1,23 @@
-// Si definís VITE_API_URL en un .env, se usa esa (ideal para producción).
-// Si no, se arma automáticamente con el mismo host desde el que se abrió
-// el panel — así funciona igual en localhost, en la IP del wifi, o en
-// cualquier otra red, sin tocar código.
-export const API_URL =
-  import.meta.env.API_URL || `https://valette-backend.onrender.com`;
+// frontend-admin/src/config/api.js
+// Configuración dinámica de API URL para VPS, Vercel y Localhost
+
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (import.meta.env.API_URL) {
+    return import.meta.env.API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname.includes("abastecedoravalette.digital")) {
+      return "https://api.abastecedoravalette.digital";
+    }
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3000";
+    }
+  }
+  return "https://api.abastecedoravalette.digital";
+};
+
+export const API_URL = getApiUrl();
