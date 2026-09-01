@@ -9,13 +9,28 @@ let io = null;
  * cortadores y clientes individuales.
  */
 const initSocket = (httpServer) => {
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
+  const defaultAllowedOrigins = [
+    "https://abastecedoravalette.digital",
+    "https://admin.abastecedoravalette.digital",
+    "https://api.abastecedoravalette.digital",
+  ];
+  const envAllowed = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-    : ["*"];
+    : [];
+  const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]));
 
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins.includes("*") ? "*" : allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          return callback(null, true);
+        }
+        if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        callback(new Error(`Socket CORS bloqueado: ${origin}`));
+      },
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true,
     },

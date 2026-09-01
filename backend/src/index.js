@@ -19,19 +19,37 @@ const seoRoutes = require("./routes/seo.routes");
 const app = express();
 const httpServer = http.createServer(app);
 
-// CORS: En desarrollo permite todo, en producción usa ALLOWED_ORIGINS
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+// CORS: Permite dominios oficiales, variables de entorno y localhost de desarrollo
+const defaultAllowedOrigins = [
+  "https://abastecedoravalette.digital",
+  "https://admin.abastecedoravalette.digital",
+  "https://api.abastecedoravalette.digital",
+];
+
+const envAllowed = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : ["*"];
+  : [];
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]));
 
 app.use(
   cors({
-    origin: allowedOrigins.includes("*") ? "*" : (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS bloqueado: ${origin}`));
+    origin: (origin, callback) => {
+      // Permitir peticiones sin origen (como Postman, apps móviles o llamadas internas)
+      if (!origin) return callback(null, true);
+
+      // Permitir cualquier localhost / 127.0.0.1 en cualquier puerto para desarrollo
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
       }
+
+      // Permitir dominios configurados
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS] Origen bloqueado: ${origin}`);
+      callback(new Error(`CORS bloqueado: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
