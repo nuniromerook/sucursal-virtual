@@ -27,6 +27,7 @@ const EMPTY_FORM = {
   destacar: false,
   gana_puntos: false,
   puntos: "0",
+  sin_stock: false,
 };
 
 const ProductEditor = () => {
@@ -113,6 +114,7 @@ const ProductEditor = () => {
           destacar: Boolean(data.destacar),
           gana_puntos: Boolean(data.gana_puntos),
           puntos: data.puntos != null ? String(data.puntos) : "0",
+          sin_stock: Boolean(data.sin_stock),
         });
       } catch (err) {
         console.error("Error al cargar el producto:", err);
@@ -594,6 +596,24 @@ const ProductEditor = () => {
               />
               <span className="text-sm font-medium text-gray-900">
                 Producto activo (visible en la tienda)
+              </span>
+            </label>
+
+            <label
+              htmlFor="sin_stock"
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                id="sin_stock"
+                name="sin_stock"
+                checked={formValues.sin_stock}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="size-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+              />
+              <span className="text-sm font-medium text-red-700">
+                Sin Stock (Ocultar botones de agregar)
               </span>
             </label>
 

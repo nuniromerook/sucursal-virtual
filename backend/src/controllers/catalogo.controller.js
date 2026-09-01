@@ -138,6 +138,7 @@ const createCatalogoItem = async (req, res) => {
     destacar,
     gana_puntos,
     puntos,
+    sin_stock,
   } = req.body;
 
   if (!nombre_producto || !slug || !especie) {
@@ -151,9 +152,9 @@ const createCatalogoItem = async (req, res) => {
       `INSERT INTO catalogo (
          nombre_producto, slug, descripcion, especie, categoria,
          imagen_url, unidad_medida, calorias, proteinas, grasas,
-         precio, precio_anterior, activo, destacar, gana_puntos, puntos
+         precio, precio_anterior, activo, destacar, gana_puntos, puntos, sin_stock
        )
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING *`,
       [
         nombre_producto,
@@ -172,6 +173,7 @@ const createCatalogoItem = async (req, res) => {
         destacar ?? false,
         gana_puntos ?? false,
         puntos ?? 0,
+        sin_stock ?? false,
       ],
     );
 
@@ -209,6 +211,7 @@ const updateCatalogoItem = async (req, res) => {
     destacar,
     gana_puntos,
     puntos,
+    sin_stock,
   } = req.body;
 
   try {
@@ -230,8 +233,9 @@ const updateCatalogoItem = async (req, res) => {
          destacar = $14,
          gana_puntos = $15,
          puntos = $16,
+         sin_stock = $17,
          actualizado_en = now()
-       WHERE id = $17
+       WHERE id = $18
        RETURNING *`,
       [
         nombre_producto,
@@ -250,6 +254,7 @@ const updateCatalogoItem = async (req, res) => {
         destacar ?? false,
         gana_puntos ?? false,
         puntos ?? 0,
+        sin_stock ?? false,
         id,
       ],
     );

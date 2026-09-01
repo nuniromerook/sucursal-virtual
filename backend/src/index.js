@@ -14,6 +14,7 @@ const analyticsRoutes = require("./routes/analytics.routes");
 const bannersRoutes = require("./routes/banners.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const notificacionesRoutes = require("./routes/notificaciones.routes");
+const seoRoutes = require("./routes/seo.routes");
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -52,6 +53,7 @@ app.use(analyticsRoutes);
 app.use(bannersRoutes);
 app.use(dashboardRoutes);
 app.use(notificacionesRoutes);
+app.use(seoRoutes);
 
 app.get("/", (req, res) => {
   res.send("Sucursal Virtual running with Socket.io!");

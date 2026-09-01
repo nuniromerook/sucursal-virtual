@@ -266,106 +266,114 @@ export default function Product() {
 
               {/* Selector de cantidad (stepper) */}
               <form onSubmit={handleSubmit} className="mt-6">
-                {/* Chips de promo: tocar uno salta el stepper directo a esa
-                    cantidad. Mismo color que usamos en las cards para no
-                    confundir esto con la oferta de precio_anterior. */}
-                {promos.length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {promos.map((promo) => {
-                      const promoCantidad = Number(promo.cantidad_kg);
-                      const isSelected = promoCantidad === cantidadNum;
-
-                      return (
-                        <button
-                          key={promo.id}
-                          type="button"
-                          onClick={() => setCantidad(promoCantidad)}
-                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                            isSelected
-                              ? "border-emerald-600 bg-emerald-600 text-white"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {promoCantidad}
-                          {unidad_medida} x{" "}
-                          {formatPrecio(Number(promo.precio_promocional))}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="flex w-full items-center gap-3 border border-gray-200 bg-gray-50 p-3 justify-between">
-                  {/* Stepper selector de cantidad */}
-                  <div className="flex flex-col w-full">
-                    <h3 className="text-sm font-medium text-gray-900 text-center lg:text-start">
-                      Cantidad a pedir ({unidad_medida})
-                    </h3>
-
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleDecrement}
-                        disabled={cantidadNum <= 1}
-                        className="flex size-10 items-center justify-center rounded-md border border-gray-300 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed bg-white"
-                        aria-label={`Restar un ${unidad_medida}`}
-                      >
-                        <Minus className="size-4" />
-                      </button>
-
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        inputMode="numeric"
-                        value={cantidad}
-                        onChange={handleCantidadInput}
-                        onBlur={handleCantidadBlur}
-                        className={`w-16 rounded-md border py-2 text-center text-base font-semibold focus:outline-none transition-colors ${
-                          promoActiva
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                            : "border-gray-300 text-gray-900 focus:border-main-blue bg-white"
-                        }`}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={handleIncrement}
-                        className="flex size-10 items-center justify-center rounded-md border border-gray-300 text-gray-700 transition-colors hover:bg-gray-50 bg-white"
-                        aria-label={`Sumar un ${unidad_medida}`}
-                      >
-                        <Plus className="size-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Precio final */}
-                  <div className="flex flex-col w-full rounded-md border border-gray-200 bg-white p-3">
-                    <p className="text-sm text-gray-600">Total estimado</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {formatPrecio(totalEstimado)}{" "}
-                      <span className="text-sm font-normal text-gray-500">
-                        aprox.
-                      </span>
+                {productData.sin_stock ? (
+                  <div className="flex w-full items-center justify-center rounded-md border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-bold text-red-600">
+                      Producto temporalmente sin stock
                     </p>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {/* Chips de promo */}
+                    {promos.length > 0 && (
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        {promos.map((promo) => {
+                          const promoCantidad = Number(promo.cantidad_kg);
+                          const isSelected = promoCantidad === cantidadNum;
 
-                {promoActiva && (
-                  <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                    <Check className="size-3.5" />
-                    ¡Estás llevando el precio promocional!
-                  </p>
+                          return (
+                            <button
+                              key={promo.id}
+                              type="button"
+                              onClick={() => setCantidad(promoCantidad)}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                                isSelected
+                                  ? "border-emerald-600 bg-emerald-600 text-white"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                            >
+                              {promoCantidad}
+                              {unidad_medida} x{" "}
+                              {formatPrecio(Number(promo.precio_promocional))}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="flex w-full items-center gap-3 border border-gray-200 bg-gray-50 p-3 justify-between">
+                      {/* Stepper selector de cantidad */}
+                      <div className="flex flex-col w-full">
+                        <h3 className="text-sm font-medium text-gray-900 text-center lg:text-start">
+                          Cantidad a pedir ({unidad_medida})
+                        </h3>
+
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDecrement}
+                            disabled={cantidadNum <= 1}
+                            className="flex size-10 items-center justify-center rounded-md border border-gray-300 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+                            aria-label={`Restar un ${unidad_medida}`}
+                          >
+                            <Minus className="size-4" />
+                          </button>
+
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            value={cantidad}
+                            onChange={handleCantidadInput}
+                            onBlur={handleCantidadBlur}
+                            className={`w-16 rounded-md border py-2 text-center text-base font-semibold focus:outline-none transition-colors ${
+                              promoActiva
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                : "border-gray-300 text-gray-900 focus:border-main-blue bg-white"
+                            }`}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={handleIncrement}
+                            className="flex size-10 items-center justify-center rounded-md border border-gray-300 text-gray-700 transition-colors hover:bg-gray-50 bg-white"
+                            aria-label={`Sumar un ${unidad_medida}`}
+                          >
+                            <Plus className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Precio final */}
+                      <div className="flex flex-col w-full rounded-md border border-gray-200 bg-white p-3">
+                        <p className="text-sm text-gray-600">Total estimado</p>
+                        <p className="text-xl font-bold text-gray-900">
+                          {formatPrecio(totalEstimado)}{" "}
+                          <span className="text-sm font-normal text-gray-500">
+                            aprox.
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {promoActiva && (
+                      <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                        <Check className="size-3.5" />
+                        ¡Estás llevando el precio promocional!
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={cantidadNum < 1}
+                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-main-blue px-8 py-3 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ShoppingBag className="size-5" />
+                      Agregar al carrito
+                    </button>
+                  </>
                 )}
-
-                <button
-                  type="submit"
-                  disabled={cantidadNum < 1}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-main-blue px-8 py-3 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ShoppingBag className="size-5" />
-                  Agregar al carrito
-                </button>
               </form>
             </div>
           </div>
