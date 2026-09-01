@@ -14,6 +14,8 @@ import SucursalEditor from "./pages/sucursales/SucursalEditor";
 import NotificacionesSucursal from "./pages/sucursales/sucursal-data/NotificacionesSucursal";
 import BannersSucursal from "./pages/sucursales/sucursal-data/BannersSucursal";
 import Comandas from "./pages/sucursales/sucursal-data/Comandas";
+import CombosBuilder from "./pages/sucursales/sucursal-data/CombosBuilder";
+import RendimientoCortadores from "./pages/sucursales/sucursal-data/RendimientoCortadores";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -39,6 +41,7 @@ function App() {
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/catalogo/editar/:slug" element={<ProductEditor />} />
         <Route path="/catalogo/nuevo-producto" element={<ProductEditor />} />
+        <Route path="/catalogo/combos" element={<CombosBuilder />} />
 
         {/* Rutas de Sucursal */}
         <Route path="/sucursal/:slug" element={<Sucursal />}>
@@ -48,6 +51,7 @@ function App() {
           <Route path="banners" element={<BannersSucursal />} />
           <Route path="ajustes" element={<Informacion />} />
           <Route path="equipo" element={<Empleados />} />
+          <Route path="rendimiento" element={<RendimientoCortadores />} />
         </Route>
 
         <Route path="/sucursales/nueva" element={<SucursalEditor />} />

@@ -23,7 +23,7 @@ const PROMOS_ACTIVAS_SUBQUERY = `
 
 // GET /catalogo
 const getCatalogo = async (req, res) => {
-  const { activo, destacar, categoria, especie, q } = req.query;
+  const { activo, destacar, categoria, especie, q, sucursal_id } = req.query;
 
   const condiciones = [];
   const valores = [];
@@ -58,15 +58,28 @@ const getCatalogo = async (req, res) => {
     : "";
 
   try {
-    const result = await pool.query(
-      `SELECT c.*, 
-              ${PROMOS_ACTIVAS_SUBQUERY},
-              COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos
-       FROM catalogo c
-       ${whereClause}
-       ORDER BY c.nombre_producto`,
-      valores,
-    );
+    let query;
+    if (sucursal_id) {
+      valores.push(Number(sucursal_id));
+      query = `SELECT c.*, 
+                ${PROMOS_ACTIVAS_SUBQUERY},
+                COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos,
+                COALESCE(ss.en_stock, true) AS en_stock
+         FROM catalogo c
+         LEFT JOIN stock_sucursal ss ON ss.catalogo_id = c.id AND ss.sucursal_id = $${valores.length}
+         ${whereClause}
+         ORDER BY c.nombre_producto`;
+    } else {
+      query = `SELECT c.*, 
+                ${PROMOS_ACTIVAS_SUBQUERY},
+                COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos,
+                true AS en_stock
+         FROM catalogo c
+         ${whereClause}
+         ORDER BY c.nombre_producto`;
+    }
+
+    const result = await pool.query(query, valores);
 
     res.json(result.rows);
   } catch (error) {
@@ -79,6 +92,7 @@ const getCatalogo = async (req, res) => {
 const getCatalogoItem = async (req, res) => {
   const { id } = req.params;
   const incluirInactivas = req.query.incluir_promos_inactivas === "true";
+  const sucursal_id = req.query.sucursal_id;
 
   const promosSubquery = incluirInactivas
     ? `
@@ -101,12 +115,23 @@ const getCatalogoItem = async (req, res) => {
     : PROMOS_ACTIVAS_SUBQUERY;
 
   try {
-    const result = await pool.query(
-      `SELECT c.*, ${promosSubquery}
-       FROM catalogo c
-       WHERE c.id::text = $1 OR c.slug = $1`,
-      [id],
-    );
+    let query, valores;
+    if (sucursal_id) {
+      query = `SELECT c.*, ${promosSubquery},
+                      COALESCE(ss.en_stock, true) AS en_stock
+               FROM catalogo c
+               LEFT JOIN stock_sucursal ss ON ss.catalogo_id = c.id AND ss.sucursal_id = $2
+               WHERE c.id::text = $1 OR c.slug = $1`;
+      valores = [id, Number(sucursal_id)];
+    } else {
+      query = `SELECT c.*, ${promosSubquery},
+                      true AS en_stock
+               FROM catalogo c
+               WHERE c.id::text = $1 OR c.slug = $1`;
+      valores = [id];
+    }
+
+    const result = await pool.query(query, valores);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Producto no encontrado" });

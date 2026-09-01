@@ -68,14 +68,14 @@ const ProductCard = ({ product }) => {
           <img
             alt={imageAlt}
             src={imageSrc}
-            className={`h-full w-full object-cover object-center aspect-square transition-transform duration-300 group-hover:scale-105 ${product.sin_stock ? "opacity-50 grayscale" : ""}`}
+            className={`h-full w-full object-cover object-center aspect-square transition-transform duration-300 group-hover:scale-105 ${!product.en_stock ? "opacity-50 grayscale" : ""}`}
             loading="lazy"
           />
 
-          {product.sin_stock && (
+          {!product.en_stock && (
             <div className="absolute inset-0 bg-neutral-900/10 flex items-center justify-center z-10">
               <span className="bg-neutral-900/80 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
-                Agotado
+                Sin Stock
               </span>
             </div>
           )}
@@ -175,7 +175,7 @@ const ProductCard = ({ product }) => {
 
         {/* Botón de Agregar Rápido */}
         <div className="mt-auto pt-2 border-t border-neutral-100 z-10 relative">
-          {product.sin_stock ? (
+          {!product.en_stock ? (
             <div className="w-full py-2 px-3 bg-neutral-100 text-neutral-400 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
               <span>Sin Stock</span>
             </div>

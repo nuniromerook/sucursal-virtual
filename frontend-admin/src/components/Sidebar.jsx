@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Store,
   User,
+  Package,
   LogOut,
   ShieldCheck,
   KeyRound,
@@ -175,6 +176,15 @@ const Sidebar = () => {
                       className={linkClassName}
                     >
                       <Plus className={iconStyle} /> Nuevo producto
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/catalogo/combos"
+                      onClick={closeSidebar}
+                      className={linkClassName}
+                    >
+                      <Package className={iconStyle} /> Creador de Combos
                     </NavLink>
                   </li>
                 </ul>

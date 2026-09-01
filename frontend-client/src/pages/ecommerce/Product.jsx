@@ -18,6 +18,7 @@ import { useSocket } from "../../context/SocketContext";
 import { useFavorites } from "../../context/FavoritesContext";
 import FormattedDescription from "../../components/FormattedDescription";
 import RelatedProducts from "../../components/RelatedProducts";
+import UrgencyTimer from "../../components/UrgencyTimer";
 import NotFound from "../NotFound";
 
 export default function Product() {
@@ -247,6 +248,10 @@ export default function Product() {
                   </p>
                 )}
               </div>
+              
+              {(hasDiscount || promos.length > 0) && (
+                <UrgencyTimer endDate={new Date().setHours(23, 59, 59, 999)} />
+              )}
 
               {unidad_medida == "kg" ? (
                 <p className="mt-1 text-xs text-gray-500">
@@ -366,11 +371,11 @@ export default function Product() {
 
                     <button
                       type="submit"
-                      disabled={cantidadNum < 1}
-                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-main-blue px-8 py-3 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      disabled={cantidadNum < 1 || !productData.en_stock}
+                      className={`mt-6 flex w-full items-center justify-center gap-2 rounded-md px-8 py-3 text-base font-medium transition-colors ${!productData.en_stock ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-main-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"}`}
                     >
                       <ShoppingBag className="size-5" />
-                      Agregar al carrito
+                      {!productData.en_stock ? "Sin stock en esta sucursal" : "Agregar al carrito"}
                     </button>
                   </>
                 )}

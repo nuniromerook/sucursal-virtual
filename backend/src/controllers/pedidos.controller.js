@@ -98,7 +98,61 @@ const createPedido = async (req, res) => {
       clienteId = nuevoCliente.rows[0].id;
     }
 
-    // 2. Insertar el Pedido maestro
+    // 2. Validar precios y calcular total directamente desde la DB (Seguridad)
+    const catalogoIds = items.map((i) => Number(i.catalogo_id || i.id));
+    const catalogoRes = await dbClient.query(
+      `SELECT c.id, c.precio,
+         COALESCE(
+           (
+             SELECT jsonb_agg(
+               jsonb_build_object(
+                 'cantidad_kg', p.cantidad_kg,
+                 'precio_promocional', p.precio_promocional
+               ) ORDER BY p.cantidad_kg
+             )
+             FROM catalogo_promos p
+             WHERE p.catalogo_id = c.id AND p.activa = true
+           ),
+           '[]'::jsonb
+         ) AS promos
+       FROM catalogo c WHERE c.id = ANY($1::int[])`,
+      [catalogoIds]
+    );
+
+    const catalogoMap = new Map(catalogoRes.rows.map((r) => [r.id, r]));
+    let montoTotalVerificado = 0;
+    const itemsProcesados = [];
+
+    for (const item of items) {
+      const catalogoId = Number(item.catalogo_id || item.id);
+      const cantidadKg = Number(item.cantidad_kg) || 1;
+      
+      const catData = catalogoMap.get(catalogoId);
+      if (!catData) {
+        await dbClient.query("ROLLBACK");
+        return res.status(400).json({ error: `Producto no encontrado en catálogo (ID: ${catalogoId})` });
+      }
+      
+      let precioPorKg = Number(catData.precio);
+      const promos = Array.isArray(catData.promos) ? catData.promos : [];
+      for (const promo of promos) {
+        if (cantidadKg >= Number(promo.cantidad_kg)) {
+          precioPorKg = Number(promo.precio_promocional);
+        }
+      }
+
+      const precioEstimado = precioPorKg * cantidadKg;
+      montoTotalVerificado += precioEstimado;
+
+      itemsProcesados.push({
+        catalogoId,
+        cantidadKg,
+        precioPorKg,
+        precioEstimado
+      });
+    }
+
+    // 3. Insertar el Pedido maestro
     const insertPedidoRes = await dbClient.query(
       `INSERT INTO pedidos (
          cliente_id,
@@ -120,7 +174,7 @@ const createPedido = async (req, res) => {
         tipo_entrega || "retiro_sucursal",
         fecha_entrega_programada || null,
         medio_pago || "efectivo",
-        Number(monto_total_estimado) || 0,
+        montoTotalVerificado,
         direccion_entrega || null,
         notas || null,
       ],
@@ -128,15 +182,8 @@ const createPedido = async (req, res) => {
 
     const pedidoCreado = insertPedidoRes.rows[0];
 
-    // 3. Insertar cada item del pedido
-    for (const item of items) {
-      const catalogoId = Number(item.catalogo_id || item.id);
-      const cantidadKg = Number(item.cantidad_kg) || 1;
-      const precioPorKg =
-        Number(item.precio_por_kg_congelado || item.precio) || 0;
-      const precioEstimado =
-        Number(item.precio_estimado || item.total) || precioPorKg * cantidadKg;
-
+    // 4. Insertar cada item del pedido
+    for (const item of itemsProcesados) {
       await dbClient.query(
         `INSERT INTO pedido_items (
            pedido_id,
@@ -146,7 +193,7 @@ const createPedido = async (req, res) => {
            precio_estimado,
            estado_item
          ) VALUES ($1, $2, $3, $4, $5, 'pendiente')`,
-        [pedidoCreado.id, catalogoId, cantidadKg, precioPorKg, precioEstimado],
+        [pedidoCreado.id, item.catalogoId, item.cantidadKg, item.precioPorKg, item.precioEstimado],
       );
     }
 

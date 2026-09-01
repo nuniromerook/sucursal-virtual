@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS pedidos CASCADE;
 DROP TABLE IF EXISTS stock_sucursal CASCADE;
 DROP TABLE IF EXISTS catalogo_promos CASCADE;
 DROP TABLE IF EXISTS catalogo CASCADE;
+DROP TABLE IF EXISTS catalogo_combos CASCADE;
 DROP TABLE IF EXISTS clientes CASCADE;
 DROP TABLE IF EXISTS empleados CASCADE;
 DROP TABLE IF EXISTS sucursales CASCADE;
@@ -25,10 +26,11 @@ CREATE TABLE sucursales (
     slug VARCHAR(255) NOT NULL,
     direccion text NOT NULL,
     ciudad VARCHAR(255) NOT NULL,
-    latitud NUMERIC(10,2),
-    longitud NUMERIC(10,2),
+    latitud NUMERIC(10,6),
+    longitud NUMERIC(10,6),
     telefono VARCHAR(255),
     horario_atencion text,
+    horarios_apertura JSONB DEFAULT '{"lunes": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "martes": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "miercoles": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "jueves": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "viernes": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "sabado": {"abierto": true, "apertura": "07:00", "cierre": "15:00"}, "domingo": {"abierto": false, "apertura": "", "cierre": ""}}'::jsonb,
     activa boolean DEFAULT true NOT NULL,
     creado_en timestamp without time zone DEFAULT now() NOT NULL,
     actualizado_en timestamp without time zone DEFAULT now() NOT NULL
@@ -98,11 +100,20 @@ CREATE TABLE catalogo_promos (
     creado_en timestamp without time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE catalogo_combos (
+    id SERIAL PRIMARY KEY,
+    combo_id integer NOT NULL,
+    producto_id integer NOT NULL,
+    cantidad_kg NUMERIC(10,2) DEFAULT 1 NOT NULL,
+    creado_en timestamp without time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE stock_sucursal (
     id SERIAL PRIMARY KEY,
     catalogo_id integer NOT NULL,
     sucursal_id integer NOT NULL,
     disponible_kg NUMERIC(10,2) DEFAULT 0 NOT NULL,
+    en_stock boolean DEFAULT true NOT NULL,
     actualizado_en timestamp without time zone DEFAULT now() NOT NULL
 );
 

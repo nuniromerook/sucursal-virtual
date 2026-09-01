@@ -20,6 +20,7 @@ import { useCart, calculateItemPrice } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL } from "../../config/api";
 import { formatPrecio, formatCantidad, formatPrecioPorUnidad } from "../../utils/formatters";
+import TimeSlotSelector from "../../components/TimeSlotSelector";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -69,6 +70,8 @@ export default function Checkout() {
   // Paso 2: Tipo de Entrega
   const [tipoEntrega, setTipoEntrega] = useState("retiro_sucursal"); // "retiro_sucursal" | "pedidosya" | "logistica_propia"
   const [sucursalId, setSucursalId] = useState("");
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   // Dirección formal estructurada para detección exacta en Maps
   const [direccionForm, setDireccionForm] = useState({
@@ -182,6 +185,11 @@ export default function Checkout() {
       return;
     }
 
+    if (!selectedDate || !selectedSlot) {
+      setErrorMsg("Por favor, seleccioná el día y el horario para recibir/retirar tu pedido.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -195,6 +203,7 @@ export default function Checkout() {
         },
         sucursal_id: Number(sucursalId),
         tipo_entrega: tipoEntrega,
+        fecha_entrega_programada: new Date(selectedDate.toDateString() + " " + selectedSlot.split(" - ")[0]).toISOString(),
         medio_pago: medioPago,
         direccion_entrega: tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
         notas: direccionForm.notas ? direccionForm.notas.trim() : null,
@@ -544,29 +553,22 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="pt-2">
                     <label className={inputLabel}>
                       Aclaraciones de entrega (Opcional)
                     </label>
-                    <input
-                      type="text"
+                    <textarea
                       placeholder="Ej. Dejar en recepción / Portón gris / Tocar timbre 2"
                       value={direccionForm.notas}
                       onChange={(e) =>
                         setDireccionForm({ ...direccionForm, notas: e.target.value })
                       }
-                      className={inputClassnames}
+                      rows={2}
+                      className="w-full p-2.5 rounded-lg border border-neutral-300 text-sm focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue mb-4 resize-none"
                     />
                   </div>
 
-                  {direccionForm.calleNumero && (
-                    <div className="p-2.5 bg-neutral-100 rounded-lg text-sm text-neutral-600">
-                      <span className="font-semibold text-neutral-800">Dirección normalizada:</span>{" "}
-                      {direccionFormalCompleta}
-                    </div>
-                  )}
-
-                  <div className="pt-2">
+                  <div className="flex flex-col gap-2">
                     <label className={inputLabel}>
                       Sucursal Valette que preparará tu envío:
                     </label>
@@ -582,6 +584,20 @@ export default function Checkout() {
                       ))}
                     </select>
                   </div>
+
+
+                  
+                  <TimeSlotSelector 
+                    sucursal={sucursalSeleccionada}
+                    selectedDate={selectedDate}
+                    selectedSlot={selectedSlot}
+                    onSelectSlot={(date, slot) => {
+                      setSelectedDate(date);
+                      setSelectedSlot(slot);
+                    }}
+                  />
+
+                  {calculandoEnvio && (null)}
                 </div>
               )}
             </div>

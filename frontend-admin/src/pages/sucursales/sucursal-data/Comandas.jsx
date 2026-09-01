@@ -1,6 +1,6 @@
 // frontend-admin/src/pages/sucursales/sucursal-data/Comandas.jsx
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Bell,
   Volume2,
@@ -40,6 +40,7 @@ export default function Comandas() {
   const { slug } = useParams();
   const { user } = useAuth();
   const { socket, isConnected, joinSucursal, leaveSucursal, reproducirSonidoComanda, ultimoPedido } = useSocket();
+  const navigate = useNavigate();
 
   const [sucursal, setSucursal] = useState(null);
   const [pedidos, setPedidos] = useState([]);
@@ -55,6 +56,7 @@ export default function Comandas() {
   });
   const [ordenCortadores, setOrdenCortadores] = useState("menos_pedidos"); // "menos_pedidos" | "alfabetico"
   const [filtroTextoCortador, setFiltroTextoCortador] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const puedeGestionar = Boolean(
     user && (user.rol === "admin" || user.rol === "administrador" || user.rol === "encargado")
@@ -185,6 +187,34 @@ export default function Comandas() {
       (p) => (p.estado || p.estado_local) === filtroEstado
     );
   }, [pedidos, filtroEstado]);
+
+  // Atajos de teclado para KDS
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignorar si el usuario está escribiendo en un input o el modal está abierto
+      if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
+      if (modalAsignacion.open) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(prev + 1, pedidosFiltrados.length - 1));
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === "Enter" && focusedIndex >= 0) {
+        e.preventDefault();
+        const pedido = pedidosFiltrados[focusedIndex];
+        if (pedido) {
+          navigate(`/admin/sucursales/${slug}/comandas/${pedido.id}`);
+        }
+      } else if (e.key === "Escape") {
+        setFocusedIndex(-1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pedidosFiltrados, focusedIndex, modalAsignacion.open, slug, navigate]);
 
   // Contadores para las pestañas
   const conteoPorEstado = useMemo(() => {
@@ -409,7 +439,12 @@ export default function Comandas() {
               return (
                 <div
                   key={pedido.id}
-                  className="flex flex-col justify-between rounded-lg border p-4 sm:p-5 transition-all bg-white border-neutral-200/80 shadow-2xs hover:shadow-xs"
+                  className={`flex flex-col justify-between rounded-lg border p-4 sm:p-5 transition-all bg-white shadow-2xs hover:shadow-xs cursor-pointer ${
+                    focusedIndex === idx
+                      ? "ring-2 ring-main-blue border-main-blue scale-[1.02] shadow-md"
+                      : "border-neutral-200/80"
+                  }`}
+                  onClick={() => navigate(`/admin/sucursales/${slug}/comandas/${pedido.id}`)}
                 >
                   <div>
                     {/* Header de la Comanda */}
