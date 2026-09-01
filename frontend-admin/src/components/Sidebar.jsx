@@ -49,14 +49,12 @@ const Sidebar = () => {
   useEffect(() => {
     const loadSucursales = async () => {
       try {
-        console.log(`[Sidebar] Fetching sucursales from: ${API_URL}/sucursales`);
         const res = await fetch(`${API_URL}/sucursales`);
         const data = await res.json();
-        console.log("[Sidebar] Sucursales response data:", data);
 
         setSucursales(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("[Sidebar] Error fetching sucursales:", error);
+        console.error(error);
       }
     };
 
