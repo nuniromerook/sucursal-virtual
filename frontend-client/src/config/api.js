@@ -1,5 +1,5 @@
 // frontend-client/src/config/api.js
-// Configuración única y centralizada de API URL
+// Configuración centralizada de API URL
 
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
@@ -18,3 +18,4 @@ const getApiUrl = () => {
 };
 
 export const API_URL = getApiUrl();
+export const VITE_API_URL = API_URL;
