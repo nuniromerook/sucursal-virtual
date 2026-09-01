@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { User, Sparkles, Package, Star, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { VITE_API_URL } from "../../config/api";
+import { API_URL } from "../../config/api";
 
 // Módulos independientes de pestañas
 import ComprasTab from "./profile-tabs/ComprasTab";
@@ -49,7 +49,7 @@ export default function Profile() {
       if (!token) return;
       setLoadingPedidos(true);
       try {
-        const res = await fetch(`${VITE_API_URL}/clientes/pedidos`, {
+        const res = await fetch(`${API_URL}/clientes/pedidos`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

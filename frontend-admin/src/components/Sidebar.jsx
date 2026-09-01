@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
-import { VITE_API_URL } from "../config/api";
+import { API_URL } from "../config/api";
 import {
   ChevronDown,
   Home,
@@ -49,7 +49,7 @@ const Sidebar = () => {
   useEffect(() => {
     const loadSucursales = async () => {
       try {
-        const res = await fetch(`${VITE_API_URL}/sucursales`);
+        const res = await fetch(`${API_URL}/sucursales`);
         const data = await res.json();
 
         setSucursales(Array.isArray(data) ? data : []);

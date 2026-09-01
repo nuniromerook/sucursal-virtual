@@ -11,7 +11,7 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import { VITE_API_URL } from "../../config/api";
+import { API_URL } from "../../config/api";
 import { formatPrecio } from "../../utils/formatters";
 import { useCart } from "../../context/CartContext";
 import { useSocket } from "../../context/SocketContext";
@@ -38,7 +38,7 @@ export default function Product() {
       setIsLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${VITE_API_URL}/catalogo/${slug}`);
+        const res = await fetch(`${API_URL}/catalogo/${slug}`);
         if (!res.ok) throw new Error("Producto no encontrado");
 
         const data = await res.json();

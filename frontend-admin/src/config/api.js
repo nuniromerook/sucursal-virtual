@@ -1,10 +1,7 @@
 // frontend-admin/src/config/api.js
-// Configuración dinámica de API URL para VPS, Vercel y Localhost
+// Configuración única y centralizada de API URL
 
 const getApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
@@ -20,4 +17,4 @@ const getApiUrl = () => {
   return "https://api.abastecedoravalette.digital";
 };
 
-export const VITE_API_URL = getApiUrl();
+export const API_URL = getApiUrl();

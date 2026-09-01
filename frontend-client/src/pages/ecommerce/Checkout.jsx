@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useCart, calculateItemPrice } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { VITE_API_URL } from "../../config/api";
+import { API_URL } from "../../config/api";
 import {
   formatPrecio,
   formatCantidad,
@@ -98,7 +98,7 @@ export default function Checkout() {
   useEffect(() => {
     const fetchSucursales = async () => {
       try {
-        const res = await fetch(`${VITE_API_URL}/sucursales`);
+        const res = await fetch(`${API_URL}/sucursales`);
         if (res.ok) {
           const data = await res.json();
           const activas = Array.isArray(data)
