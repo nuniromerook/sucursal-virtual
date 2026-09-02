@@ -47,13 +47,141 @@ export default function PedidosSucursal() {
   const [filtroEstado, setFiltroEstado] = useState("todos"); // Vista por defecto "solicitado"
   const [actualizandoId, setActualizandoId] = useState(null);
 
-  // Modal para cargar peso real
+  // Modal para cargar peso real por cada corte
   const [modalPesaje, setModalPesaje] = useState({
     open: false,
     pedido: null,
-    pesoFinal: "",
-    montoFinal: "",
+    pesosItems: {},
   });
+
+  const handleAbrirModalPesaje = (pedido) => {
+    const pesosIniciales = {};
+    if (Array.isArray(pedido.items)) {
+      pedido.items.forEach((item) => {
+        const val =
+          item.peso_real || item.cantidad_kg_solicitada || item.cantidad_kg || 1;
+        pesosIniciales[item.id] = Number(val).toFixed(3);
+      });
+    }
+    setModalPesaje({
+      open: true,
+      pedido,
+      pesosItems: pesosIniciales,
+    });
+  };
+
+  const formatKgInput = (rawVal) => {
+    if (rawVal === null || rawVal === undefined) return "";
+    const str = String(rawVal).trim();
+    if (str === "") return "";
+
+    if (str.includes(".") || str.includes(",")) {
+      return str.replace(",", ".");
+    }
+
+    const digits = str.replace(/\D/g, "");
+    if (!digits) return "";
+    const num = parseInt(digits, 10) / 1000;
+    return num.toFixed(3);
+  };
+
+  const handlePesoItemChange = (itemId, rawVal) => {
+    const formatted = formatKgInput(rawVal);
+    setModalPesaje((prev) => ({
+      ...prev,
+      pesosItems: {
+        ...prev.pesosItems,
+        [itemId]: formatted,
+      },
+    }));
+  };
+
+  const handlePesoItemBlur = (itemId, val) => {
+    const num = parseFloat(String(val).replace(",", "."));
+    const fixed = isNaN(num) || num <= 0 ? "0.000" : num.toFixed(3);
+    setModalPesaje((prev) => ({
+      ...prev,
+      pesosItems: {
+        ...prev.pesosItems,
+        [itemId]: fixed,
+      },
+    }));
+  };
+
+  const calcularResumenPesaje = () => {
+    if (!modalPesaje.pedido || !Array.isArray(modalPesaje.pedido.items)) {
+      return {
+        itemsArray: [],
+        totalSolicitadoKg: 0,
+        totalRealKg: 0,
+        mermaKg: 0,
+        montoTotalFinal: 0,
+      };
+    }
+
+    let totalSolicitadoKg = 0;
+    let totalRealKg = 0;
+    let montoTotalFinal = 0;
+
+    const itemsArray = modalPesaje.pedido.items.map((item) => {
+      const kgSolicitados = Number(
+        item.cantidad_kg_solicitada || item.cantidad_kg || 1,
+      );
+      const valStr =
+        modalPesaje.pesosItems[item.id] ?? String(kgSolicitados.toFixed(3));
+      const pesoRealKg = parseFloat(String(valStr).replace(",", ".")) || 0;
+      const precioKg = Number(
+        item.precio_por_kg_congelado || item.precio_al_agregar || item.precio || 0,
+      );
+      const precioFinalItem = Math.round(pesoRealKg * precioKg);
+
+      totalSolicitadoKg += kgSolicitados;
+      totalRealKg += pesoRealKg;
+      montoTotalFinal += precioFinalItem;
+
+      return {
+        id: item.id,
+        nombre: item.nombre_producto || `Corte #${item.catalogo_id}`,
+        especie: item.especie,
+        kgSolicitados,
+        precioKg,
+        pesoRealKg,
+        precioFinalItem,
+      };
+    });
+
+    const mermaKg = totalRealKg - totalSolicitadoKg;
+
+    return {
+      itemsArray,
+      totalSolicitadoKg,
+      totalRealKg,
+      mermaKg,
+      montoTotalFinal,
+    };
+  };
+
+  const handleGuardarPesaje = async () => {
+    if (!modalPesaje.pedido) return;
+    const { itemsArray, montoTotalFinal } = calcularResumenPesaje();
+
+    const items_pesos = itemsArray.map((i) => ({
+      id: i.id,
+      peso_real: i.pesoRealKg,
+      precio_final: i.precioFinalItem,
+    }));
+
+    await handleCambiarEstado(modalPesaje.pedido.id, "listo", {
+      items_pesos,
+      monto_final_real: montoTotalFinal,
+    });
+
+    setModalPesaje({
+      open: false,
+      pedido: null,
+      pesosItems: {},
+    });
+  };
 
   const loadData = async () => {
     if (!sucursal?.id) return;
@@ -165,24 +293,7 @@ export default function PedidosSucursal() {
     }
   };
 
-  // Confirmar pesaje real y pasar directamente a listo
-  const handleGuardarPesaje = async () => {
-    if (!modalPesaje.pedido) return;
-    await handleCambiarEstado(modalPesaje.pedido.id, "listo", {
-      monto_final_real:
-        parseFloat(modalPesaje.montoFinal) ||
-        modalPesaje.pedido.monto_total_estimado,
-      notas: modalPesaje.pesoFinal
-        ? `Peso real: ${modalPesaje.pesoFinal}`
-        : null,
-    });
-    setModalPesaje({
-      open: false,
-      pedido: null,
-      pesoFinal: "",
-      montoFinal: "",
-    });
-  };
+
 
   const pedidosFiltrados = useMemo(() => {
     if (filtroEstado === "todos") return pedidos;
@@ -553,14 +664,7 @@ export default function PedidosSucursal() {
                     {pedido.estado === "en_corte" && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setModalPesaje({
-                            open: true,
-                            pedido,
-                            pesoFinal: "",
-                            montoFinal: pedido.monto_total_estimado,
-                          })
-                        }
+                        onClick={() => handleAbrirModalPesaje(pedido)}
                         className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                       >
                         <Scale className="size-3.5" />
@@ -653,86 +757,143 @@ export default function PedidosSucursal() {
         </div>
       )}
 
-      {/* ─── Modal de Carga de Peso Real ─── */}
-      {modalPesaje.open && modalPesaje.pedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 text-neutral-900">
-            <div className="flex items-center gap-2 mb-4 text-purple-700">
-              <Scale className="size-6" />
-              <h3 className="font-bold text-lg text-neutral-900">
-                Registrar Pesaje Real #{modalPesaje.pedido.id}
-              </h3>
-            </div>
-
-            <p className="text-xs text-neutral-500 mb-4">
-              Ingresá el monto final exacto según el peso en balanza para registrar
-              el cálculo y marcar el pedido como Listo.
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">
-                  Monto Final Real ($)
-                </label>
-                <input
-                  type="number"
-                  value={modalPesaje.montoFinal}
-                  onChange={(e) =>
-                    setModalPesaje({
-                      ...modalPesaje,
-                      montoFinal: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  placeholder="Ej: 14500"
-                />
+      {/* ─── Modal de Carga de Peso Real por Corte ─── */}
+      {modalPesaje.open && modalPesaje.pedido && (() => {
+        const { itemsArray, totalSolicitadoKg, totalRealKg, mermaKg, montoTotalFinal } = calcularResumenPesaje();
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 text-neutral-900 my-8">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <div className="flex items-center gap-2 text-main-blue">
+                  <Scale className="size-6 shrink-0" />
+                  <div>
+                    <h3 className="font-extrabold text-base sm:text-lg text-neutral-900">
+                      Pesaje Real · Comanda #{modalPesaje.pedido.id}
+                    </h3>
+                    <p className="text-xs text-neutral-500">
+                      Ingresá el peso exacto de balanza por cada corte solicitado
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-neutral-700 mb-1">
-                  Detalle del pesaje en balanza (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={modalPesaje.pesoFinal}
-                  onChange={(e) =>
+              {/* Lista de Cortes e Inputs */}
+              <div className="py-4 space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                {itemsArray.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    {/* Párrafo con nombre y kilaje pedido */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-extrabold text-sm text-neutral-900 truncate">
+                          {item.nombre}
+                        </span>
+                        {item.especie && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-neutral-200 text-neutral-700 capitalize shrink-0">
+                            {item.especie}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-500 mt-1 flex items-center gap-2 flex-wrap">
+                        <span>
+                          Pedido: <strong className="text-neutral-900">{item.kgSolicitados.toFixed(3)} kg</strong>
+                        </span>
+                        {item.precioKg > 0 && (
+                          <>
+                            <span className="text-neutral-300">•</span>
+                            <span className="text-neutral-600 font-medium">
+                              ${item.precioKg.toLocaleString("es-AR")}/kg
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Input de peso real y subtotal en pesos */}
+                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                      <div className="flex flex-col items-end">
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-0.5">
+                          Peso Real (kg)
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={modalPesaje.pesosItems[item.id] ?? ""}
+                            onChange={(e) => handlePesoItemChange(item.id, e.target.value)}
+                            onBlur={(e) => handlePesoItemBlur(item.id, e.target.value)}
+                            className="w-28 px-3 py-1.5 text-right font-black text-sm rounded-lg border border-neutral-300 focus:border-main-blue focus:ring-2 focus:ring-main-blue/20 outline-none bg-white text-neutral-900"
+                            placeholder="0.000"
+                          />
+                        </div>
+                      </div>
+
+                      {item.precioKg > 0 && (
+                        <div className="w-22 text-right pt-4">
+                          <span className="text-xs font-black text-emerald-700 block">
+                            ${item.precioFinalItem.toLocaleString("es-AR")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Resumen de Kilaje & Merma */}
+              <div className="p-3.5 rounded-xl bg-neutral-900 text-white space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400 font-semibold">Total Solicitado:</span>
+                  <span className="font-bold">{totalSolicitadoKg.toFixed(3)} kg</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400 font-semibold">Total Peso Real:</span>
+                  <span className="font-black text-emerald-400">{totalRealKg.toFixed(3)} kg</span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
+                  <span className="text-neutral-400 font-semibold">Diferencia / Merma:</span>
+                  <span className={`font-extrabold ${mermaKg >= 0 ? "text-amber-400" : "text-red-400"}`}>
+                    {mermaKg >= 0 ? `+${mermaKg.toFixed(3)} kg` : `${mermaKg.toFixed(3)} kg`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-700 text-sm">
+                  <span className="font-extrabold text-white">Monto Total Calculado:</span>
+                  <span className="text-base font-black text-emerald-400">
+                    ${montoTotalFinal.toLocaleString("es-AR")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex items-center justify-end gap-2.5 mt-5">
+                <button
+                  type="button"
+                  onClick={() =>
                     setModalPesaje({
-                      ...modalPesaje,
-                      pesoFinal: e.target.value,
+                      open: false,
+                      pedido: null,
+                      pesosItems: {},
                     })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  placeholder="Ej: Asado 2.150kg, Vacío 1.400kg"
-                />
+                  className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGuardarPesaje}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <CheckCircle className="size-4" />
+                  <span>Guardar Pesos & Marcar Listo</span>
+                </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 mt-6">
-              <button
-                type="button"
-                onClick={() =>
-                  setModalPesaje({
-                    open: false,
-                    pedido: null,
-                    pesoFinal: "",
-                    montoFinal: "",
-                  })
-                }
-                className="px-4 py-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleGuardarPesaje}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-2xs"
-              >
-                Guardar Pesaje & Marcar Listo
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <ModalAsignacionCortador
         isOpen={modalAsignacion.open && modalAsignacion.pedido}

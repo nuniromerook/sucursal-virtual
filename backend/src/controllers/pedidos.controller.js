@@ -379,8 +379,41 @@ const actualizarEstadoPedido = async (req, res) => {
     req.body.monto_final_real || req.body.monto_total_final;
   const cortador_id = req.body.cortador_id || req.body.empleado_id;
   const notas = req.body.notas;
+  const items_pesos = req.body.items_pesos || req.body.items;
 
   try {
+    // 1. Si vienen pesos individuales por ítem, actualizar pedido_items
+    let sumaCalculada = 0;
+    if (Array.isArray(items_pesos) && items_pesos.length > 0) {
+      for (const itemP of items_pesos) {
+        const itemId = Number(itemP.item_id || itemP.id);
+        const pesoReal = parseFloat(itemP.peso_real || itemP.peso_real_kg || itemP.cantidad_kg) || 0;
+
+        if (itemId > 0) {
+          const itemDb = await pool.query(
+            `SELECT precio_por_kg_congelado FROM pedido_items WHERE id = $1 AND pedido_id = $2`,
+            [itemId, id],
+          );
+          if (itemDb.rows.length > 0) {
+            const precioKg = parseFloat(itemDb.rows[0].precio_por_kg_congelado) || 0;
+            const precioFinalItem = itemP.precio_final
+              ? parseFloat(itemP.precio_final)
+              : Math.round(pesoReal * precioKg);
+            sumaCalculada += precioFinalItem;
+
+            await pool.query(
+              `UPDATE pedido_items 
+               SET peso_real = $1, precio_final = $2 
+               WHERE id = $3 AND pedido_id = $4`,
+              [pesoReal, precioFinalItem, itemId, id],
+            );
+          }
+        }
+      }
+    }
+
+    const montoFinalFinal = monto_final_real || (sumaCalculada > 0 ? sumaCalculada : null);
+
     const updateRes = await pool.query(
       `UPDATE pedidos
        SET estado_local = COALESCE($1, estado_local),
@@ -392,7 +425,7 @@ const actualizarEstadoPedido = async (req, res) => {
        RETURNING *`,
       [
         estado || null,
-        monto_final_real || null,
+        montoFinalFinal || null,
         notas || null,
         cortador_id ? Number(cortador_id) : null,
         id,
