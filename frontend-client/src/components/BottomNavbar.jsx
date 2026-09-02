@@ -9,8 +9,9 @@ export default function BottomNavbar() {
   const location = useLocation();
   const { totalItems = 0, openCart } = useCart();
   const { unreadCount = 0, openNotifications } = useNotifications();
-  const { usuario } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
+  const isLogged = Boolean(isAuthenticated || user);
   const currentPath = location.pathname;
 
   const isHome = currentPath === "/";
@@ -23,7 +24,7 @@ export default function BottomNavbar() {
   const isProfile = currentPath.startsWith("/perfil") || currentPath.startsWith("/ingresar");
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 transition-all">
+    <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1 transition-all">
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {/* 1. Inicio */}
         <Link
@@ -34,13 +35,9 @@ export default function BottomNavbar() {
               : "text-neutral-500 hover:text-neutral-900 font-medium"
           }`}
         >
-          <div className="relative">
-            <Home className={`size-5 transition-transform ${isHome ? "scale-110" : ""}`} />
-            {isHome && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-main-blue rounded-full" />
-            )}
-          </div>
-          <span className="text-[11px] mt-1 tracking-tight">Inicio</span>
+          <Home className={`size-5 transition-transform ${isHome ? "scale-110" : ""}`} />
+          <span className="text-[11px] mt-0.5 tracking-tight">Inicio</span>
+          <span className={`w-4 h-0.5 rounded-full mt-0.5 transition-all ${isHome ? "bg-main-blue" : "bg-transparent"}`} />
         </Link>
 
         {/* 2. Catálogo */}
@@ -52,13 +49,9 @@ export default function BottomNavbar() {
               : "text-neutral-500 hover:text-neutral-900 font-medium"
           }`}
         >
-          <div className="relative">
-            <LayoutGrid className={`size-5 transition-transform ${isCatalog ? "scale-110" : ""}`} />
-            {isCatalog && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-main-blue rounded-full" />
-            )}
-          </div>
-          <span className="text-[11px] mt-1 tracking-tight">Catálogo</span>
+          <LayoutGrid className={`size-5 transition-transform ${isCatalog ? "scale-110" : ""}`} />
+          <span className="text-[11px] mt-0.5 tracking-tight">Catálogo</span>
+          <span className={`w-4 h-0.5 rounded-full mt-0.5 transition-all ${isCatalog ? "bg-main-blue" : "bg-transparent"}`} />
         </Link>
 
         {/* 3. Carrito (Central con botón flotante / destacado) */}
@@ -69,16 +62,17 @@ export default function BottomNavbar() {
           aria-label="Abrir carrito de compras"
         >
           <div className="relative">
-            <div className="size-10 -mt-3.5 rounded-full bg-main-blue text-white flex items-center justify-center shadow-md shadow-main-blue/30 active:scale-95 transition-transform">
+            <div className="size-10 -mt-4 rounded-full bg-main-blue text-white flex items-center justify-center shadow-md shadow-main-blue/30 active:scale-95 transition-transform">
               <ShoppingBag className="size-5" />
             </div>
             {totalItems > 0 && (
-              <span className="absolute -top-3.5 -right-1 bg-main-red text-white text-[10px] font-extrabold size-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in">
+              <span className="absolute -top-4 -right-1 bg-main-red text-white text-[10px] font-extrabold size-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
             )}
           </div>
           <span className="text-[11px] font-semibold text-neutral-800 mt-0.5">Carrito</span>
+          <span className="w-4 h-0.5 bg-transparent mt-0.5" />
         </button>
 
         {/* 4. Notificaciones / Avisos */}
@@ -96,27 +90,24 @@ export default function BottomNavbar() {
               </span>
             )}
           </div>
-          <span className="text-[11px] mt-1 tracking-tight">Avisos</span>
+          <span className="text-[11px] mt-0.5 tracking-tight">Avisos</span>
+          <span className="w-4 h-0.5 bg-transparent mt-0.5" />
         </button>
 
         {/* 5. Cuenta / Perfil */}
         <Link
-          to={usuario ? "/perfil" : "/ingresar"}
+          to={isLogged ? "/perfil" : "/ingresar"}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isProfile
               ? "text-main-blue font-bold"
               : "text-neutral-500 hover:text-neutral-900 font-medium"
           }`}
         >
-          <div className="relative">
-            <User className={`size-5 transition-transform ${isProfile ? "scale-110" : ""}`} />
-            {isProfile && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-main-blue rounded-full" />
-            )}
-          </div>
-          <span className="text-[11px] mt-1 tracking-tight">
-            {usuario ? "Mi Perfil" : "Ingresar"}
+          <User className={`size-5 transition-transform ${isProfile ? "scale-110" : ""}`} />
+          <span className="text-[11px] mt-0.5 tracking-tight">
+            {isLogged ? "Mi Perfil" : "Ingresar"}
           </span>
+          <span className={`w-4 h-0.5 rounded-full mt-0.5 transition-all ${isProfile ? "bg-main-blue" : "bg-transparent"}`} />
         </Link>
       </div>
     </div>
