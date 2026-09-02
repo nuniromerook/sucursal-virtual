@@ -84,7 +84,7 @@ const getCatalogo = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("Error al obtener el catálogo:", error.message);
-    res.status(500).json({ error: "Error al obtener el catálogo" });
+    res.status(500).json({ error: "Error al obtener el catálogo", detalle: error.message });
   }
 };
 
@@ -140,7 +140,7 @@ const getCatalogoItem = async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Error al obtener el producto:", error.message);
-    res.status(500).json({ error: "Error al obtener el producto" });
+    res.status(500).json({ error: "Error al obtener el producto", detalle: error.message });
   }
 };
 
@@ -298,7 +298,7 @@ const updateCatalogoItem = async (req, res) => {
     }
 
     console.error("Error al actualizar el producto:", error.message);
-    res.status(500).json({ error: "Error al actualizar el producto" });
+    res.status(500).json({ error: "Error al actualizar el producto", detalle: error.message });
   }
 };
 
