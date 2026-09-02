@@ -112,6 +112,9 @@ const Sidebar = () => {
         <div
           aria-hidden="true"
           onClick={closeSidebar}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEndEvent}
           className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden touch-none"
         />
       )}

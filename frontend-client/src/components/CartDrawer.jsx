@@ -92,6 +92,9 @@ export default function CartDrawer() {
 
   return (
     <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEndEvent}
       className={`fixed inset-0 z-101 overflow-hidden transition-all duration-300 ${
         isCartOpen
           ? "pointer-events-auto visible"
@@ -110,9 +113,6 @@ export default function CartDrawer() {
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEndEvent}
           className={`w-full max-w-xs bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
             isCartOpen ? "translate-x-0" : "translate-x-full"
           }`}
