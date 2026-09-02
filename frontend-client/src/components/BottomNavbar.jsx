@@ -14,6 +14,10 @@ export default function BottomNavbar() {
   const isLogged = Boolean(isAuthenticated || user);
   const currentPath = location.pathname;
 
+  const handleLinkClick = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  };
+
   const isHome = currentPath === "/";
   const isCatalog =
     currentPath.startsWith("/productos") ||
@@ -31,6 +35,7 @@ export default function BottomNavbar() {
         {/* 1. Inicio */}
         <Link
           to="/"
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isHome
               ? "text-main-blue font-bold"
@@ -49,6 +54,7 @@ export default function BottomNavbar() {
         {/* 2. Catálogo */}
         <Link
           to="/productos"
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isCatalog
               ? "text-main-blue font-bold"
@@ -109,6 +115,7 @@ export default function BottomNavbar() {
         {/* 5. Cuenta / Perfil */}
         <Link
           to={isLogged ? "/perfil" : "/ingresar"}
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isProfile
               ? "text-main-blue font-bold"

@@ -60,6 +60,10 @@ const Sidebar = () => {
   };
 
   const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
+  const handleNavClick = () => {
     window.scroll({ top: 0, left: 0, behavior: "smooth" });
     setSidebarOpen(false);
   };
@@ -114,7 +118,7 @@ const Sidebar = () => {
       >
         {/* Header del panel */}
         <div className="flex justify-between px-5 pt-5 pb-4 border-b border-white/10">
-          <Link to="/" onClick={closeSidebar}>
+          <Link to="/" onClick={handleNavClick}>
             <img
               src="/favicon.svg"
               alt="Abastecedora Valette"
@@ -134,7 +138,7 @@ const Sidebar = () => {
         {/* Cuerpo del menú */}
         <nav className="flex-1 px-4 py-5 space-y-1">
           {/* Inicio */}
-          <NavLink to="/" end onClick={closeSidebar} className={linkClass}>
+          <NavLink to="/" end onClick={handleNavClick} className={linkClass}>
             <Home className="size-5 shrink-0" />
             <span>Inicio</span>
           </NavLink>
@@ -158,7 +162,7 @@ const Sidebar = () => {
           </button>
 
           {/* Mis Favoritos */}
-          <NavLink to="/favoritos" onClick={closeSidebar} className={linkClass}>
+          <NavLink to="/favoritos" onClick={handleNavClick} className={linkClass}>
             <Star className="size-5 shrink-0 fill-amber-400 text-amber-400" />
             <span>Mis Favoritos</span>
             {favoritesCount > 0 && (
@@ -179,7 +183,7 @@ const Sidebar = () => {
             <NavLink
               key={cat.nameId}
               to={`/${cat.nameId}`}
-              onClick={closeSidebar}
+              onClick={handleNavClick}
               className={linkClass}
             >
               <span className="text-base leading-none">{cat.emoji}</span>
@@ -196,21 +200,21 @@ const Sidebar = () => {
           </div>
 
           {/* Ofertas */}
-          <NavLink to="/ofertas" onClick={closeSidebar} className={linkClass}>
+          <NavLink to="/ofertas" onClick={handleNavClick} className={linkClass}>
             <Tag className="size-5 shrink-0" />
             <span>Ofertas</span>
           </NavLink>
 
           <NavLink
             to="/sucursales"
-            onClick={closeSidebar}
+            onClick={handleNavClick}
             className={linkClass}
           >
             <Store className="size-5 shrink-0" />
             <span>Sucursales</span>
           </NavLink>
 
-          <NavLink to="/envios" onClick={closeSidebar} className={linkClass}>
+          <NavLink to="/envios" onClick={handleNavClick} className={linkClass}>
             <Truck className="size-5 shrink-0" />
             <span>Envíos</span>
           </NavLink>
@@ -241,7 +245,7 @@ const Sidebar = () => {
               {/* Datos del usuario */}
               <Link
                 to="/perfil"
-                onClick={closeSidebar}
+                onClick={handleNavClick}
                 className="flex items-center gap-3 rounded-xl p-3 hover:bg-white/10 transition-colors"
               >
                 <div className="size-10 rounded-full bg-white text-main-blue font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden">
@@ -276,7 +280,7 @@ const Sidebar = () => {
               <div className="mt-2 flex gap-2">
                 <Link
                   to="/perfil"
-                  onClick={closeSidebar}
+                  onClick={handleNavClick}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all"
                 >
                   <Package className="size-3.5" />
@@ -300,7 +304,7 @@ const Sidebar = () => {
               </p>
               <Link
                 to="/ingresar"
-                onClick={closeSidebar}
+                onClick={handleNavClick}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white text-main-blue font-bold text-sm hover:bg-neutral-100 transition-all shadow"
               >
                 <User className="size-4" />
@@ -308,7 +312,7 @@ const Sidebar = () => {
               </Link>
               <Link
                 to="/ingresar"
-                onClick={closeSidebar}
+                onClick={handleNavClick}
                 state={{ defaultTab: "register" }}
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold transition-all"
               >

@@ -6,6 +6,10 @@ export default function BottomNavbarAdmin() {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  const handleLinkClick = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  };
+
   const isDashboard = currentPath === "/";
   const isCatalog = currentPath.startsWith("/catalogo");
   const isOrders = currentPath.includes("/pedidos");
@@ -17,6 +21,7 @@ export default function BottomNavbarAdmin() {
         {/* 1. Dashboard */}
         <Link
           to="/"
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isDashboard
               ? "text-main-blue font-bold"
@@ -31,6 +36,7 @@ export default function BottomNavbarAdmin() {
         {/* 2. Catálogo */}
         <Link
           to="/catalogo"
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isCatalog
               ? "text-main-blue font-bold"
@@ -45,6 +51,7 @@ export default function BottomNavbarAdmin() {
         {/* 3. Pedidos (Central destacado) */}
         <Link
           to="/sucursal/luis-guillon/pedidos"
+          onClick={handleLinkClick}
           className="flex flex-col items-center justify-center flex-1 py-1 text-neutral-700 hover:text-main-blue transition-all relative"
         >
           <div className="relative">
@@ -77,6 +84,7 @@ export default function BottomNavbarAdmin() {
         {/* 5. Sucursal */}
         <Link
           to="/sucursal/luis-guillon"
+          onClick={handleLinkClick}
           className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition-all ${
             isBranch
               ? "text-main-blue font-bold"

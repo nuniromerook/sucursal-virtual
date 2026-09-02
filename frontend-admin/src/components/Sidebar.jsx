@@ -43,7 +43,13 @@ const Sidebar = () => {
 
   const closeSidebar = () => {
     if (window.innerWidth < 1024) {
-      window.scroll({ top: 0, left: 0, behavior: "smooth" });
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleNavClick = () => {
+    window.scroll({ top: 0, left: 0, behavior: "smooth" });
+    if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
@@ -143,7 +149,7 @@ const Sidebar = () => {
 
           <ul className="mt-8 space-y-1">
             <li>
-              <NavLink to="/" onClick={closeSidebar} className={linkClassName}>
+              <NavLink to="/" onClick={handleNavClick} className={linkClassName}>
                 <Home className={iconStyle} /> Inicio
               </NavLink>
             </li>
@@ -166,7 +172,7 @@ const Sidebar = () => {
                     <li key={sucursal.id} className="space-y-1">
                       <NavLink
                         to={`/sucursal/${sucursal.slug}`}
-                        onClick={closeSidebar}
+                        onClick={handleNavClick}
                         className={linkClassName}
                       >
                         {sucursal.nombre}
@@ -190,7 +196,7 @@ const Sidebar = () => {
                   <li className="pt-1">
                     <NavLink
                       to="/sucursales/nueva"
-                      onClick={closeSidebar}
+                      onClick={handleNavClick}
                       className={linkClassName}
                     >
                       <Plus className={iconStyle} /> Agregar Sucursal
@@ -214,7 +220,7 @@ const Sidebar = () => {
                   <li>
                     <NavLink
                       to="/catalogo"
-                      onClick={closeSidebar}
+                      onClick={handleNavClick}
                       className={linkClassName}
                       end
                     >
@@ -224,7 +230,7 @@ const Sidebar = () => {
                   <li>
                     <NavLink
                       to="/catalogo/nuevo-producto"
-                      onClick={closeSidebar}
+                      onClick={handleNavClick}
                       className={linkClassName}
                     >
                       <Plus className={iconStyle} /> Nuevo producto
@@ -233,7 +239,7 @@ const Sidebar = () => {
                   <li>
                     <NavLink
                       to="/catalogo/combos"
-                      onClick={closeSidebar}
+                      onClick={handleNavClick}
                       className={linkClassName}
                     >
                       <Package className={iconStyle} /> Creador de Combos
