@@ -64,7 +64,7 @@ const getCatalogo = async (req, res) => {
       query = `SELECT c.*, 
                 ${PROMOS_ACTIVAS_SUBQUERY},
                 COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos,
-                COALESCE(ss.en_stock, true) AS en_stock
+                COALESCE(ss.disponible_kg > 0, NOT c.sin_stock) AS en_stock
          FROM catalogo c
          LEFT JOIN stock_sucursal ss ON ss.catalogo_id = c.id AND ss.sucursal_id = $${valores.length}
          ${whereClause}
@@ -73,7 +73,7 @@ const getCatalogo = async (req, res) => {
       query = `SELECT c.*, 
                 ${PROMOS_ACTIVAS_SUBQUERY},
                 COALESCE((SELECT COUNT(*)::int FROM cliente_favoritos f WHERE f.catalogo_id = c.id), 0) AS total_favoritos,
-                true AS en_stock
+                NOT c.sin_stock AS en_stock
          FROM catalogo c
          ${whereClause}
          ORDER BY c.nombre_producto`;
@@ -118,14 +118,14 @@ const getCatalogoItem = async (req, res) => {
     let query, valores;
     if (sucursal_id) {
       query = `SELECT c.*, ${promosSubquery},
-                      COALESCE(ss.en_stock, true) AS en_stock
+                      COALESCE(ss.disponible_kg > 0, NOT c.sin_stock) AS en_stock
                FROM catalogo c
                LEFT JOIN stock_sucursal ss ON ss.catalogo_id = c.id AND ss.sucursal_id = $2
                WHERE c.id::text = $1 OR c.slug = $1`;
       valores = [id, Number(sucursal_id)];
     } else {
       query = `SELECT c.*, ${promosSubquery},
-                      true AS en_stock
+                      NOT c.sin_stock AS en_stock
                FROM catalogo c
                WHERE c.id::text = $1 OR c.slug = $1`;
       valores = [id];
