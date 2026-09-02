@@ -422,23 +422,24 @@ const actualizarEstadoPedido = async (req, res) => {
         const est = (estado || "").toLowerCase();
         if (est.includes("corte") || est.includes("preparacion")) {
           notifTitulo = `Pedido #${id} en preparación 🔪`;
-          notifMensaje = `Nuestros cortadores están preparando y pesando tus cortes.`;
-        } else if (
-          est.includes("pesado") ||
-          (est.includes("listo") && !est.includes("retiro"))
-        ) {
-          notifTitulo = `¡Cortes pesados y empaquetados! ⚖️`;
-          notifMensaje = `Tu pedido #${id} ya fue preparado. Monto final: $${pedidoActualizado.monto_total_final || pedidoActualizado.total_estimado}.`;
+          notifMensaje = `Nuestros cortadores están preparando y fraccionando tus cortes frescos.`;
+          notifIcono = "scissors";
+        } else if (est.includes("listo") || est.includes("pesado")) {
+          if (pedidoActualizado.tipo_entrega !== "retiro_sucursal") {
+            notifTitulo = `¡Tu pedido #${id} está listo para despacho! 📦`;
+            notifMensaje = `Tu pedido fue empaquetado y en breve saldrá el repartidor hacia tu domicilio.`;
+          } else {
+            notifTitulo = `¡Tu pedido #${id} está listo para retirar! 🛍️`;
+            notifMensaje = `Podés pasar por el mostrador de la sucursal a retirar tu compra.`;
+          }
+          notifIcono = "package";
         } else if (est.includes("camino")) {
           notifTitulo = `Tu pedido #${id} va en camino 🛵`;
           notifMensaje = `El repartidor retiró tu pedido y se dirige a tu domicilio.`;
           notifIcono = "truck";
-        } else if (est.includes("retiro")) {
-          notifTitulo = `¡Tu pedido #${id} está listo para retirar! 🛍️`;
-          notifMensaje = `Podés pasar por el mostrador de la sucursal a retirar tu compra.`;
         } else if (est.includes("entregado") || est.includes("completado")) {
           notifTitulo = `¡Pedido #${id} entregado! 🎉`;
-          notifMensaje = `¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tu comida.`;
+          notifMensaje = `¡Gracias por tu compra en Abastecedora Valette! Que disfrutes tus cortes.`;
           notifIcono = "check";
         } else if (est.includes("cancelado") || est.includes("rechazado")) {
           notifTitulo = `Pedido #${id} cancelado ❌`;

@@ -28,7 +28,6 @@ const ESTADOS = [
   { key: "todos", label: "Todos los pedidos" },
   { key: "solicitado", label: "Solicitados" },
   { key: "en_corte", label: "En Corte" },
-  { key: "pesado", label: "Esperando Aprobación" },
   { key: "listo", label: "Listos" },
   { key: "en_camino", label: "En Camino" },
   { key: "entregado", label: "Entregados" },
@@ -163,15 +162,15 @@ export default function PedidosSucursal() {
     }
   };
 
-  // Confirmar pesaje real y pasar a esperando confirmación del cliente
+  // Confirmar pesaje real y pasar directamente a listo
   const handleGuardarPesaje = async () => {
     if (!modalPesaje.pedido) return;
-    await handleCambiarEstado(modalPesaje.pedido.id, "pesado", {
+    await handleCambiarEstado(modalPesaje.pedido.id, "listo", {
       monto_final_real:
         parseFloat(modalPesaje.montoFinal) ||
         modalPesaje.pedido.monto_total_estimado,
       notas: modalPesaje.pesoFinal
-        ? `Pesado real: ${modalPesaje.pesoFinal}`
+        ? `Peso real: ${modalPesaje.pesoFinal}`
         : null,
     });
     setModalPesaje({
@@ -547,7 +546,7 @@ export default function PedidosSucursal() {
                       </div>
                     )}
 
-                    {/* PASO 2: En Corte -> Cargar Pesaje Real */}
+                    {/* PASO 2: En Corte -> Cargar Pesaje Real y Marcar Listo */}
                     {pedido.estado === "en_corte" && (
                       <button
                         type="button"
@@ -559,34 +558,26 @@ export default function PedidosSucursal() {
                             montoFinal: pedido.monto_total_estimado,
                           })
                         }
-                        className="w-full py-2 px-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                        className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                       >
                         <Scale className="size-3.5" />
-                        <span>Cargar Pesaje Real & Precio</span>
+                        <span>Cargar Pesaje Real & Marcar Listo</span>
                       </button>
                     )}
 
-                    {/* PASO 3: Pesado -> Esperando confirmación cliente -> Pasar a Listo */}
+                    {/* Compatibilidad pedidos antiguos en estado pesado */}
                     {pedido.estado === "pesado" && (
-                      <div className="flex flex-col gap-1.5">
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-[11px] text-purple-800 flex items-center gap-1.5">
-                          <AlertCircle className="size-3.5 text-purple-600 shrink-0" />
-                          <span>
-                            Notificado al cliente. Esperando su confirmación.
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={isPendingAction}
-                          onClick={() =>
-                            handleCambiarEstado(pedido.id, "listo")
-                          }
-                          className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                        >
-                          <CheckCircle className="size-3.5" />
-                          <span>Cliente Confirmó / Pasar a Listo</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        disabled={isPendingAction}
+                        onClick={() =>
+                          handleCambiarEstado(pedido.id, "listo")
+                        }
+                        className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <CheckCircle className="size-3.5" />
+                        <span>Marcar Como Listo</span>
+                      </button>
                     )}
 
                     {/* PASO 4: Listo -> Despacho PedidosYa / Logística Propia / Mostrador */}

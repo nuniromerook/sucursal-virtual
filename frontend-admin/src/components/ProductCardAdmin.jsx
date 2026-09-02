@@ -144,7 +144,7 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
 
         <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-sm font-black text-neutral-900">
+            <span className="text-lg font-black text-neutral-900">
               {formatPrecio(price)}
             </span>
             <span className="text-[11px] font-medium text-neutral-400">

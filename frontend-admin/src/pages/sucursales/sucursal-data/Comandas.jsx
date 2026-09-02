@@ -31,7 +31,6 @@ const ESTADOS = [
   { key: "todos", label: "Todos los pedidos" },
   { key: "solicitado", label: "Solicitados" },
   { key: "en_corte", label: "En Corte" },
-  { key: "pesado", label: "Esperando Aprobación" },
   { key: "listo", label: "Listos" },
   { key: "en_camino", label: "En Camino" },
   { key: "entregado", label: "Entregados" },

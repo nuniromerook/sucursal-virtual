@@ -48,19 +48,11 @@ const ESTADOS = [
   },
   {
     key: "en_corte",
-    label: "En Corte",
-    desc: "Cortador preparando piezas de carne",
+    label: "En Preparación / Corte",
+    desc: "Cortador preparando y pesando cortes",
     icon: Scissors,
     color: "blue",
     bg: "bg-blue-50 text-blue-800 border-blue-200",
-  },
-  {
-    key: "pesado",
-    label: "Pesado / Aprobación",
-    desc: "Piezas pesadas, listo para confirmación de monto",
-    icon: Scale,
-    color: "purple",
-    bg: "bg-purple-50 text-purple-800 border-purple-200",
   },
   {
     key: "listo",
@@ -457,12 +449,12 @@ export default function ComandaDetalle() {
             <div className="p-4 bg-neutral-900 text-white flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider font-bold text-neutral-400">
-                  Monto Final / Estimado
+                  Monto Total del Pedido
                 </p>
                 <p className="text-xs text-neutral-400">
                   {pedido.monto_total_final
-                    ? "Monto pesado final"
-                    : "Monto estimado sujeto al peso exacto"}
+                    ? "Monto final calculado"
+                    : "Monto total acumulado"}
                 </p>
               </div>
               <div className="text-right">
