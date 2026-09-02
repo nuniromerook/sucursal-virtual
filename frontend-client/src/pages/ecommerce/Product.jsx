@@ -8,6 +8,7 @@ import {
   Minus,
   Plus,
   ShoppingBag,
+  ShoppingCart,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -378,9 +379,9 @@ export default function Product() {
                     <button
                       type="submit"
                       disabled={cantidadNum < 1 || !productData.en_stock}
-                      className={`mt-6 flex w-full items-center justify-center gap-2 rounded-md px-8 py-3 text-base font-medium transition-colors ${!productData.en_stock ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-main-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"}`}
+                      className={`mt-6 flex w-full items-center justify-center gap-2 rounded-md px-8 py-3 text-base font-semibold transition-colors ${!productData.en_stock ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-main-blue text-white hover:bg-main-blue/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"}`}
                     >
-                      <ShoppingBag className="size-5" />
+                      <ShoppingCart className="size-5 stroke-[2.3]" />
                       {!productData.en_stock
                         ? "Sin stock en esta sucursal"
                         : "Agregar al carrito"}

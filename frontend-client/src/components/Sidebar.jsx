@@ -115,6 +115,17 @@ const Sidebar = () => {
             )}
           </button>
 
+          {/* Mis Favoritos */}
+          <NavLink to="/favoritos" onClick={closeSidebar} className={linkClass}>
+            <Star className="size-5 shrink-0 fill-amber-400 text-amber-400" />
+            <span>Mis Favoritos</span>
+            {favoritesCount > 0 && (
+              <span className="ml-auto bg-amber-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5 min-w-5 text-center shadow-2xs">
+                {favoritesCount}
+              </span>
+            )}
+          </NavLink>
+
           {/* Separador: Tienda */}
           <div className="pt-4 pb-1">
             <p className="text-[10px] font-bold tracking-widest uppercase text-white/40 px-3">
@@ -141,17 +152,6 @@ const Sidebar = () => {
               Información
             </p>
           </div>
-
-          {/* Mis Favoritos */}
-          <NavLink to="/favoritos" onClick={closeSidebar} className={linkClass}>
-            <Star className="size-5 shrink-0 fill-amber-400 text-amber-400" />
-            <span>Mis Favoritos</span>
-            {favoritesCount > 0 && (
-              <span className="ml-auto bg-amber-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5 min-w-5 text-center shadow-2xs">
-                {favoritesCount}
-              </span>
-            )}
-          </NavLink>
 
           {/* Ofertas */}
           <NavLink to="/ofertas" onClick={closeSidebar} className={linkClass}>

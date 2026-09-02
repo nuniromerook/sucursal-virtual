@@ -58,8 +58,8 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-lg border border-neutral-200/80 bg-white p-2.5 shadow-2xs hover:border-main-blue/50 hover:shadow-xs transition-all duration-200">
-      <div className="flex flex-col h-full">
+    <div className="group relative flex flex-col justify-between rounded-lg border border-neutral-200/80 bg-white p-2.5 shadow-2xs hover:border-main-blue/50 hover:shadow-xs transition-all duration-200 h-full">
+      <div className="flex flex-col h-full gap-2">
         {/* Imagen del corte */}
         <Link
           to={`/${categoriaSlug}/${productSlug}`}
@@ -102,7 +102,7 @@ const ProductCard = ({ product }) => {
             <Star
               className={`size-4 ${
                 isFavorite
-                  ? "fill-amber-400 text-amber-400"
+                  ? "fill-amber-400 text-amber-400 hover:fill-amber-600 hover:text-amber-600"
                   : "text-neutral-500 hover:text-neutral-900"
               }`}
             />
@@ -110,7 +110,7 @@ const ProductCard = ({ product }) => {
         </Link>
 
         {/* Info del Producto */}
-        <div className="mt-2.5 flex flex-col gap-1">
+        <div className="flex flex-col">
           <h3
             className={`flex text-sm ${
               product.destacar ? "text-amber-600" : "text-neutral-900"
@@ -118,7 +118,7 @@ const ProductCard = ({ product }) => {
           >
             <Link
               to={`/${categoriaSlug}/${productSlug}`}
-              className="flex items-center gap-0.5"
+              className="flex"
               title="Producto destacado"
             >
               {name}
@@ -134,14 +134,15 @@ const ProductCard = ({ product }) => {
 
           {/* Promos por cantidad */}
           {promos.length > 0 && (
-            <div className="mt-1 flex flex-col bg-emerald-50/70 border border-emerald-100 rounded px-2 py-1">
+            <div className="mt-2 flex flex-col bg-emerald-50/70 border border-emerald-100 rounded px-2 py-1">
               {promos.map((promo) => (
                 <p
                   key={promo.id}
                   className="text-xs font-black text-emerald-800"
                 >
-                  {Number(promo.cantidad_kg)} {unidadMedida} x{" "}
-                  {formatPrecio(Number(promo.precio_promocional))}
+                  {Number(promo.cantidad_kg)}
+                  {unidadMedida} por{" "}
+                  {formatPrecio(Number(promo.precio_promocional))}!
                 </p>
               ))}
             </div>
@@ -149,7 +150,7 @@ const ProductCard = ({ product }) => {
 
           {/* Precio y Oferta */}
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-sm sm:text-base font-black text-neutral-900">
+            <span className="text-lg font-black text-neutral-900">
               {formatPrecio(price)}
             </span>
             <span className="text-[11px] font-medium text-neutral-400">
