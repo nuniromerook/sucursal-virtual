@@ -5,14 +5,14 @@ const Navbar = () => {
   const { sidebarOpen, setSidebarOpen, navbarTitle } = useAppContext();
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-18 lg:h-fit items-center justify-between border-b border-gray-200 bg-white px-6 py-4 lg:hidden">
+      <header className="sticky top-0 z-20 flex h-18 lg:h-fit items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center gap-4">
           <button
             type="button"
             aria-expanded={sidebarOpen}
             aria-controls="dashboard-sidebar"
             onClick={() => setSidebarOpen((v) => !v)}
-            className="cursor-pointer rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 lg:hidden"
+            className="cursor-pointer rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100"
           >
             <svg
               aria-hidden="true"

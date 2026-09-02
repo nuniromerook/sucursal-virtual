@@ -38,7 +38,7 @@ export default function BottomNavbar() {
           }`}
         >
           <Home
-            className={`size-5 transition-transform ${isHome ? "scale-110" : ""}`}
+            className={`size-5 stroke-[1.6px] transition-transform ${isHome ? "scale-110" : ""}`}
           />
           <span className="text-[11px] mt-0.5 tracking-tight">Inicio</span>
           <span
@@ -56,7 +56,7 @@ export default function BottomNavbar() {
           }`}
         >
           <LayoutGrid
-            className={`size-5 transition-transform ${isCatalog ? "scale-110" : ""}`}
+            className={`size-5 stroke-[1.6px] transition-transform ${isCatalog ? "scale-110" : ""}`}
           />
           <span className="text-[11px] mt-0.5 tracking-tight">Catálogo</span>
           <span
@@ -72,11 +72,11 @@ export default function BottomNavbar() {
           aria-label="Abrir carrito de compras"
         >
           <div className="relative">
-            <div className="size-10 -mt-4 rounded-full bg-main-blue text-white flex items-center justify-center shadow-md shadow-main-blue/30 active:scale-95 transition-transform">
-              <ShoppingCart className="size-5" />
+            <div className="size-13 -mt-6 rounded-full bg-main-blue text-white flex items-center justify-center shadow-md shadow-main-blue/20 active:scale-95 transition-transform">
+              <ShoppingCart className="size-6" />
             </div>
             {totalItems > 0 && (
-              <span className="absolute -top-5 -right-2 bg-main-red text-white text-[10px] font-extrabold size-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in">
+              <span className="absolute -top-6 -right-2 bg-main-red text-white text-[10px] font-extrabold size-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
             )}
@@ -95,7 +95,7 @@ export default function BottomNavbar() {
           aria-label="Abrir notificaciones"
         >
           <div className="relative">
-            <Bell className="size-5" />
+            <Bell className="size-5 stroke-[1.6px]" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1.5 bg-main-red text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full flex items-center justify-center border-2 border-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -116,7 +116,7 @@ export default function BottomNavbar() {
           }`}
         >
           <User
-            className={`size-5 transition-transform ${isProfile ? "scale-110" : ""}`}
+            className={`size-5 stroke-[1.6px] transition-transform ${isProfile ? "scale-110" : ""}`}
           />
           <span className="text-[11px] mt-0.5 tracking-tight">
             {isLogged ? "Mi Perfil" : "Ingresar"}
