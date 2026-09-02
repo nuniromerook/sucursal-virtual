@@ -615,8 +615,8 @@ export default function Inicio() {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto scrollbar-none -mx-5 sm:mx-0 px-5 sm:px-0">
+          <table className="w-full text-left text-xs min-w-[650px]">
             <thead>
               <tr className="border-b border-neutral-200 text-neutral-400 font-bold uppercase text-[10px]">
                 <th className="pb-2.5">Pedido</th>
