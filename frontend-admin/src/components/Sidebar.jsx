@@ -42,8 +42,10 @@ const Sidebar = () => {
   const iconStyle = "shrink-0 stroke-[1.5px] size-5 text-gray-600";
 
   const closeSidebar = () => {
-    window.scroll({ top: 0, left: 0, behavior: "smooth" });
-    setSidebarOpen(false);
+    if (window.innerWidth < 1024) {
+      window.scroll({ top: 0, left: 0, behavior: "smooth" });
+      setSidebarOpen(false);
+    }
   };
 
   useEffect(() => {

@@ -13,13 +13,15 @@ export default function DashboardLayout() {
   return (
     <div className="flex min-h-screen bg-neutral-100 text-neutral-900 font-sans pb-16 lg:pb-0">
       <Sidebar />
-      <main className="flex flex-col flex-1 min-w-0 bg-neutral-100 w-full lg:max-w-[calc(100vw-16rem)] mx-auto transition-all duration-300 ease-in-out">
+      <div className="flex flex-col flex-1 min-w-0 bg-neutral-100">
         <Navbar />
-        <Breadcrumb routes={ADMIN_BREADCRUMB_ROUTES} extra={breadcrumbExtra} />
-        <div className="flex-1 p-4 sm:p-6">
-          <Outlet />
-        </div>
-      </main>
+        <main className="flex-1 flex flex-col w-full lg:max-w-[calc(100vw-16rem)] mx-auto transition-all duration-300 ease-in-out">
+          <Breadcrumb routes={ADMIN_BREADCRUMB_ROUTES} extra={breadcrumbExtra} />
+          <div className="flex-1 p-4 sm:p-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
       <BottomNavbarAdmin />
     </div>
   );
