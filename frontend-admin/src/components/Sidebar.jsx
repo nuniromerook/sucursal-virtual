@@ -1,5 +1,5 @@
 // src/components/Sidebar.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
@@ -61,6 +61,33 @@ const Sidebar = () => {
     loadSucursales();
   }, []);
 
+  // Swipe to close
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    // Only apply swipe to close on mobile
+    if (window.innerWidth >= 1024) return;
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    if (window.innerWidth >= 1024) return;
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEndEvent = () => {
+    if (window.innerWidth >= 1024) return;
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > minSwipeDistance) {
+      // Swiped left
+      closeSidebar();
+    }
+  };
+
   useEffect(() => {
     if (sidebarOpen && window.innerWidth < 1024) {
       document.body.style.overflow = "hidden";
@@ -85,12 +112,15 @@ const Sidebar = () => {
         <div
           aria-hidden="true"
           onClick={closeSidebar}
-          className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden touch-none"
         />
       )}
 
       <div
         id="dashboard-sidebar"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEndEvent}
         className={`fixed inset-y-0 start-0 z-40 bg-white transition-all duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 overflow-hidden select-none ${
           sidebarOpen
             ? "w-64 translate-x-0 border-e border-gray-200"

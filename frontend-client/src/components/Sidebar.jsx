@@ -1,5 +1,5 @@
 // frontend/src/components/Sidebar.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
@@ -34,6 +34,30 @@ const Sidebar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems, openCart } = useCart();
   const { favoritesCount } = useFavorites();
+  const sidebarRef = useRef(null);
+
+  // Swipe to close
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEndEvent = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > minSwipeDistance) {
+      // Swiped left
+      closeSidebar();
+    }
+  };
 
   const closeSidebar = () => {
     window.scroll({ top: 0, left: 0, behavior: "smooth" });
@@ -77,6 +101,10 @@ const Sidebar = () => {
       {/* Panel lateral */}
       <div
         id="ecom-sidebar"
+        ref={sidebarRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEndEvent}
         className={`fixed inset-y-0 inset-s-0 z-101 flex w-72 flex-col bg-main-blue overflow-y-auto transition-transform duration-300 select-none shadow-2xl lg:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
