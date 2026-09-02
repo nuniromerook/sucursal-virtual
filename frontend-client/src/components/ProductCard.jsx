@@ -68,16 +68,14 @@ const ProductCard = ({ product }) => {
           <img
             alt={imageAlt}
             src={imageSrc}
-            className={`h-full w-full object-cover object-center aspect-square transition-transform duration-300 group-hover:scale-105 ${!product.en_stock ? "opacity-50 grayscale" : ""}`}
+            className="h-full w-full object-cover object-center aspect-square transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
 
           {!product.en_stock && (
-            <div className="absolute inset-0 bg-neutral-900/10 flex items-center justify-center z-10">
-              <span className="bg-neutral-900/80 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
-                Sin Stock
-              </span>
-            </div>
+            <span className="absolute top-2 left-2 bg-main-red/80 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm shadow-md">
+              Sin Stock
+            </span>
           )}
 
           {/* Badges superiores */}
