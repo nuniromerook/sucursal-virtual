@@ -15,8 +15,8 @@ cd /var/www/sucursal-virtual
 # 2. Descargar últimos cambios de GitHub
 echo "📥 [Git] Descargando últimos cambios de GitHub..."
 git config --global --add safe.directory /var/www/sucursal-virtual
+git fetch origin main
 git reset --hard origin/main
-git pull origin main
 
 # 3. Backend
 echo "⚙️ [Backend] Instalando dependencias y reiniciando PM2..."
