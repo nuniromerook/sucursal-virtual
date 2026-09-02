@@ -8,6 +8,9 @@ description: >-
 
 Permite empaquetar, enviar cambios a GitHub y desplegar automáticamente en el VPS Linux.
 
+## Regla Estricta de Trabajo
+**IMPORTANTE:** Durante el desarrollo normal, **SÓLO** guarda los cambios de forma local en los archivos del sistema. **NUNCA** ejecutes commits automáticos, pushes, ni despliegues en el VPS sin autorización explícita. El código sólo se subirá y desplegará cuando el usuario dé el "OK" definitivo o pida explícitamente ejecutar esta skill (`git-pull`, `deploy`, etc).
+
 ## Pasos de Ejecución
 
 1. **Git Status & Commit**:

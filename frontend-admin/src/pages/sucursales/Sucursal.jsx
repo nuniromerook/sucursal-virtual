@@ -24,7 +24,7 @@ const NavLinkTab = ({ to, text, icon: Icon, badge, end }) => {
       className={({ isActive }) =>
         `whitespace-nowrap py-2 px-3.5 rounded-md font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer ${
           isActive
-            ? "bg-main-blue text-white shadow-2xs"
+            ? "bg-main-blue text-white shadow-2xs active-tab"
             : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
         }`
       }
@@ -47,6 +47,17 @@ const Sucursal = () => {
   const [sucursal, setSucursal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
+  const tabContainerRef = React.useRef(null);
+
+  // Scroll active tab into view
+  useEffect(() => {
+    if (tabContainerRef.current) {
+      const activeBtn = tabContainerRef.current.querySelector(".active-tab");
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  });
 
   // Cargar datos de la sucursal
   useEffect(() => {
@@ -111,6 +122,7 @@ const Sucursal = () => {
     <div className="flex flex-col gap-5">
       {/* ─── Pestañas de Navegación de la Sucursal ─── */}
       <div
+        ref={tabContainerRef}
         role="tablist"
         className="bg-white rounded-lg p-1.5 border border-neutral-200/80 shadow-2xs flex items-center gap-1.5 overflow-x-auto scrollbar-none"
       >

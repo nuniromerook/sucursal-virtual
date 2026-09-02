@@ -197,7 +197,7 @@ export default function OrderSuccess() {
                   ? "bg-red-50 text-red-600 border-red-200"
                   : stepActual === 4
                     ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                    : "bg-blue-50 text-main-blue border-blue-200 animate-pulse"
+                    : "bg-blue-50 text-main-blue border-blue-200"
               }`}
             >
               {isCancelado ? (
@@ -254,8 +254,8 @@ export default function OrderSuccess() {
                     Completado
                   </span>
                 ) : (
-                  <span className="text-[11px] font-bold text-main-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
-                    <span className="size-1.5 rounded-full bg-main-blue animate-ping" />
+                  <span className="text-[11px] font-bold text-main-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-2">
+                    <span className="size-1 rounded-full bg-main-blue animate-ping" />
                     En vivo
                   </span>
                 )}
@@ -335,7 +335,7 @@ export default function OrderSuccess() {
               </div>
 
               {/* ─── Descripción detallada de la etapa actual ─── */}
-              <div className="pt-2.5 border-t border-neutral-200/60 text-xs text-neutral-600 flex items-start gap-2 bg-white/70 p-3 rounded-lg">
+              <div className="pt-2.5 border-t border-neutral-200/60 text-xs text-neutral-600 flex flex-col items-start gap-1 bg-white/70 p-3 rounded-lg">
                 <span className="font-bold text-neutral-900 shrink-0">
                   {stepActual === 1 && "1. Pedido Solicitado:"}
                   {stepActual === 2 && "2. Fraccionamiento en Curso:"}
@@ -457,22 +457,22 @@ export default function OrderSuccess() {
                   className="py-3 flex items-center justify-between gap-3 text-neutral-900"
                 >
                   <div className="min-w-0">
-                    <p className="font-bold text-xs sm:text-sm text-neutral-900 truncate">
+                    <p className="font-bold text-sm sm:text-base text-neutral-900 truncate">
                       {item.nombre_producto}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">
+                    <p className="text-sm text-neutral-500 mt-0.5">
                       {formatCantidad(
                         item.cantidad_kg_solicitada,
                         item.unidad_medida || "kg",
                       )}{" "}
-                      •{" "}
+                      --{" "}
                       {formatPrecioPorUnidad(
                         item.precio_por_kg_congelado,
                         item.unidad_medida || "kg",
                       )}
                     </p>
                   </div>
-                  <span className="font-black text-xs sm:text-sm text-neutral-900 shrink-0">
+                  <span className="font-black text-sm sm:text-base text-neutral-900 shrink-0">
                     {formatPrecio(item.precio_estimado)}
                   </span>
                 </div>
@@ -485,7 +485,6 @@ export default function OrderSuccess() {
                 <span className="font-black text-base sm:text-lg text-neutral-900">
                   Total
                 </span>
-
               </div>
               <span className="font-black text-xl sm:text-2xl text-main-blue">
                 {formatPrecio(

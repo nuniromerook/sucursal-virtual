@@ -61,6 +61,17 @@ const Sidebar = () => {
     loadSucursales();
   }, []);
 
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [sidebarOpen]);
+
   const linkClassName = ({ isActive }) =>
     `block rounded-lg px-3.5 py-2 text-xs sm:text-sm font-bold transition-all flex gap-x-2.5 items-center ${
       isActive
@@ -80,16 +91,19 @@ const Sidebar = () => {
 
       <div
         id="dashboard-sidebar"
-        className={`fixed inset-y-0 start-0 z-40 flex w-64 flex-col justify-between overflow-y-auto border-e border-gray-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 select-none ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 start-0 z-40 bg-white transition-all duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 overflow-hidden select-none ${
+          sidebarOpen
+            ? "w-64 translate-x-0 border-e border-gray-200"
+            : "w-64 -translate-x-full lg:translate-x-0 lg:w-0 border-transparent"
         }`}
       >
-        <div className="p-2">
-          <img
-            src="/favicon.svg"
-            alt=""
-            className="size-40 aspect-square mx-auto"
-          />
+        <div className="w-64 flex flex-col justify-between h-full overflow-y-auto">
+          <div className="p-2">
+            <img
+              src="/favicon.svg"
+              alt=""
+              className="size-40 aspect-square mx-auto"
+            />
           <p className="flex w-fit mx-auto text-lg">Panel de Administración</p>
 
           <ul className="mt-8 space-y-1">
@@ -255,6 +269,7 @@ const Sidebar = () => {
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

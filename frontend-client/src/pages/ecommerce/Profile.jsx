@@ -1,5 +1,5 @@
 // frontend-client/src/pages/ecommerce/Profile.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { User, Sparkles, Package, Star, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -75,6 +75,17 @@ export default function Profile() {
   const nombreLimpio = user.nombre
     ? user.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
     : "Cliente Valette";
+
+  const tabContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (tabContainerRef.current) {
+      const activeBtn = tabContainerRef.current.querySelector('[aria-selected="true"]');
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  }, [activeTab]);
 
   return (
     <div className="w-full min-h-screen pb-14">
@@ -199,6 +210,7 @@ export default function Profile() {
 
         {/* ─── Selector de pestañas Scrolleable en Mobile ─── */}
         <div
+          ref={tabContainerRef}
           role="tablist"
           className="bg-white rounded-lg p-1.5 border border-neutral-200/80 shadow-2xs flex items-center gap-1.5 mb-5 overflow-x-auto scrollbar-none flex-nowrap"
         >

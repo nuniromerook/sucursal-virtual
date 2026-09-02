@@ -6,3 +6,29 @@
   --color-main-blue: #1e3b6c;
   --color-main-red: #ef393a;
 }
+
+@layer base {
+  /* Ocultar scrollbars globalmente */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Excepción para cuando se quiera mostrar explícitamente */
+  .show-scrollbar {
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
+  }
+  .show-scrollbar::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+    height: 6px;
+  }
+  .show-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+}

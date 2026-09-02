@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   X,
@@ -47,6 +47,26 @@ export default function CartDrawer() {
 
   const drawerRef = useRef(null);
 
+  // Swipe to close
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance < -minSwipeDistance) {
+      closeCart();
+    }
+  };
+
   // Cerrar con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -90,6 +110,9 @@ export default function CartDrawer() {
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEndEvent}
           className={`w-full max-w-xs bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
             isCartOpen ? "translate-x-0" : "translate-x-full"
           }`}

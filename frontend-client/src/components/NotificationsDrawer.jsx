@@ -74,6 +74,26 @@ export default function NotificationsDrawer() {
   const [filtro, setFiltro] = useState("todas"); // 'todas' | 'no_leidas'
   const drawerRef = useRef(null);
 
+  // Swipe to close
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance < -minSwipeDistance) {
+      closeNotifications();
+    }
+  };
+
   // Cerrar con Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -162,6 +182,9 @@ export default function NotificationsDrawer() {
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEndEvent}
           className={`w-full max-w-sm bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
             isDrawerOpen ? "translate-x-0" : "translate-x-full"
           }`}
@@ -313,7 +336,7 @@ export default function NotificationsDrawer() {
           </div>
 
           {/* ─── Lista de Notificaciones ─── */}
-          <div className="flex-1 overflow-y-auto divide-y divide-neutral-100 px-4 py-2">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="space-y-3 py-4">
                 {[...Array(3)].map((_, i) => (
@@ -353,56 +376,59 @@ export default function NotificationsDrawer() {
                   <div
                     key={notif.id}
                     onClick={() => handleCardClick(notif)}
-                    className={`py-3.5 px-3 rounded-xl transition-all cursor-pointer flex items-start gap-3 my-1 border ${
+                    className={`py-3 px-4 transition-all cursor-pointer flex items-start gap-3 border-b last:border-b-0 ${
                       !notif.leida
-                        ? "bg-blue-50/40 hover:bg-blue-50/80 border-blue-200/60 shadow-2xs"
-                        : "bg-white hover:bg-neutral-50 border-neutral-100"
+                        ? "bg-white border-neutral-200"
+                        : "bg-neutral-50/50 border-neutral-100"
                     }`}
                   >
-                    {/* Icono temático */}
+                    {/* Icono temático (estilo Avatar) */}
                     <div
-                      className={`size-8.5 rounded-lg flex items-center justify-center border shrink-0 mt-0.5 ${getIconBg(
+                      className={`size-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getIconBg(
                         notif.tipo
                       )}`}
                     >
                       {renderIcon(notif.tipo, notif.icono)}
                     </div>
 
-                    {/* Contenido */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1.5 mb-1">
-                        <h4 className="text-xs font-bold text-neutral-900 truncate">
+                    {/* Contenido principal */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4
+                          className={`text-sm truncate ${
+                            !notif.leida ? "font-bold text-neutral-900" : "font-semibold text-neutral-700"
+                          }`}
+                        >
                           {notif.titulo}
                         </h4>
-                        <span className="text-[10px] text-neutral-400 shrink-0 flex items-center gap-1">
-                          <Clock className="size-2.5" />
-                          {formatTiempoRelativo(notif.creada_en)}
+                        <span
+                          className={`text-xs shrink-0 whitespace-nowrap ${
+                            !notif.leida ? "font-bold text-main-blue" : "text-neutral-500"
+                          }`}
+                        >
+                          {formatTiempoRelativo(notif.creada_en).replace("Hace ", "")}
                         </span>
                       </div>
 
-                      <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+                      <p
+                        className={`text-xs line-clamp-2 mt-0.5 leading-snug ${
+                          !notif.leida ? "font-semibold text-neutral-800" : "text-neutral-500"
+                        }`}
+                      >
                         {notif.mensaje}
                       </p>
 
                       {/* Badge de estado vivo para pedidos */}
                       {estadoBadge && (
-                        <div className="mt-2 flex items-center gap-1.5">
+                        <div className="mt-1.5 flex items-center gap-1.5">
                           <span
-                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${estadoBadge.color}`}
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${estadoBadge.color}`}
                           >
                             {estadoBadge.label}
-                          </span>
-                          <span className="text-[10px] text-main-blue font-bold flex items-center gap-0.5 hover:underline">
-                            Ver seguimiento <ChevronRight className="size-3" />
                           </span>
                         </div>
                       )}
                     </div>
-
-                    {/* Punto azul de no leída */}
-                    {!notif.leida && (
-                      <div className="size-2 rounded-full bg-main-blue shrink-0 mt-1.5 shadow-2xs" />
-                    )}
                   </div>
                 );
               })

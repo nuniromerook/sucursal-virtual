@@ -1,5 +1,5 @@
 // frontend/src/components/Sidebar.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
@@ -44,6 +44,17 @@ const Sidebar = () => {
     logout();
     closeSidebar();
   };
+
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [sidebarOpen]);
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${

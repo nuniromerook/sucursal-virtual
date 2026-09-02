@@ -118,7 +118,7 @@ export default function PedidosSucursal() {
       const res = await fetch(
         `${VITE_API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
         {
-          method: "PATCH",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
