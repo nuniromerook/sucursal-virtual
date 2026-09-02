@@ -483,15 +483,9 @@ export default function OrderSuccess() {
             <div className="pt-3.5 mt-2 border-t border-neutral-200 flex justify-between items-baseline">
               <div>
                 <span className="font-black text-base sm:text-lg text-neutral-900">
-                  {pedido.monto_total_final
-                    ? "Monto Total Final"
-                    : "Total Estimado"}
+                  Total
                 </span>
-                <p className="text-[11px] text-neutral-400">
-                  {pedido.monto_total_final
-                    ? "Pesaje final confirmado por la sucursal"
-                    : "Sujeto a variación mínima por gramaje exacto"}
-                </p>
+
               </div>
               <span className="font-black text-xl sm:text-2xl text-main-blue">
                 {formatPrecio(

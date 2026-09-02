@@ -355,17 +355,12 @@ export default function CartDrawer() {
                 )}
 
                 <div className="flex justify-between text-base font-bold text-neutral-900 pt-2 border-t border-neutral-200">
-                  <span>Total estimado</span>
+                  <span>Total</span>
                   <span className="text-lg text-main-blue">
                     {formatPrecio(totalEstimado)}
                   </span>
                 </div>
               </div>
-
-              <p className="text-[11px] text-neutral-400 text-center">
-                * El peso real y precio final se confirman con precisión de
-                balanza al fraccionar tu pedido.
-              </p>
 
               {/* Botones de acción */}
               <div className="flex flex-col gap-2 pt-1">

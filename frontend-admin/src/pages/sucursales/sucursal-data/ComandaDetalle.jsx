@@ -33,6 +33,8 @@ import {
   Package,
   CheckCircle,
 } from "lucide-react";
+import { formatMoney } from "../../../utils/formatters";
+import ModalAsignacionCortador from "../../../components/ModalAsignacionCortador";
 import ButtonLoader from "../../../components/ui/ButtonLoader";
 
 const ESTADOS = [
@@ -154,12 +156,12 @@ export default function ComandaDetalle() {
 
     try {
       const res = await fetch(
-        `${VITE_API_URL}/sucursales/${targetSucursal}/empleados`,
+        `${VITE_API_URL}/sucursales/${targetSucursal}/cortadores-carga`,
       );
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          setCortadores(data.filter((e) => e.rol === "cortador" && e.activo));
+          setCortadores(data);
         }
       }
     } catch (err) {
@@ -234,13 +236,13 @@ export default function ComandaDetalle() {
   };
 
   // Asignar cortador
-  const handleAsignarCortador = async (cortadorId) => {
+  const handleAsignarCortador = async (cortador) => {
     setIsUpdating(true);
     try {
       const res = await fetch(`${VITE_API_URL}/pedidos/${id}/estado`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cortador_id: cortadorId }),
+        body: JSON.stringify({ cortador_id: cortador.id }),
       });
 
       if (!res.ok) throw new Error("Error al asignar cortador");
@@ -736,76 +738,14 @@ export default function ComandaDetalle() {
       </div>
 
       {/* ─── Modal de Selección de Cortador para Encargados ─── */}
-      {modalCortadorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs select-none">
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
-              <div className="flex items-center gap-2">
-                <Scissors className="size-4 text-main-blue" />
-                <h3 className="font-extrabold text-sm text-neutral-900">
-                  Asignar Cortador para Comanda #{pedido.id}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalCortadorOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-              {cortadores.length === 0 ? (
-                <p className="text-xs text-neutral-500 italic py-4 text-center">
-                  No hay cortadores activos disponibles en esta sucursal.
-                </p>
-              ) : (
-                cortadores.map((cortador) => (
-                  <button
-                    key={cortador.id}
-                    type="button"
-                    disabled={isUpdating}
-                    onClick={() => handleAsignarCortador(cortador.id)}
-                    className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer text-left ${
-                      pedido.cortador_id === cortador.id
-                        ? "bg-main-blue/10 border-main-blue text-main-blue font-bold"
-                        : "bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-800"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-8 rounded-full bg-main-blue/10 text-main-blue font-black flex items-center justify-center text-xs">
-                        {cortador.apodo?.[0] || cortador.nombre?.[0] || "C"}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold">
-                          {cortador.apodo || cortador.nombre}
-                        </p>
-                        <p className="text-[10px] text-neutral-400 capitalize">
-                          {cortador.rol}
-                        </p>
-                      </div>
-                    </div>
-                    {pedido.cortador_id === cortador.id && (
-                      <CheckCircle className="size-4 text-main-blue" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-
-            <div className="p-4 border-t border-neutral-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setModalCortadorOpen(false)}
-                className="px-4 py-2 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:bg-neutral-100 cursor-pointer"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ModalAsignacionCortador
+        isOpen={modalCortadorOpen}
+        onClose={() => setModalCortadorOpen(false)}
+        pedido={pedido}
+        cortadores={cortadores}
+        onAssign={handleAsignarCortador}
+        isAssigning={isUpdating}
+      />
     </div>
   );
 }

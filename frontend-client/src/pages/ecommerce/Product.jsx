@@ -262,8 +262,7 @@ export default function Product() {
 
               {unidad_medida == "kg" ? (
                 <p className="mt-1 text-xs text-gray-500">
-                  Precio aproximado por {unidad_medida}. El peso final lo define
-                  el cortador al preparar tu pedido.
+                  Precio por {unidad_medida}.
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-gray-500">Precio por unidad.</p>
@@ -359,12 +358,9 @@ export default function Product() {
 
                       {/* Precio final */}
                       <div className="flex flex-col w-full rounded-md border border-gray-200 bg-white p-3">
-                        <p className="text-sm text-gray-600">Total estimado</p>
-                        <p className="text-xl font-bold text-gray-900">
-                          {formatPrecio(totalEstimado)}{" "}
-                          <span className="text-sm font-normal text-gray-500">
-                            aprox.
-                          </span>
+                        <p className="text-sm text-gray-600">Total</p>
+                        <p className="text-xl font-bold text-main-blue">
+                          {formatPrecio(totalEstimado)}
                         </p>
                       </div>
                     </div>

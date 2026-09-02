@@ -76,7 +76,7 @@ export default function ComprasTab({ pedidos = [], loading = false }) {
               </div>
 
               <div className="text-left sm:text-right">
-                <span className="text-xs text-neutral-500 block">Total Estimado:</span>
+                <span className="text-xs text-neutral-500 block">Total:</span>
                 <span className="text-lg sm:text-xl font-black text-main-blue">
                   {formatPrecio(ped.monto_total_estimado)}
                 </span>

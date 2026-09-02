@@ -34,12 +34,16 @@ const ESTADOS = [
   { key: "entregado", label: "Entregados" },
 ];
 
+import { useAuth } from "../../../context/AuthContext";
+import ModalAsignacionCortador from "../../../components/ModalAsignacionCortador";
+
 export default function PedidosSucursal() {
   const { sucursal, setPedidosPendientes } = useOutletContext();
   const { ultimoPedido, reproducirSonidoComanda } = useSocket();
+  const { token } = useAuth();
 
   const [pedidos, setPedidos] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
+  const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState("todos"); // Vista por defecto "solicitado"
   const [actualizandoId, setActualizandoId] = useState(null);
@@ -56,16 +60,16 @@ export default function PedidosSucursal() {
     if (!sucursal?.id) return;
     setIsLoading(true);
     try {
-      const [resPedidos, resEmpleados] = await Promise.all([
+      const [resPedidos, resCortadores] = await Promise.all([
         fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`),
-        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/empleados`),
+        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/cortadores-carga`),
       ]);
 
       const dataPedidos = await resPedidos.json();
-      const dataEmpleados = await resEmpleados.json();
+      const dataCortadores = await resCortadores.json();
 
       setPedidos(Array.isArray(dataPedidos) ? dataPedidos : []);
-      setEmpleados(Array.isArray(dataEmpleados) ? dataEmpleados : []);
+      setCortadores(Array.isArray(dataCortadores) ? dataCortadores : []);
 
       const pendientes = Array.isArray(dataPedidos)
         ? dataPedidos.filter(
@@ -105,10 +109,36 @@ export default function PedidosSucursal() {
     }
   }, [ultimoPedido?.id, sucursal?.id]);
 
-  // Cortadores activos de esta sucursal
-  const cortadoresActivos = useMemo(() => {
-    return empleados.filter((e) => e.rol === "cortador" && e.activo);
-  }, [empleados]);
+  const [modalAsignacion, setModalAsignacion] = useState({ open: false, pedido: null });
+
+  const handleAsignarCortador = async (cortador) => {
+    if (!modalAsignacion.pedido) return;
+    setActualizandoId(modalAsignacion.pedido.id);
+    try {
+      const res = await fetch(
+        `${VITE_API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            estado_local: "en_corte",
+            cortador_id: cortador.id,
+          }),
+        }
+      );
+      if (res.ok) {
+        setModalAsignacion({ open: false, pedido: null });
+        loadData();
+      }
+    } catch (error) {
+      console.error("Error asignando cortador:", error);
+    } finally {
+      setActualizandoId(null);
+    }
+  };
 
   // Cambiar estado operativo del pedido
   const handleCambiarEstado = async (pedidoId, nuevoEstado, extraData = {}) => {
@@ -505,37 +535,15 @@ export default function PedidosSucursal() {
                           ¿Quién fracciona este pedido?
                         </span>
 
-                        {cortadoresActivos.length > 0 ? (
-                          <div className="grid grid-cols-3 gap-1.5 mt-2">
-                            {cortadoresActivos.map((cortador) => (
-                              <button
-                                key={cortador.id}
-                                type="button"
-                                disabled={isPendingAction}
-                                onClick={() =>
-                                  handleCambiarEstado(pedido.id, "en_corte", {
-                                    cortador_id: cortador.id,
-                                  })
-                                }
-                                className="py-2 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-[1.02]"
-                              >
-                                <span>{cortador.apodo || cortador.nombre}</span>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isPendingAction}
-                            onClick={() =>
-                              handleCambiarEstado(pedido.id, "en_corte")
-                            }
-                            className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                          >
-                            <Scissors className="size-3.5" />
-                            <span>Pasar a Fraccionar / Corte</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          disabled={isPendingAction}
+                          onClick={() => setModalAsignacion({ open: true, pedido })}
+                          className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs mt-2"
+                        >
+                          <Scissors className="size-3.5" />
+                          <span>Asignar Cortador</span>
+                        </button>
                       </div>
                     )}
 
@@ -731,6 +739,15 @@ export default function PedidosSucursal() {
           </div>
         </div>
       )}
+
+      <ModalAsignacionCortador
+        isOpen={modalAsignacion.open && modalAsignacion.pedido}
+        onClose={() => setModalAsignacion({ open: false, pedido: null })}
+        pedido={modalAsignacion.pedido}
+        cortadores={cortadores}
+        onAssign={handleAsignarCortador}
+        isAssigning={actualizandoId === modalAsignacion.pedido?.id}
+      />
     </div>
   );
 }

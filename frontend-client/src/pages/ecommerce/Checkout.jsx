@@ -894,7 +894,7 @@ export default function Checkout() {
                 </div>
 
                 <div className="flex justify-between text-base font-extrabold text-neutral-900 pt-2 border-t border-neutral-200">
-                  <span>Total Estimado</span>
+                  <span>Total</span>
                   <span className="text-xl text-main-blue">
                     {formatPrecio(granTotal)}
                   </span>
