@@ -145,7 +145,10 @@ export default function PedidosSucursal() {
     try {
       const res = await fetch(`${VITE_API_URL}/pedidos/${pedidoId}/estado`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ estado: nuevoEstado, ...extraData }),
       });
       const data = await res.json();
@@ -662,8 +665,8 @@ export default function PedidosSucursal() {
             </div>
 
             <p className="text-xs text-neutral-500 mb-4">
-              Ingresá el monto final exacto según el peso en balanza para
-              notificar al cliente vía Socket.io antes de empaquetar.
+              Ingresá el monto final exacto según el peso en balanza para registrar
+              el cálculo y marcar el pedido como Listo.
             </p>
 
             <div className="space-y-4">
@@ -722,9 +725,9 @@ export default function PedidosSucursal() {
               <button
                 type="button"
                 onClick={handleGuardarPesaje}
-                className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold cursor-pointer shadow-2xs"
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-2xs"
               >
-                Notificar al Cliente para Aprobación
+                Guardar Pesaje & Marcar Listo
               </button>
             </div>
           </div>
