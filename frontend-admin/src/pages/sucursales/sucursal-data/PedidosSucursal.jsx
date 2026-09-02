@@ -70,35 +70,25 @@ export default function PedidosSucursal() {
     });
   };
 
-  const formatKgInput = (rawVal) => {
-    if (rawVal === null || rawVal === undefined) return "";
-    const str = String(rawVal).trim();
-    if (str === "") return "";
-
-    if (str.includes(".") || str.includes(",")) {
-      return str.replace(",", ".");
-    }
-
-    const digits = str.replace(/\D/g, "");
-    if (!digits) return "";
-    const num = parseInt(digits, 10) / 1000;
-    return num.toFixed(3);
-  };
-
   const handlePesoItemChange = (itemId, rawVal) => {
-    const formatted = formatKgInput(rawVal);
+    let cleaned = rawVal.replace(",", ".");
+    cleaned = cleaned.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      cleaned = `${parts[0]}.${parts.slice(1).join("")}`;
+    }
     setModalPesaje((prev) => ({
       ...prev,
       pesosItems: {
         ...prev.pesosItems,
-        [itemId]: formatted,
+        [itemId]: cleaned,
       },
     }));
   };
 
   const handlePesoItemBlur = (itemId, val) => {
     const num = parseFloat(String(val).replace(",", "."));
-    const fixed = isNaN(num) || num <= 0 ? "0.000" : num.toFixed(3);
+    const fixed = isNaN(num) || num < 0 ? "0.000" : num.toFixed(3);
     setModalPesaje((prev) => ({
       ...prev,
       pesosItems: {
@@ -106,6 +96,10 @@ export default function PedidosSucursal() {
         [itemId]: fixed,
       },
     }));
+  };
+
+  const handlePesoItemFocus = (e) => {
+    e.target.select();
   };
 
   const calcularResumenPesaje = () => {
@@ -796,22 +790,12 @@ export default function PedidosSucursal() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-neutral-500 mt-1 flex items-center gap-2 flex-wrap">
-                        <span>
-                          Pedido: <strong className="text-neutral-900">{item.kgSolicitados.toFixed(3)} kg</strong>
-                        </span>
-                        {item.precioKg > 0 && (
-                          <>
-                            <span className="text-neutral-300">•</span>
-                            <span className="text-neutral-600 font-medium">
-                              ${item.precioKg.toLocaleString("es-AR")}/kg
-                            </span>
-                          </>
-                        )}
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Pedido: <strong className="text-neutral-900">{item.kgSolicitados.toFixed(3)} kg</strong>
                       </p>
                     </div>
 
-                    {/* Input de peso real y subtotal en pesos */}
+                    {/* Input de peso real */}
                     <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
                       <div className="flex flex-col items-end">
                         <label className="text-[10px] font-bold uppercase text-neutral-500 mb-0.5">
@@ -822,6 +806,7 @@ export default function PedidosSucursal() {
                             type="text"
                             inputMode="decimal"
                             value={modalPesaje.pesosItems[item.id] ?? ""}
+                            onFocus={handlePesoItemFocus}
                             onChange={(e) => handlePesoItemChange(item.id, e.target.value)}
                             onBlur={(e) => handlePesoItemBlur(item.id, e.target.value)}
                             className="w-28 px-3 py-1.5 text-right font-black text-sm rounded-lg border border-neutral-300 focus:border-main-blue focus:ring-2 focus:ring-main-blue/20 outline-none bg-white text-neutral-900"
@@ -829,20 +814,12 @@ export default function PedidosSucursal() {
                           />
                         </div>
                       </div>
-
-                      {item.precioKg > 0 && (
-                        <div className="w-22 text-right pt-4">
-                          <span className="text-xs font-black text-emerald-700 block">
-                            ${item.precioFinalItem.toLocaleString("es-AR")}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Resumen de Kilaje & Merma */}
+              {/* Resumen de Kilaje & Merma (Sin precios) */}
               <div className="p-3.5 rounded-xl bg-neutral-900 text-white space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-400 font-semibold">Total Solicitado:</span>
@@ -852,16 +829,10 @@ export default function PedidosSucursal() {
                   <span className="text-neutral-400 font-semibold">Total Peso Real:</span>
                   <span className="font-black text-emerald-400">{totalRealKg.toFixed(3)} kg</span>
                 </div>
-                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
-                  <span className="text-neutral-400 font-semibold">Diferencia / Merma:</span>
-                  <span className={`font-extrabold ${mermaKg >= 0 ? "text-amber-400" : "text-red-400"}`}>
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-800 text-sm">
+                  <span className="text-neutral-300 font-extrabold">Diferencia / Merma:</span>
+                  <span className={`font-black ${mermaKg >= 0 ? "text-amber-400" : "text-red-400"}`}>
                     {mermaKg >= 0 ? `+${mermaKg.toFixed(3)} kg` : `${mermaKg.toFixed(3)} kg`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-neutral-700 text-sm">
-                  <span className="font-extrabold text-white">Monto Total Calculado:</span>
-                  <span className="text-base font-black text-emerald-400">
-                    ${montoTotalFinal.toLocaleString("es-AR")}
                   </span>
                 </div>
               </div>
