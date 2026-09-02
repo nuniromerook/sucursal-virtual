@@ -77,7 +77,15 @@ app.get("/", (req, res) => {
   res.send("Sucursal Virtual running with Socket.io!");
 });
 
+const pool = require("./db");
+
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log(`Server & Socket.io running on port ${PORT}`);
+  try {
+    await pool.query("ALTER TABLE catalogo ADD COLUMN IF NOT EXISTS sin_stock BOOLEAN DEFAULT false;");
+    console.log("✅ [DB Auto-Migration] Columna 'sin_stock' en tabla 'catalogo' verificada/creada.");
+  } catch (err) {
+    console.error("⚠️ [DB Auto-Migration Error]:", err.message);
+  }
 });
