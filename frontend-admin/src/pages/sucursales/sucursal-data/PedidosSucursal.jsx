@@ -44,8 +44,15 @@ export default function PedidosSucursal() {
   const [pedidos, setPedidos] = useState([]);
   const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filtroEstado, setFiltroEstado] = useState("todos"); // Vista por defecto "solicitado"
   const [actualizandoId, setActualizandoId] = useState(null);
+
+  // Paginación numérica para listados grandes
+  const [paginaActual, setPaginaActual] = useState(1);
+  const PEDIDOS_POR_PAGINA = 9;
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filtroEstado]);
 
   // Modal para cargar peso real por cada corte
   const [modalPesaje, setModalPesaje] = useState({
@@ -294,6 +301,13 @@ export default function PedidosSucursal() {
     return pedidos.filter((p) => p.estado === filtroEstado);
   }, [pedidos, filtroEstado]);
 
+  const totalPaginas = Math.ceil(pedidosFiltrados.length / PEDIDOS_POR_PAGINA) || 1;
+
+  const pedidosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * PEDIDOS_POR_PAGINA;
+    return pedidosFiltrados.slice(inicio, inicio + PEDIDOS_POR_PAGINA);
+  }, [pedidosFiltrados, paginaActual]);
+
   const badgeEstado = (estado) => {
     const map = {
       solicitado: {
@@ -487,7 +501,7 @@ export default function PedidosSucursal() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pedidosFiltrados.map((pedido) => {
+          {pedidosPaginados.map((pedido) => {
             const isPendingAction = actualizandoId === pedido.id;
             const cortadorAsignado =
               pedido.cortador_apodo || pedido.cortador_nombre;
@@ -749,12 +763,70 @@ export default function PedidosSucursal() {
               </div>
             );
           })}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* ─── Paginación Numérica para Historial / Listados ─── */}
+        {totalPaginas > 1 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
+            <span className="text-xs text-neutral-500 font-semibold">
+              Mostrando {(paginaActual - 1) * PEDIDOS_POR_PAGINA + 1} -{" "}
+              {Math.min(
+                paginaActual * PEDIDOS_POR_PAGINA,
+                pedidosFiltrados.length,
+              )}{" "}
+              de {pedidosFiltrados.length} pedidos
+            </span>
+
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <button
+                type="button"
+                disabled={paginaActual === 1}
+                onClick={() => {
+                  setPaginaActual((prev) => Math.max(prev - 1, 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold text-neutral-700 bg-white hover:bg-neutral-50 border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => {
+                    setPaginaActual(num);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={`size-8 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    paginaActual === num
+                      ? "bg-main-blue text-white shadow-2xs"
+                      : "bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-50"
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={paginaActual === totalPaginas}
+                onClick={() => {
+                  setPaginaActual((prev) => Math.min(prev + 1, totalPaginas));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold text-neutral-700 bg-white hover:bg-neutral-50 border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* ─── Modal de Carga de Peso Real por Corte ─── */}
       {modalPesaje.open && modalPesaje.pedido && (() => {
-        const { itemsArray, totalSolicitadoKg, totalRealKg, mermaKg, montoTotalFinal } = calcularResumenPesaje();
+        const { itemsArray, totalSolicitadoKg, totalRealKg, mermaKg } = calcularResumenPesaje();
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
             <div className="bg-white rounded-xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95 text-neutral-900 my-8">

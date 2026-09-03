@@ -10,6 +10,7 @@ import { ToastContextProvider } from "./context/ToastContext.jsx";
 import { SocketContextProvider } from "./context/SocketContext.jsx";
 import { NotificationContextProvider } from "./context/NotificationContext.jsx";
 import { FavoritesContextProvider } from "./context/FavoritesContext.jsx";
+import { LocationProvider } from "./context/LocationContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useCart } from "./context/CartContext.jsx";
 
@@ -23,7 +24,7 @@ import { useCart } from "./context/CartContext.jsx";
  */
 function CartSyncBridge() {
   const { token, isAuthenticated } = useAuth();
-  const { sincronizarCarrito, setAuthToken } = useCart();
+  const { sincronizarCarrito, setAuthToken, clearCartLocal } = useCart();
   const hasSyncedRef = useRef(false);
 
   useEffect(() => {
@@ -37,11 +38,12 @@ function CartSyncBridge() {
         sincronizarCarrito(token);
       }
     } else if (!isAuthenticated) {
-      // Logout: permitir una nueva sincronización en el próximo login
+      // Logout: limpiar carrito de memoria y permitir una nueva sincronización en el próximo login
       hasSyncedRef.current = false;
       setAuthToken(null);
+      clearCartLocal();
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, clearCartLocal]);
 
   return null;
 }
@@ -51,18 +53,20 @@ createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <AppContextProvider>
         <AuthContextProvider>
-          <FavoritesContextProvider>
-            <SocketContextProvider>
-              <ToastContextProvider>
-                <NotificationContextProvider>
-                  <CartContextProvider>
-                    <CartSyncBridge />
-                    <App />
-                  </CartContextProvider>
-                </NotificationContextProvider>
-              </ToastContextProvider>
-            </SocketContextProvider>
-          </FavoritesContextProvider>
+          <LocationProvider>
+            <FavoritesContextProvider>
+              <SocketContextProvider>
+                <ToastContextProvider>
+                  <NotificationContextProvider>
+                    <CartContextProvider>
+                      <CartSyncBridge />
+                      <App />
+                    </CartContextProvider>
+                  </NotificationContextProvider>
+                </ToastContextProvider>
+              </SocketContextProvider>
+            </FavoritesContextProvider>
+          </LocationProvider>
         </AuthContextProvider>
       </AppContextProvider>
     </BrowserRouter>

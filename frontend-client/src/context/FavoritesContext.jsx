@@ -25,14 +25,23 @@ export function FavoritesContextProvider({ children }) {
     }
   });
 
-  // Guardar en localStorage cada vez que cambien
-  useEffect(() => {
+  // Limpiar memoria de favoritos (invocado en logout)
+  const clearFavoritesLocal = useCallback(() => {
+    setFavoriteIds([]);
     try {
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteIds));
+      localStorage.removeItem(FAVORITES_STORAGE_KEY);
     } catch (e) {
-      console.error("Error guardando favoritos en localStorage:", e);
+      console.error("Error limpiando favoritos local:", e);
     }
-  }, [favoriteIds]);
+  }, []);
+
+  useEffect(() => {
+    const handleLogout = () => {
+      clearFavoritesLocal();
+    };
+    window.addEventListener("valette_logout", handleLogout);
+    return () => window.removeEventListener("valette_logout", handleLogout);
+  }, [clearFavoritesLocal]);
 
   // Cargar y sincronizar con la base de datos cuando el usuario inicia sesión
   useEffect(() => {
@@ -149,6 +158,7 @@ export function FavoritesContextProvider({ children }) {
         isFavorite,
         toggleFavorite,
         cleanInvalidFavorites,
+        clearFavoritesLocal,
       }}
     >
       {children}

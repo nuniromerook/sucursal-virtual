@@ -10,6 +10,7 @@ import {
   LogOut,
   Package,
   Star,
+  ChevronDown,
 } from "lucide-react";
 import EnvioNavbar from "@/components/EnvioNavbar";
 import { useAppContext } from "../context/AppContext";
@@ -17,6 +18,18 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useLocationCoverage } from "../context/LocationContext";
+
+const CATEGORIAS_MENU = [
+  { nameId: "vacuno", label: "Carne Vacuna", emoji: "🥩", desc: "Novillo y ternera seleccionada" },
+  { nameId: "cerdo", label: "Cortes de Cerdo", emoji: "🐷", desc: "Bondiola, pechito, matambrito" },
+  { nameId: "pollo", label: "Pollo & Granja", emoji: "🍗", desc: "Supremas, pata muslo, alitas" },
+  { nameId: "embutidos", label: "Embutidos & Achuras", emoji: "🌭", desc: "Chorizos artesanales, morcillas" },
+  { nameId: "preparados", label: "Preparados & Milanesas", emoji: "🍲", desc: "Milanesas caseras, elaborados" },
+  { nameId: "combos", label: "Combos de Ahorro", emoji: "📦", desc: "Packs parrilleros familiares" },
+  { nameId: "almacen", label: "Almacén & Carbón", emoji: "🧂", desc: "Especias, sales, acompañamientos" },
+  { nameId: "ofertas", label: "Ofertas Especiales", emoji: "🔥", desc: "Precios promocionales del día" },
+];
 
 const Navbar = () => {
   const { sidebarOpen, setSidebarOpen } = useAppContext();
@@ -24,7 +37,9 @@ const Navbar = () => {
   const { openNotifications, unreadCount } = useNotifications();
   const { favoritesCount } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
+  const { coords, isInCoverage } = useLocationCoverage();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [categoriasMenuOpen, setCategoriasMenuOpen] = useState(false);
 
   return (
     <header className="flex sticky top-0 left-0 w-full bg-main-blue z-100">
@@ -201,21 +216,97 @@ const Navbar = () => {
             {/*Links desktop (oculto en mobile)*/}
             <nav
               aria-label="Navegación principal"
-              className="hidden lg:flex w-fit ml-auto gap-4 items-center text-white"
+              className="hidden lg:flex w-fit ml-auto gap-5 items-center text-white font-semibold text-sm"
             >
-              <Link to="/categorias" aria-label="Categorías">
-                Categorías
-              </Link>
-              <Link to="/productos" aria-label="Productos">
+              {/* Dropdown de Categorías */}
+              <div
+                className="relative"
+                onMouseEnter={() => setCategoriasMenuOpen(true)}
+                onMouseLeave={() => setCategoriasMenuOpen(false)}
+              >
+                <button
+                  type="button"
+                  aria-haspopup="true"
+                  aria-expanded={categoriasMenuOpen}
+                  onClick={() => setCategoriasMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 hover:text-blue-100 transition-colors cursor-pointer py-1.5"
+                >
+                  <span>Categorías</span>
+                  <ChevronDown
+                    className={`size-3.5 transition-transform duration-200 ${
+                      categoriasMenuOpen ? "rotate-180 text-blue-200" : "text-white/70"
+                    }`}
+                  />
+                </button>
+
+                {categoriasMenuOpen && (
+                  <div
+                    onClick={() => setCategoriasMenuOpen(false)}
+                    className="absolute left-0 top-full mt-1.5 w-72 rounded-2xl bg-white shadow-2xl border border-neutral-200/90 p-2 text-neutral-800 z-110 animate-in fade-in zoom-in-95"
+                  >
+                    <div className="px-3 py-1.5 border-b border-neutral-100 mb-1 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">
+                        Categorías de Carnicería
+                      </span>
+                      <Link
+                        to="/productos"
+                        className="text-[11px] font-bold text-main-blue hover:underline"
+                      >
+                        Ver todo
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-0.5">
+                      {CATEGORIAS_MENU.map((cat) => (
+                        <Link
+                          key={cat.nameId}
+                          to={`/${cat.nameId}`}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-50 transition-colors group"
+                        >
+                          <span className="text-xl shrink-0 p-1.5 bg-neutral-100 rounded-lg group-hover:bg-blue-50 transition-colors">
+                            {cat.emoji}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-neutral-900 group-hover:text-main-blue transition-colors">
+                              {cat.label}
+                            </p>
+                            <p className="text-[10px] text-neutral-400 truncate">
+                              {cat.desc}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                to="/productos"
+                aria-label="Productos"
+                className="hover:text-blue-100 transition-colors"
+              >
                 Productos
               </Link>
-              <Link to="/ofertas" aria-label="Ofertas">
-                Ofertas
+              <Link
+                to="/ofertas"
+                aria-label="Ofertas"
+                className="hover:text-blue-100 transition-colors flex items-center gap-1 text-amber-300"
+              >
+                <span>Ofertas</span>
               </Link>
-              <Link to="/sucursales" aria-label="Sucursales">
+              <Link
+                to="/sucursales"
+                aria-label="Sucursales"
+                className="hover:text-blue-100 transition-colors"
+              >
                 Sucursales
               </Link>
-              <Link to="/envios" aria-label="Envíos">
+              <Link
+                to="/envios"
+                aria-label="Envíos"
+                className="hover:text-blue-100 transition-colors"
+              >
                 Envíos
               </Link>
             </nav>

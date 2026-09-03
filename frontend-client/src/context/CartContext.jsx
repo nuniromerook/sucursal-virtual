@@ -114,6 +114,25 @@ export function CartContextProvider({ children }) {
     }
   }, [cartItems]);
 
+  // Limpia la memoria local del carrito (invocado en logout o evento de sesión)
+  const clearCartLocal = useCallback(() => {
+    setCartItems([]);
+    setCartAlerts([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch (e) {
+      console.error("Error saving cart to localStorage:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleLogout = () => {
+      clearCartLocal();
+    };
+    window.addEventListener("valette_logout", handleLogout);
+    return () => window.removeEventListener("valette_logout", handleLogout);
+  }, [clearCartLocal]);
+
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
   const toggleCart = () => setIsCartOpen((prev) => !prev);
@@ -403,6 +422,7 @@ export function CartContextProvider({ children }) {
         decrementQuantity,
         removeFromCart,
         clearCart,
+        clearCartLocal,
         // Alertas
         dismissAlert,
         clearAlerts,

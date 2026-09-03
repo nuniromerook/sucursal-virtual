@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Search,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { VITE_API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
@@ -121,6 +122,12 @@ export default function CategoryPage() {
   const [filtroCombos, setFiltroCombos] = useState(false);
   const [filtroFavoritos, setFiltroFavoritos] = useState(false);
   const [orden, setOrden] = useState("relevancia");
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  // Resetear la cantidad visible cuando cambia la categoría o los filtros
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [categoria, queryParam, filtroOfertas, filtroPuntos, filtroCombos, filtroFavoritos, orden]);
 
   // Identificador de la sección actual
   const currentKey = (categoria || "productos").toLowerCase().trim();
@@ -289,6 +296,11 @@ export default function CategoryPage() {
     favoriteIds,
     orden,
   ]);
+
+  // Productos visibles según paginación progresiva (Load More)
+  const visibleProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
 
   // Conteo exacto dentro de la categoría
   const totalOfertas = useMemo(
@@ -580,10 +592,29 @@ export default function CategoryPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-1.5 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div>
+            <div className="grid grid-cols-2 gap-x-1.5 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {visibleProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Botón Cargar Más Cortes (Load More) */}
+            {visibleCount < filteredProducts.length && (
+              <div className="mt-8 flex flex-col items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
+                  className="px-6 py-3 bg-white hover:bg-neutral-50 text-neutral-900 font-extrabold text-xs sm:text-sm rounded-xl border border-neutral-300 shadow-2xs hover:border-main-blue hover:text-main-blue transition-all cursor-pointer flex items-center gap-2 group active:scale-98"
+                >
+                  <span>Cargar más cortes</span>
+                  <ChevronDown className="size-4 text-neutral-400 group-hover:text-main-blue group-hover:translate-y-0.5 transition-all" />
+                </button>
+                <p className="text-xs text-neutral-400 font-medium">
+                  Mostrando {Math.min(visibleCount, filteredProducts.length)} de {filteredProducts.length} cortes
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

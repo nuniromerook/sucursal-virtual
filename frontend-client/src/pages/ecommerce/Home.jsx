@@ -8,7 +8,7 @@ import ProductCard from "../../components/ProductCard.jsx";
 import BannerCarousel from "../../components/BannerCarousel.jsx";
 import { VITE_API_URL } from "../../config/api.js";
 import { useSocket } from "../../context/SocketContext";
-import { Sparkles, Flame, Tag, ArrowRight, Layers } from "lucide-react";
+import { Sparkles, Flame, Tag, ArrowRight, Layers, ChevronDown } from "lucide-react";
 
 export default function Home() {
   const { catalogoVersion } = useSocket();
@@ -18,6 +18,7 @@ export default function Home() {
     todos: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleCountTodos, setVisibleCountTodos] = useState(10);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -204,10 +205,28 @@ export default function Home() {
         {isLoading ? (
           <SkeletonGrid />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {data.todos.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {data.todos.slice(0, visibleCountTodos).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {visibleCountTodos < data.todos.length && (
+              <div className="mt-8 flex flex-col items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCountTodos((prev) => prev + 10)}
+                  className="px-6 py-3 bg-white hover:bg-neutral-50 text-neutral-900 font-extrabold text-xs sm:text-sm rounded-xl border border-neutral-300 shadow-2xs hover:border-main-blue hover:text-main-blue transition-all cursor-pointer flex items-center gap-2 group active:scale-98"
+                >
+                  <span>Cargar más cortes</span>
+                  <ChevronDown className="size-4 text-neutral-400 group-hover:text-main-blue group-hover:translate-y-0.5 transition-all" />
+                </button>
+                <p className="text-xs text-neutral-400 font-medium">
+                  Mostrando {Math.min(visibleCountTodos, data.todos.length)} de {data.todos.length} cortes
+                </p>
+              </div>
+            )}
           </div>
         )}
       </section>

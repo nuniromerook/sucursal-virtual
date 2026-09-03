@@ -360,6 +360,7 @@ const getPerfil = async (req, res) => {
          c.id, c.nombre, c.email, c.telefono, c.usuario,
          c.direccion_default, c.puntos_acumulados, c.perfil_completo,
          c.avatar_url, c.creado_en, c.referral_code,
+         c.latitud, c.longitud,
          (SELECT COUNT(*) FROM clientes r WHERE r.referido_por = c.id) AS referidos_count
        FROM clientes c
        WHERE c.id = $1`,
@@ -386,7 +387,7 @@ const getPerfil = async (req, res) => {
  */
 const updatePerfil = async (req, res) => {
   const clienteId = req.user.id;
-  const { nombre, usuario, telefono, direccion_default } = req.body;
+  const { nombre, usuario, telefono, direccion_default, latitud, longitud } = req.body;
 
   const usuarioClean = usuario ? usuario.trim().replace(/^@/, "").toLowerCase() : null;
   const telefonoClean = telefono ? telefono.trim() : null;
@@ -428,9 +429,11 @@ const updatePerfil = async (req, res) => {
            direccion_default = COALESCE($4, direccion_default),
            puntos_acumulados = puntos_acumulados + $5,
            perfil_completo = $6,
+           latitud = COALESCE($7, latitud),
+           longitud = COALESCE($8, longitud),
            actualizado_en = NOW()
-       WHERE id = $7
-       RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url`,
+       WHERE id = $9
+       RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, latitud, longitud`,
       [
         nombre ? nombre.trim() : null,
         usuarioClean,
@@ -438,6 +441,8 @@ const updatePerfil = async (req, res) => {
         direccion_default ? direccion_default.trim() : null,
         puntosBonus,
         nuevoEstadoCompleto,
+        latitud !== undefined ? latitud : null,
+        longitud !== undefined ? longitud : null,
         clienteId,
       ]
     );
