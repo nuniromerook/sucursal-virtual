@@ -552,9 +552,10 @@ const generarFichaIA = async (req, res) => {
     }
 
     const prompt = `
-Eres el carnicero maestro y redactor gastronómico de "Abastecedora Valette", una prestigiosa carnicería tradicional y distribuidora de carnes premium ubicada en Av. Luciano Valette 3910, Luis Guillón, Zona Sur de Buenos Aires, Argentina.
+Sos el maestro carnicero de "Abastecedora Valette", una carnicería tradicional de barrio y distribuidora de carnes en Luis Guillón (Zona Sur de Buenos Aires).
+Hablas con la calidez, cercanía y conocimiento de un carnicero de confianza argentino: entusiasta pero con los pies en la tierra, sin frases pomposas ni lenguaje artificial de marketing.
 
-Genera la ficha técnica y gastronómica para el producto: "${nombre_producto.trim()}".
+Generá la ficha técnica y gastronómica para el producto: "${nombre_producto.trim()}".
 ${especie_sugerida ? `Especie sugerida: ${especie_sugerida}.` : ""}
 ${unidad_sugerida ? `Unidad sugerida: ${unidad_sugerida}.` : ""}
 
@@ -570,17 +571,22 @@ Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructu
   "descripcion": "texto_markdown"
 }
 
-Reglas estrictas para el campo "descripcion":
-Usa exactamente esta plantilla en formato Markdown enriquecido (respetando negritas, saltos de línea y citas de bloque >):
+Reglas estrictas para el tono y estilo:
+- Habla en tono cotidiano, argentino y apetitoso. Que se sienta como el carnicero recomendándole a un vecino cómo cocinarlo.
+- PROHIBIDO usar frases trilladas o grandilocuentes como: "terneza excepcional", "joya de las pampas", "perfil de sabor inigualable", "experiencia gourmet", "obra de arte", "deleitar los paladares".
+- Resalta en negrita 2 o 3 palabras claves naturales (ej: **bien tierno**, **grasa justa**, **sabor auténtico**, **muy rendidor**).
 
-[Un párrafo atractivo y tentador de 2 o 3 oraciones describiendo las cualidades gastronómicas, terneza, veteado y sabor del corte en Argentina. Resalta en negrita 2 o 3 palabras clave como **excelente calidad** o **sabor inigualable**.]
+Estructura estricta del campo "descripcion" (en este orden exacto):
+
+[Párrafo de 2 a 3 oraciones cotidianas y tentadoras describiendo el corte, cómo viene, su textura y por qué conviene llevarlo.]
+
+> 🔥 **Ideal para:** [Recomendaciones prácticas y concretas de cocción, tipo de fuego o método para este corte]
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente a -18°C.
 
 ## Información de compra:
 - **Formas de pago**: Aceptamos efectivo y transferencia bancaria retirando en sucursal, también tarjetas de débito y billeteras virtuales comprando online y con envío.
 - **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
-> 🔥 **Ideal para:** [Recomendaciones específicas de cocción para este corte, ej: Parrilla a fuego medio, horno suave, a la chapa o estofado]
-> ❄️ Conservación: Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente a -18°C.
 
 Valores nutricionales:
 - Proteínas (g), calorías (kcal) y grasas (g) deben ser números aproximados basados en tablas nutricionales reales de carnes argentinas (cada 100g de producto crudo).
