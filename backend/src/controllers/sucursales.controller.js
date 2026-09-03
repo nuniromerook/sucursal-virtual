@@ -6,7 +6,7 @@ const pool = require("../db");
 const getAllSucursales = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, nombre, ciudad, slug, activa, horario_atencion FROM sucursales ORDER BY nombre`,
+      `SELECT id, nombre, ciudad, slug, activa, horario_atencion, direccion, horarios_apertura FROM sucursales ORDER BY nombre`,
     );
 
     res.json(result.rows);

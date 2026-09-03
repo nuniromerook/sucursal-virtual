@@ -22,18 +22,80 @@ function getScheduleForDay(sucursal, dateObj) {
     const h = sucursal.horarios_apertura[dayName];
     if (h) {
       return {
-        abierto: h.abierto !== false,
-        apertura: h.apertura || "08:00",
-        cierre: h.cierre || "20:00",
+        abierto: Boolean(h.abierto),
+        apertura: h.apertura || "07:00",
+        cierre: h.cierre || "14:30",
       };
     }
   }
 
-  // Fallback seguro si no hay JSON de horarios_apertura
+  // Fallback seguro: Luis Guillón de Lun a Sáb 07:00 a 14:30, Dom cerrado
   if (dayName === "domingo") {
-    return { abierto: true, apertura: "08:00", cierre: "13:00" };
+    return { abierto: false, apertura: "", cierre: "" };
   }
-  return { abierto: true, apertura: "08:00", cierre: "20:00" };
+  return { abierto: true, apertura: "07:00", cierre: "14:30" };
+}
+
+function generateSlotsForDay(dayObj) {
+  const slots = [];
+  const schedule = dayObj.horario;
+
+  if (!schedule || !schedule.abierto) {
+    return [];
+  }
+
+  const [aperturaH, aperturaM] = (schedule.apertura || "07:00")
+    .split(":")
+    .map(Number);
+  const [cierreH, cierreM] = (schedule.cierre || "14:30")
+    .split(":")
+    .map(Number);
+
+  const startOfDay = new Date(dayObj.date);
+  startOfDay.setHours(aperturaH || 7, aperturaM || 0, 0, 0);
+
+  const endOfDay = new Date(dayObj.date);
+  endOfDay.setHours(cierreH || 14, cierreM !== undefined ? cierreM : 30, 0, 0);
+
+  const now = new Date();
+  // Margen mínimo de 30 min desde la hora actual si es para "Hoy"
+  const nowBuffer = new Date(now.getTime() + 30 * 60000);
+
+  let curr = new Date(startOfDay);
+
+  while (curr < endOfDay) {
+    const nextSlot = new Date(curr);
+    nextSlot.setHours(curr.getHours() + 1);
+
+    if (nextSlot > endOfDay) {
+      nextSlot.setTime(endOfDay.getTime());
+    }
+
+    const startH = curr.getHours().toString().padStart(2, "0");
+    const startM = curr.getMinutes().toString().padStart(2, "0");
+    const endH = nextSlot.getHours().toString().padStart(2, "0");
+    const endM = nextSlot.getMinutes().toString().padStart(2, "0");
+
+    const label = `${startH}:${startM} - ${endH}:${endM}`;
+
+    // Deshabilitado si es hoy y la hora ya pasó o está a menos de 30 min
+    const isPast = dayObj.isToday && curr < nowBuffer;
+
+    slots.push({
+      start: new Date(curr),
+      end: new Date(nextSlot),
+      label,
+      isDisabled: isPast,
+      reason: isPast ? "Horario pasado" : null,
+    });
+
+    if (nextSlot.getTime() === endOfDay.getTime()) {
+      break;
+    }
+    curr.setHours(curr.getHours() + 1);
+  }
+
+  return slots;
 }
 
 export default function TimeSlotSelector({
@@ -76,80 +138,29 @@ export default function TimeSlotSelector({
 
     setAvailableDays(days);
 
-    // Seleccionar el primer día por defecto si no hay ninguno seleccionado
-    if (days.length > 0 && !selectedDate) {
-      handleDateSelect(days[0]);
+    // Seleccionar automáticamente el primer día con horarios válidos
+    if (days.length > 0) {
+      const hoy = days.find((day) => day.isToday);
+      if (hoy) {
+        const slotsHoy = generateSlotsForDay(hoy);
+        const hasAvailableSlot = slotsHoy.some((s) => !s.isDisabled);
+        if (hasAvailableSlot) {
+          handleDateSelect(hoy);
+          return;
+        }
+      }
+      // Si hoy ya cerró o no tiene franjas libres, pasar al día siguiente abierto
+      const nextOpenDay = days.find((day) => !day.isToday) || days[0];
+      handleDateSelect(nextOpenDay);
     }
   }, [sucursal]);
 
   // 2. Generar franjas horarias para el día seleccionado
   const handleDateSelect = (dayObj) => {
-    const slots = [];
-    const schedule = dayObj.horario;
-
-    if (!schedule || !schedule.abierto) {
-      setAvailableSlots([]);
-      onSelectSlot(dayObj.date, null);
-      return;
-    }
-
-    const [aperturaH, aperturaM] = (schedule.apertura || "08:00")
-      .split(":")
-      .map(Number);
-    const [cierreH, cierreM] = (schedule.cierre || "20:00")
-      .split(":")
-      .map(Number);
-
-    const startOfDay = new Date(dayObj.date);
-    startOfDay.setHours(aperturaH || 8, aperturaM || 0, 0, 0);
-
-    const endOfDay = new Date(dayObj.date);
-    endOfDay.setHours(cierreH || 20, cierreM || 0, 0, 0);
-
-    // Regla de negocio: 30 minutos antes del cierre del local se cierran los pedidos
-    const cutoffTime = new Date(endOfDay.getTime() - 30 * 60000);
-
-    const now = new Date();
-    // Margen de 30 min desde la hora actual si es para "Hoy"
-    const nowBuffer = new Date(now.getTime() + 30 * 60000);
-
-    let curr = new Date(startOfDay);
-
-    while (curr < endOfDay) {
-      const nextSlot = new Date(curr);
-      nextSlot.setHours(curr.getHours() + 1);
-
-      if (nextSlot > endOfDay) {
-        nextSlot.setTime(endOfDay.getTime());
-      }
-
-      const label = `${curr.getHours().toString().padStart(2, "0")}:${curr.getMinutes().toString().padStart(2, "0")} - ${nextSlot.getHours().toString().padStart(2, "0")}:${nextSlot.getMinutes().toString().padStart(2, "0")}`;
-
-      // Determinar si la franja está deshabilitada (en gris)
-      // a) Si es hoy y la hora ya pasó o está a menos de 30 min
-      // b) Si el horario cae dentro de los 30 min previos al cierre del local
-      const isPast = dayObj.isToday && curr < nowBuffer;
-      const isTooCloseToClosing = curr >= cutoffTime;
-      const isDisabled = isPast || isTooCloseToClosing;
-
-      slots.push({
-        start: new Date(curr),
-        end: new Date(nextSlot),
-        label,
-        isDisabled,
-        reason: isTooCloseToClosing
-          ? "Cierra en menos de 30 min"
-          : isPast
-            ? "Horario pasado"
-            : null,
-      });
-
-      curr.setHours(curr.getHours() + 1);
-    }
-
+    const slots = generateSlotsForDay(dayObj);
     setAvailableSlots(slots);
 
-    // Auto-seleccionar la primera franja disponible válida si no hay selección o la selección previa quedó deshabilitada
+    // Auto-seleccionar la primera franja disponible válida
     const firstValid = slots.find((s) => !s.isDisabled);
     if (firstValid) {
       onSelectSlot(dayObj.date, firstValid.label);
@@ -259,8 +270,7 @@ export default function TimeSlotSelector({
       <p className="text-[11px] text-neutral-400 flex items-center gap-1 font-medium pt-1">
         <Clock className="size-3 text-neutral-400 shrink-0" />
         <span>
-          Las franjas se cierran 30 minutos antes del horario de cierre del
-          local para garantizar la preparación.
+          Pedidos web disponibles de Lunes a Sábados de 07:00 a 14:30 hs para garantizar la preparación antes del cierre.
         </span>
       </p>
     </div>

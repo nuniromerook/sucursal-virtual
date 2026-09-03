@@ -22,6 +22,7 @@ git reset --hard origin/main
 echo "⚙️ [Backend] Instalando dependencias y reiniciando PM2..."
 cd /var/www/sucursal-virtual/backend
 npm install
+node scripts/migrate_horarios.js || true
 pm2 restart valette-backend --update-env
 
 # 4. Frontend Cliente (Tienda)

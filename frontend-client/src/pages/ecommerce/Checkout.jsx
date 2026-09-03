@@ -133,8 +133,6 @@ export default function Checkout() {
       if (medioPago === "transferencia" || medioPago === "posnet_entrega") {
         setMedioPago("mercadopago");
       }
-    } else if (tipoEntrega === "logistica_propia") {
-      setCostoEnvio(1200); // Logística propia Valette
     }
   }, [tipoEntrega]);
 
@@ -396,71 +394,52 @@ export default function Checkout() {
                 </h2>
               </div>
 
-              {/* Selector de opciones */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Selector de opciones (Retiro en Sucursal vs Envío a Domicilio PedidosYa) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <button
                   type="button"
                   onClick={() => setTipoEntrega("retiro_sucursal")}
-                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                  className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                     tipoEntrega === "retiro_sucursal"
-                      ? "border-main-blue bg-blue-50/50 ring-1 ring-main-blue text-main-blue"
+                      ? "border-main-blue bg-blue-50/50 ring-1 ring-main-blue text-main-blue shadow-2xs"
                       : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <Store className="size-5" />
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      GRATIS
+                  <div className="flex items-center justify-between w-full mb-2.5">
+                    <div className="size-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <Store className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Gratis
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs font-bold">Retiro en Sucursal</p>
-                    <p className="text-[11px] opacity-75">Sin costo de envío</p>
+                    <p className="text-sm font-extrabold text-neutral-900">Retiro en Sucursal</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">Retirás por mostrador sin costo de envío</p>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setTipoEntrega("pedidosya")}
-                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                  className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                     tipoEntrega === "pedidosya"
-                      ? "border-main-blue bg-blue-50/50 ring-1 ring-main-blue text-main-blue"
+                      ? "border-main-blue bg-blue-50/50 ring-1 ring-main-blue text-main-blue shadow-2xs"
                       : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <Truck className="size-5 text-red-500" />
-                    <span className="text-[11px] font-bold text-neutral-600">
+                  <div className="flex items-center justify-between w-full mb-2.5">
+                    <div className="size-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+                      <Truck className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-black text-red-700 bg-red-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
                       Express
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs font-bold">PedidosYa Envíos</p>
-                    <p className="text-[11px] opacity-75">
-                      Entrega rápida (30-45 min)
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTipoEntrega("logistica_propia")}
-                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                    tipoEntrega === "logistica_propia"
-                      ? "border-main-blue bg-blue-50/50 ring-1 ring-main-blue text-main-blue"
-                      : "border-neutral-200 hover:border-neutral-300 text-neutral-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <Truck className="size-5 text-main-blue" />
-                    <span className="text-[11px] font-bold text-neutral-600">
-                      Refrigerado
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold">Logística Propia</p>
-                    <p className="text-[11px] opacity-75">
-                      Furgón refrigerado Valette
+                    <p className="text-sm font-extrabold text-neutral-900">Envío a Domicilio (PedidosYa)</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Reparto express a tu puerta en tu horario elegido
                     </p>
                   </div>
                 </button>
