@@ -1,5 +1,4 @@
 // frontend-client/src/pages/ecommerce/profile-tabs/ComprasTab.jsx
-import React from "react";
 import { Link } from "react-router-dom";
 import { Package, Store, Truck, ArrowRight } from "lucide-react";
 import { formatPrecio, formatCantidad } from "../../../utils/formatters";

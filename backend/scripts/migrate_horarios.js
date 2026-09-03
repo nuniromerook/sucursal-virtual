@@ -21,7 +21,13 @@ async function migrate() {
       [JSON.stringify(horariosLuisGuillon), 'luis-guillon']
     );
 
-    console.log('✅ [Migración] Horarios de apertura para Luis Guillón guardados exitosamente.');
+    console.log('[Migración] Creando índices de rendimiento en pedidos y pedido_items...');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pedidos_sucursal_estado ON pedidos (sucursal_id, estado_local);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pedidos_cliente ON pedidos (cliente_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pedidos_creado ON pedidos (creado_en DESC);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido ON pedido_items (pedido_id);');
+
+    console.log('✅ [Migración] Horarios e índices de rendimiento guardados exitosamente.');
     process.exit(0);
   } catch (err) {
     console.error('❌ [Migración] Error al migrar sucursales:', err);

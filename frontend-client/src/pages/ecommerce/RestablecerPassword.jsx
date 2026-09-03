@@ -1,7 +1,7 @@
 // frontend-client/src/pages/ecommerce/RestablecerPassword.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, KeyRound } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 

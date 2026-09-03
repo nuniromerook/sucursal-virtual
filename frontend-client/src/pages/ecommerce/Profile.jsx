@@ -68,14 +68,6 @@ export default function Profile() {
     fetchHistorial();
   }, [token]);
 
-  if (!user) return null;
-
-  const puntos = Number(user.puntos_acumulados) || 0;
-  const perfilIncompleto = !user.perfil_completo;
-  const nombreLimpio = user.nombre
-    ? user.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
-    : "Cliente Valette";
-
   const tabContainerRef = useRef(null);
 
   useEffect(() => {
@@ -86,6 +78,14 @@ export default function Profile() {
       }
     }
   }, [activeTab]);
+
+  if (!user) return null;
+
+  const puntos = Number(user.puntos_acumulados) || 0;
+  const perfilIncompleto = !user.perfil_completo;
+  const nombreLimpio = user.nombre
+    ? user.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
+    : "Cliente Valette";
 
   return (
     <div className="w-full min-h-screen pb-14">

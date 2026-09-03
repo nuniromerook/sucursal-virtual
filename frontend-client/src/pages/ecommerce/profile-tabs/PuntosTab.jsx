@@ -1,5 +1,5 @@
 // frontend-client/src/pages/ecommerce/profile-tabs/PuntosTab.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Sparkles,
   Gift,

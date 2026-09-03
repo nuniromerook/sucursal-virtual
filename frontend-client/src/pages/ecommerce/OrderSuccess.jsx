@@ -85,10 +85,6 @@ export default function OrderSuccess() {
 
     const handlePedidoActualizado = (pedidoActualizado) => {
       if (Number(pedidoActualizado.id) === Number(id)) {
-        console.log(
-          "⚡ [OrderSuccess] Pedido actualizado en vivo:",
-          pedidoActualizado,
-        );
         setPedido((prev) => ({
           ...prev,
           ...pedidoActualizado,
