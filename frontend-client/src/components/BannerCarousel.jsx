@@ -146,13 +146,14 @@ export default function BannerCarousel() {
     >
       {/* Contenedor de Slides */}
       <div
-        className="flex transition-transform duration-700 ease-out h-full"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        className="flex transition-transform duration-500 ease-out h-full transform-gpu will-change-transform"
+        style={{ transform: `translate3d(-${currentIndex * 100}%, 0, 0)` }}
       >
-        {banners.map((banner) => {
+        {banners.map((banner, index) => {
           const badgeClass =
             BADGE_COLORS[banner.badge_color?.toLowerCase()] ||
             BADGE_COLORS.rojo;
+          const isFirst = index === 0;
 
           return (
             <div
@@ -165,18 +166,20 @@ export default function BannerCarousel() {
                 src={banner.imagen_desktop_url}
                 alt={banner.titulo || "Promoción Valette"}
                 className="hidden md:block w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.02]"
-                loading="lazy"
+                loading={isFirst ? "eager" : "lazy"}
+                fetchpriority={isFirst ? "high" : "low"}
               />
               {/* Imagen Mobile (aspect-video) */}
               <img
                 src={banner.imagen_mobile_url || banner.imagen_desktop_url}
                 alt={banner.titulo || "Promoción Valette"}
                 className="block md:hidden w-full h-full object-cover"
-                loading="lazy"
+                loading={isFirst ? "eager" : "lazy"}
+                fetchpriority={isFirst ? "high" : "low"}
               />
 
               {/* Sombra y Gradientes elegantes para legibilidad */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-black/10 flex flex-col justify-end p-4 sm:p-7 md:p-9">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10 flex flex-col justify-end p-4 sm:p-7 md:p-9">
                 <div className="max-w-2xl flex flex-col items-start gap-2 sm:gap-2.5">
                   {/* Badge Personalizado Dinámico */}
                   {banner.badge_texto && (
@@ -226,7 +229,7 @@ export default function BannerCarousel() {
               handlePrev();
             }}
             aria-label="Anterior banner"
-            className="absolute left-6 top-6 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
+            className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
             <ChevronLeft className="size-6 sm:size-6" />
           </button>
@@ -237,7 +240,7 @@ export default function BannerCarousel() {
               handleNext();
             }}
             aria-label="Siguiente banner"
-            className="absolute right-6 top-6 size-9 sm:size-11 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
+            className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
             <ChevronRight className="size-6 sm:size-6" />
           </button>

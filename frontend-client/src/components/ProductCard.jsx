@@ -95,7 +95,7 @@ const ProductCard = ({ product }) => {
               isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
             }
             aria-pressed={isFavorite}
-            className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-2xs backdrop-blur-xs transition-colors hover:bg-white cursor-pointer"
+            className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-white/95 shadow-xs transition-colors hover:bg-white cursor-pointer"
           >
             <Star
               className={`size-4 ${
