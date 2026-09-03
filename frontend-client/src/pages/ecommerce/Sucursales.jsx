@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { VITE_API_URL } from "../../config/api";
 import { useLocationCoverage } from "../../context/LocationContext";
-import { calcularDistanciaKm } from "../../utils/geolocation";
+import { calcularDistanciaKm, formatearDistancia } from "../../utils/geolocation";
 
 const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
 
@@ -250,7 +250,7 @@ export default function Sucursales() {
                         {sucursal.distanciaKm !== null && (
                           <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-main-blue text-xs font-bold">
                             <Sparkles className="size-3.5" />
-                            <span>A solo {sucursal.distanciaKm} km de tu ubicación</span>
+                            <span>A solo {formatearDistancia(sucursal.distanciaKm)} de tu ubicación</span>
                           </div>
                         )}
 

@@ -20,7 +20,7 @@ import { useLocationCoverage } from "../../context/LocationContext";
 export default function Envios() {
   const {
     coords,
-    distanceKm,
+    formattedDistance,
     isInCoverage,
     detectLocation,
     isDetecting,
@@ -96,14 +96,14 @@ export default function Envios() {
                     <>
                       <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
                       <span>
-                        ¡Estás a {distanceKm} km! Tu domicilio está dentro del área de entrega.
+                        ¡Estás a {formattedDistance}! Tu domicilio está dentro del área de entrega.
                       </span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="size-4 text-amber-300 shrink-0" />
                       <span>
-                        Estás a {distanceKm} km (fuera del radio de {RADIO_COBERTURA_KM} km). ¡Podés elegir Retiro en Sucursal!
+                        Estás a {formattedDistance} (fuera del radio de {RADIO_COBERTURA_KM} km). ¡Podés elegir Retiro en Sucursal!
                       </span>
                     </>
                   )}

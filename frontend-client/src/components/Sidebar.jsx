@@ -38,7 +38,7 @@ const Sidebar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems, openCart } = useCart();
   const { favoritesCount } = useFavorites();
-  const { coords, isInCoverage, distanceKm, detectLocation, isDetecting } =
+  const { coords, isInCoverage, formattedDistance, detectLocation, isDetecting } =
     useLocationCoverage();
   const sidebarRef = useRef(null);
 
@@ -152,7 +152,7 @@ const Sidebar = () => {
                     Fuera de cobertura (10 km)
                   </p>
                   <p className="text-[11px] font-semibold text-neutral-900 mt-0.5 leading-snug">
-                    Estás a {distanceKm} km. ¡Podés pedir online y retirar en sucursal!
+                    Estás a {formattedDistance}. ¡Podés pedir online y retirar en sucursal!
                   </p>
                   <Link
                     to="/sucursales"
@@ -175,7 +175,7 @@ const Sidebar = () => {
                     En zona de entrega
                   </p>
                   <p className="text-[11px] font-medium text-emerald-100 mt-0.5 leading-snug">
-                    A {distanceKm} km de la sucursal. Envíos programados de 07:00 a 14:30 hs.
+                    A {formattedDistance} de la sucursal. Envíos programados de 07:00 a 14:30 hs.
                   </p>
                   <Link
                     to="/envios"

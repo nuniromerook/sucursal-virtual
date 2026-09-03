@@ -38,7 +38,7 @@ const Navbar = () => {
   const { openNotifications, unreadCount } = useNotifications();
   const { favoritesCount } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
-  const { coords, isInCoverage, distanceKm } = useLocationCoverage();
+  const { coords, isInCoverage, formattedDistance } = useLocationCoverage();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [categoriasMenuOpen, setCategoriasMenuOpen] = useState(false);
 
@@ -322,7 +322,7 @@ const Navbar = () => {
             <div className="flex items-center gap-2">
               <MapPin className="size-4 shrink-0 text-neutral-950" />
               <span>
-                Estás a {distanceKm} km (fuera del área de 10 km para envíos a domicilio). ¡Pero podés comprar online y retirar por nuestra sucursal de Luis Guillón! 🥩
+                Estás a {formattedDistance} (fuera del área de 10 km para envíos a domicilio). ¡Pero podés comprar online y retirar por nuestra sucursal de Luis Guillón! 🥩
               </span>
             </div>
             <Link
@@ -341,7 +341,7 @@ const Navbar = () => {
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
               <span>
-                Dentro del área de entrega (a {distanceKm} km de sucursal Luis Guillón). Envíos programados de 07:00 a 14:30 hs.
+                Dentro del área de entrega (a {formattedDistance} de sucursal Luis Guillón). Envíos programados de 07:00 a 14:30 hs.
               </span>
             </div>
             <Link

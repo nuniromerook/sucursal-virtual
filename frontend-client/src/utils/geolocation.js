@@ -1,4 +1,4 @@
-﻿// frontend-client/src/utils/geolocation.js
+// frontend-client/src/utils/geolocation.js
 
 /**
  * Coordenadas fijas de la Casa Central / Sucursal Luis Guillón
@@ -37,7 +37,22 @@ export function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c;
 
-  return Math.round(d * 10) / 10; // Redondear a 1 decimal
+  return Math.round(d * 1000) / 1000; // Precisión en metros (3 decimales)
+}
+
+/**
+ * Formatea la distancia: si es menor a 1 km, la muestra en metros (ej: "450 mts"),
+ * si es 1 km o más, en kilómetros con un decimal (ej: "2.4 km").
+ */
+export function formatearDistancia(distanciaKm) {
+  if (distanciaKm === null || distanciaKm === undefined) return "";
+  const num = Number(distanciaKm);
+  if (isNaN(num)) return "";
+  if (num < 1) {
+    const metros = Math.round(num * 1000);
+    return `${metros} mts`;
+  }
+  return `${num.toFixed(1)} km`;
 }
 
 /**

@@ -1,9 +1,10 @@
-﻿// frontend-client/src/context/LocationContext.jsx
+// frontend-client/src/context/LocationContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   SUCURSAL_LUIS_GUILLON,
   RADIO_COBERTURA_KM,
   calcularDistanciaKm,
+  formatearDistancia,
   obtenerUbicacionNavegador,
   guardarUbicacionLocal,
   leerUbicacionLocal,
@@ -52,6 +53,7 @@ export function LocationProvider({ children }) {
     : null;
 
   const isInCoverage = distanceKm !== null ? distanceKm <= RADIO_COBERTURA_KM : null;
+  const formattedDistance = formatearDistancia(distanceKm);
 
   const detectLocation = useCallback(async () => {
     setIsDetecting(true);
@@ -86,6 +88,8 @@ export function LocationProvider({ children }) {
       value={{
         coords,
         distanceKm,
+        formattedDistance,
+        formatearDistancia,
         isInCoverage,
         isDetecting,
         detectError,
