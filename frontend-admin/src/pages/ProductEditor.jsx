@@ -355,7 +355,7 @@ const ProductEditor = () => {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 p-4">
       {/* ─── Encabezado en formato módulo ─── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-white border-neutral-200/80 shadow-2xs">
         <div className="flex items-center gap-3">
