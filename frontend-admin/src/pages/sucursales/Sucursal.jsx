@@ -54,7 +54,11 @@ const Sucursal = () => {
     if (tabContainerRef.current) {
       const activeBtn = tabContainerRef.current.querySelector(".active-tab");
       if (activeBtn) {
-        activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        activeBtn.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
       }
     }
   });
@@ -119,7 +123,7 @@ const Sucursal = () => {
   }, [sucursal?.id, ultimoPedido]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col p-2 gap-5">
       {/* ─── Pestañas de Navegación de la Sucursal ─── */}
       <div
         ref={tabContainerRef}

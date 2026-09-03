@@ -16,8 +16,11 @@ export default function DashboardLayout() {
       <div className="flex flex-col flex-1 min-w-0 bg-neutral-100">
         <Navbar />
         <main className="flex-1 flex flex-col w-full lg:max-w-[calc(100vw-16rem)] mx-auto transition-all duration-300 ease-in-out">
-          <Breadcrumb routes={ADMIN_BREADCRUMB_ROUTES} extra={breadcrumbExtra} />
-          <div className="flex-1 p-4 sm:p-6">
+          <Breadcrumb
+            routes={ADMIN_BREADCRUMB_ROUTES}
+            extra={breadcrumbExtra}
+          />
+          <div className="flex-1 sm:p-6">
             <Outlet />
           </div>
         </main>

@@ -321,9 +321,9 @@ export default function Inicio() {
 
       {/* ─── 3. Tablero de Red de Sucursales ─── */}
       <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col mb-4">
           <div className="flex items-center gap-2.5">
-            <Store className="size-5 text-main-blue" />
+            <Store className="size-5 text-main-blue shrink-0" />
             <h2 className="text-base font-black text-neutral-900 tracking-tight">
               Red de Sucursales en Operación (
               {dashboardData?.sucursales?.length || 0})
@@ -399,7 +399,7 @@ export default function Inicio() {
                 <BarChart3 className="size-5 text-purple-700" />
                 <div>
                   <h2 className="text-base font-black text-neutral-900 tracking-tight">
-                    Analítica de Tráfico & Audiencia
+                    Tráfico & Audiencia
                   </h2>
                   <p className="text-xs text-neutral-500">
                     Medición de ingresos al ecommerce para pauta y espacios
@@ -407,7 +407,7 @@ export default function Inicio() {
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-black uppercase text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
+              <span className="text-xs font-black whitespace-nowrap uppercase text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
                 Media Kit
               </span>
             </div>
@@ -603,7 +603,7 @@ export default function Inicio() {
 
       {/* ─── 5. Live Feed de Últimas Órdenes de la Cadena ─── */}
       <div className="bg-white rounded-lg p-5 sm:p-6 border border-neutral-200/80 shadow-2xs">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col mb-4">
           <div className="flex items-center gap-2">
             <Radio className="size-5 text-emerald-600 animate-pulse" />
             <h3 className="font-black text-base text-neutral-900">
