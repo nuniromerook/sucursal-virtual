@@ -99,7 +99,7 @@ const getDashboardResumen = async (req, res) => {
       SELECT 
         p.id,
         p.estado_local AS estado,
-        COALESCE(p.monto_total_final, p.monto_total_estimado) AS monto,
+        COALESCE(p.monto_total_estimado, p.monto_total_final) AS monto,
         p.tipo_entrega,
         p.creado_en,
         c.nombre AS cliente_nombre,

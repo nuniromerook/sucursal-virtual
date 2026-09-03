@@ -449,18 +449,18 @@ export default function ComandaDetalle() {
             <div className="p-4 bg-neutral-900 text-white flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wider font-bold text-neutral-400">
-                  Monto Total del Pedido
+                  Total del Pedido
                 </p>
                 <p className="text-xs text-neutral-400">
-                  {pedido.monto_total_final
-                    ? "Monto final calculado"
-                    : "Monto total acumulado"}
+                  Monto acordado con el cliente
                 </p>
               </div>
               <div className="text-right">
                 <span className="text-xl sm:text-2xl font-black text-white">
                   {formatMoney(
-                    pedido.monto_total_final || pedido.monto_total_estimado,
+                    pedido.monto_total_estimado ||
+                      pedido.monto ||
+                      pedido.monto_total_final,
                   )}
                 </span>
               </div>
@@ -511,52 +511,24 @@ export default function ComandaDetalle() {
                 })}
               </div>
 
-              {/* Ajuste manual de monto en etapa de Pesado */}
-              <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-neutral-700 mb-1">
-                    Monto Final Exacto luego del Pesado ($)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="Ej: 14500"
-                    value={montoRealInput}
-                    onChange={(e) => setMontoRealInput(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold text-neutral-800 focus:border-main-blue focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex items-end gap-2">
-                  <ButtonLoader
-                    value="Guardar Monto"
-                    loadingValue="Guardando..."
-                    isLoading={isUpdating}
-                    onClick={() =>
-                      handleCambiarEstado(
-                        pedido.estado_local || pedido.estado,
+              {/* Botón cancelar comanda */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  disabled={isUpdating}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "¿Estás seguro de cancelar esta comanda?",
                       )
+                    ) {
+                      handleCambiarEstado("cancelado");
                     }
-                    classNames="px-4 py-2 bg-neutral-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
-                  />
-
-                  <button
-                    type="button"
-                    disabled={isUpdating}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "¿Estás seguro de cancelar esta comanda?",
-                        )
-                      ) {
-                        handleCambiarEstado("cancelado");
-                      }
-                    }}
-                    className="px-3 py-2 bg-red-50 text-red-700 hover:bg-red-100 font-bold text-xs rounded-xl border border-red-200 transition-colors cursor-pointer"
-                  >
-                    Cancelar Comanda
-                  </button>
-                </div>
+                  }}
+                  className="px-3 py-2 bg-red-50 text-red-700 hover:bg-red-100 font-bold text-xs rounded-xl border border-red-200 transition-colors cursor-pointer"
+                >
+                  Cancelar Comanda
+                </button>
               </div>
             </div>
           )}

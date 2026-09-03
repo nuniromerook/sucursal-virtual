@@ -620,14 +620,15 @@ export default function PedidosSucursal() {
                 <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-500 font-medium">
-                      {pedido.monto_final_real
-                        ? "Monto final real:"
-                        : "Monto estimado:"}
+                      Total del Pedido:
                     </span>
                     <span className="font-black text-lg text-neutral-900">
                       $
                       {Number(
-                        pedido.monto_final_real || pedido.monto_total_estimado,
+                        pedido.monto_total_estimado ||
+                          pedido.monto ||
+                          pedido.monto_final_real ||
+                          0,
                       ).toLocaleString("es-AR")}
                     </span>
                   </div>
