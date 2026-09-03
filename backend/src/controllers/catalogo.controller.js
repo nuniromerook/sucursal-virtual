@@ -48,9 +48,31 @@ const getCatalogo = async (req, res) => {
     condiciones.push(`LOWER(c.especie) LIKE $${valores.length}`);
   }
 
+  let orderClause = "ORDER BY c.nombre_producto ASC";
+
   if (q) {
-    valores.push(`%${q.trim().toLowerCase()}%`);
-    condiciones.push(`(LOWER(c.nombre_producto) LIKE $${valores.length} OR LOWER(COALESCE(c.descripcion, '')) LIKE $${valores.length})`);
+    const rawQ = q.trim().toLowerCase();
+    const tokens = rawQ.split(/\s+/).filter(Boolean);
+
+    tokens.forEach((token) => {
+      valores.push(`%${token}%`);
+      condiciones.push(`(
+        LOWER(c.nombre_producto) LIKE $${valores.length} 
+        OR LOWER(COALESCE(c.descripcion, '')) LIKE $${valores.length} 
+        OR LOWER(COALESCE(c.especie, '')) LIKE $${valores.length} 
+        OR LOWER(COALESCE(c.categoria, '')) LIKE $${valores.length}
+      )`);
+    });
+
+    valores.push(`%${rawQ}%`);
+    const qParamIndex = valores.length;
+    orderClause = `ORDER BY 
+      CASE 
+        WHEN LOWER(c.nombre_producto) LIKE $${qParamIndex} THEN 1
+        WHEN LOWER(COALESCE(c.descripcion, '')) LIKE $${qParamIndex} THEN 2
+        ELSE 3
+      END,
+      c.nombre_producto ASC`;
   }
 
   const whereClause = condiciones.length
@@ -64,7 +86,7 @@ const getCatalogo = async (req, res) => {
               NOT c.sin_stock AS en_stock
        FROM catalogo c
        ${whereClause}
-       ORDER BY c.nombre_producto`;
+       ${orderClause}`;
 
     const result = await pool.query(query, valores);
 

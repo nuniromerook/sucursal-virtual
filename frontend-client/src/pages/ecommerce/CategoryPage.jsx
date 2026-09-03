@@ -15,9 +15,21 @@ import {
 import { VITE_API_URL } from "../../config/api";
 import ProductCard from "../../components/ProductCard";
 import BasicDropdown from "../../components/ui/BasicDropdown";
+import SearchInput from "../../components/SearchInput";
 import { useSocket } from "../../context/SocketContext";
 import { useFavorites } from "../../context/FavoritesContext";
 import NotFound from "../NotFound";
+
+/**
+ * Normaliza texto para búsqueda: minúsculas y sin acentos ni diacríticos
+ */
+function normalizarTexto(str) {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
 
 /**
  * Metadatos y descripciones temáticas de categorías
@@ -165,84 +177,104 @@ export default function CategoryPage() {
     fetchProductos();
   }, [categoria, catalogoVersion, cleanInvalidFavorites]);
 
-  // 1. Filtrar los productos que pertenecen a esta categoría y texto de búsqueda
+  // 1. Filtrar los productos que pertenecen a esta categoría y búsqueda inteligente multi-término
   const categoryProducts = useMemo(() => {
-    return productos.filter((prod) => {
-      const prodCategoria = (prod.categoria || "").toLowerCase().trim();
-      const prodEspecie = (prod.especie || "").toLowerCase().trim();
-      const prodNombre = (prod.nombre_producto || "").toLowerCase().trim();
-      const prodDesc = (prod.descripcion || "").toLowerCase().trim();
-      const target = currentKey;
+    const rawQueryNorm = normalizarTexto(queryParam);
+    const tokens = rawQueryNorm ? rawQueryNorm.split(/\s+/).filter(Boolean) : [];
 
-      // Filtrar por término de búsqueda en query params (?q=...)
-      if (queryParam) {
-        const q = queryParam.toLowerCase();
-        const matchQ =
-          prodNombre.includes(q) ||
-          prodDesc.includes(q) ||
-          prodCategoria.includes(q) ||
-          prodEspecie.includes(q);
-        if (!matchQ) return false;
-      }
+    const listWithScores = productos
+      .map((prod) => {
+        let searchScore = 0;
 
-      if (target === "productos") return true;
-      if (target === "vacuno") {
-        return prodCategoria === "vacuno" || prodEspecie === "vacuno";
-      }
-      if (target === "cerdo") {
-        return prodCategoria === "cerdo" || prodEspecie === "cerdo";
-      }
-      if (target === "embutidos") {
-        return (
-          prodCategoria === "embutidos" ||
-          prodNombre.includes("chorizo") ||
-          prodNombre.includes("morcilla") ||
-          prodNombre.includes("salchicha") ||
-          prodNombre.includes("embutido")
-        );
-      }
-      if (target === "pollo") {
-        return prodCategoria === "pollo" || prodEspecie === "pollo";
-      }
-      if (target === "preparados") {
-        return (
-          prodCategoria === "preparados" ||
-          prodCategoria === "elaborados" ||
-          prodNombre.includes("milanesa") ||
-          prodNombre.includes("hamburguesa")
-        );
-      }
-      if (target === "almacen") {
-        return prodCategoria === "almacen" || prodCategoria === "despensa";
-      }
-      if (target === "ofertas") {
-        const anterior = Number(prod.precio_anterior);
-        const actual = Number(prod.precio);
-        const hasDiscount = anterior > 0 && anterior > actual;
-        const hasPromos = Array.isArray(prod.promos) && prod.promos.length > 0;
-        const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
-        return (
-          hasDiscount ||
-          hasPromos ||
-          hasDescuentoPorcentaje ||
-          prod.en_oferta === true
-        );
-      }
-      if (target === "favoritos") {
-        return favoriteIds.includes(prod.id);
-      }
-      if (target === "combos") {
-        return (
-          prodCategoria.includes("combo") ||
-          prodCategoria.includes("pack") ||
-          prodNombre.includes("combo") ||
-          prodNombre.includes("pack") ||
-          (Array.isArray(prod.promos) && prod.promos.length > 0)
-        );
-      }
+        // Búsqueda inteligente: tokens deben coincidir en nombre, descripcion, especie o categoria
+        if (tokens.length > 0) {
+          const nombre = normalizarTexto(prod.nombre_producto);
+          const desc = normalizarTexto(prod.descripcion);
+          const especie = normalizarTexto(prod.especie);
+          const categoria = normalizarTexto(prod.categoria);
 
-      return prodCategoria === target || prodEspecie === target;
-    });
+          const todosCoinciden = tokens.every(
+            (t) =>
+              nombre.includes(t) ||
+              desc.includes(t) ||
+              especie.includes(t) ||
+              categoria.includes(t)
+          );
+
+          if (!todosCoinciden) return null;
+
+          // Cálculo de relevancia para destacar coincidencias en nombre primero
+          if (nombre === rawQueryNorm) searchScore += 1000;
+          else if (nombre.startsWith(rawQueryNorm)) searchScore += 500;
+          else if (nombre.includes(rawQueryNorm)) searchScore += 300;
+
+          tokens.forEach((t) => {
+            if (nombre.includes(t)) searchScore += 120;
+            if (especie.includes(t) || categoria.includes(t)) searchScore += 60;
+            if (desc.includes(t)) searchScore += 25;
+          });
+        }
+
+        const prodCategoria = (prod.categoria || "").toLowerCase().trim();
+        const prodEspecie = (prod.especie || "").toLowerCase().trim();
+        const prodNombre = (prod.nombre_producto || "").toLowerCase().trim();
+        const target = currentKey;
+
+        let matchCategory = true;
+        if (target === "productos") {
+          matchCategory = true;
+        } else if (target === "vacuno") {
+          matchCategory = prodCategoria === "vacuno" || prodEspecie === "vacuno";
+        } else if (target === "cerdo") {
+          matchCategory = prodCategoria === "cerdo" || prodEspecie === "cerdo";
+        } else if (target === "embutidos") {
+          matchCategory =
+            prodCategoria === "embutidos" ||
+            prodNombre.includes("chorizo") ||
+            prodNombre.includes("morcilla") ||
+            prodNombre.includes("salchicha") ||
+            prodNombre.includes("embutido");
+        } else if (target === "pollo") {
+          matchCategory = prodCategoria === "pollo" || prodEspecie === "pollo";
+        } else if (target === "preparados") {
+          matchCategory =
+            prodCategoria === "preparados" ||
+            prodCategoria === "elaborados" ||
+            prodNombre.includes("milanesa") ||
+            prodNombre.includes("hamburguesa");
+        } else if (target === "almacen") {
+          matchCategory = prodCategoria === "almacen" || prodCategoria === "despensa";
+        } else if (target === "ofertas") {
+          const anterior = Number(prod.precio_anterior);
+          const actual = Number(prod.precio);
+          const hasDiscount = anterior > 0 && anterior > actual;
+          const hasPromos = Array.isArray(prod.promos) && prod.promos.length > 0;
+          const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
+          matchCategory =
+            hasDiscount ||
+            hasPromos ||
+            hasDescuentoPorcentaje ||
+            prod.en_oferta === true;
+        } else if (target === "favoritos") {
+          matchCategory = favoriteIds.includes(prod.id);
+        } else if (target === "combos") {
+          matchCategory =
+            prodCategoria.includes("combo") ||
+            prodCategoria.includes("pack") ||
+            prodNombre.includes("combo") ||
+            prodNombre.includes("pack") ||
+            (Array.isArray(prod.promos) && prod.promos.length > 0);
+        } else {
+          matchCategory = prodCategoria === target || prodEspecie === target;
+        }
+
+        if (!matchCategory) return null;
+
+        return { ...prod, _searchScore: searchScore };
+      })
+      .filter(Boolean);
+
+    return listWithScores;
   }, [productos, currentKey, favoriteIds, queryParam]);
 
   // 2. Aplicar micro-filtros (Ofertas, Puntos, Combos, Favoritos) sobre los productos de esta categoría
@@ -278,7 +310,13 @@ export default function CategoryPage() {
     });
 
     // Ordenamiento
-    if (orden === "precio_asc") {
+    if (orden === "relevancia") {
+      if (queryParam) {
+        result.sort((a, b) => (b._searchScore || 0) - (a._searchScore || 0));
+      } else {
+        result.sort((a, b) => b.id - a.id);
+      }
+    } else if (orden === "precio_asc") {
       result.sort((a, b) => Number(a.precio) - Number(b.precio));
     } else if (orden === "precio_desc") {
       result.sort((a, b) => Number(b.precio) - Number(a.precio));
@@ -295,6 +333,7 @@ export default function CategoryPage() {
     filtroFavoritos,
     favoriteIds,
     orden,
+    queryParam,
   ]);
 
   // Productos visibles según paginación progresiva (Load More)
@@ -419,6 +458,18 @@ export default function CategoryPage() {
               </span>
             </div>
           )}
+        </div>
+
+        {/* ─── Buscador Inteligente en Categoría ─── */}
+        <div className="mb-4">
+          <SearchInput
+            inCategoryPage={true}
+            placeholder={
+              currentKey === "productos"
+                ? "¿Qué corte o preparado buscás hoy? (ej. Asado, Vacío, Milanesa, Parrilla...)"
+                : `Buscar en ${meta.title.toLowerCase()} o por preparación (ej. asado, horno, milanesa)...`
+            }
+          />
         </div>
 
         {/* ─── Barra de Filtros Rápidos y Ordenamiento (con BasicDropdown) ─── */}

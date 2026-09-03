@@ -41,7 +41,9 @@ export default function Envios() {
               </Link>
               <ChevronRight className="size-4 shrink-0 text-gray-400 mx-1" />
             </li>
-            <li className="text-neutral-900 font-bold capitalize">Envíos & Logística</li>
+            <li className="text-neutral-900 font-bold capitalize">
+              Envíos & Logística
+            </li>
           </ol>
         </nav>
 
@@ -55,7 +57,9 @@ export default function Envios() {
             Información de Envíos & Cobertura
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
-            Llevamos los mejores cortes frescos y envasados al vacío directo a tu casa, manteniendo la cadena de frío y con entregas en franjas programadas.
+            Llevamos los mejores cortes frescos y envasados al vacío directo a
+            tu casa, manteniendo la cadena de frío y con entregas en franjas
+            programadas.
           </p>
         </div>
 
@@ -70,7 +74,10 @@ export default function Envios() {
               Radio de entrega de {RADIO_COBERTURA_KM} km desde Luis Guillón
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed mb-6">
-              Entregamos en Luis Guillón, Monte Grande, Llavallol, Adrogué, Temperley, Turdera, Ezeiza y alrededores. Tocá el botón para comprobar al instante si tu ubicación está dentro del área de entrega.
+              Entregamos en Luis Guillón, Monte Grande, Llavallol, Adrogué,
+              Temperley, Turdera, Ezeiza y alrededores. Tocá el botón para
+              comprobar al instante si tu ubicación está dentro del área de
+              entrega.
             </p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -80,8 +87,14 @@ export default function Envios() {
                 disabled={isDetecting}
                 className="px-6 py-3 rounded-xl bg-white hover:bg-neutral-100 text-main-blue font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98 disabled:opacity-50"
               >
-                <Compass className={`size-4 ${isDetecting ? "animate-spin" : ""}`} />
-                <span>{isDetecting ? "Comprobando..." : "Comprobar mi ubicación ahora"}</span>
+                <Compass
+                  className={`size-4 ${isDetecting ? "animate-spin" : ""}`}
+                />
+                <span>
+                  {isDetecting
+                    ? "Comprobando..."
+                    : "Comprobar mi ubicación ahora"}
+                </span>
               </button>
 
               {coords && (
@@ -96,14 +109,17 @@ export default function Envios() {
                     <>
                       <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
                       <span>
-                        ¡Estás a {formattedDistance}! Tu domicilio está dentro del área de entrega.
+                        ¡Estás a {formattedDistance}! Tu domicilio está dentro
+                        del área de entrega.
                       </span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="size-4 text-amber-300 shrink-0" />
                       <span>
-                        Estás a {formattedDistance} (fuera del radio de {RADIO_COBERTURA_KM} km). ¡Podés elegir Retiro en Sucursal!
+                        Estás a {formattedDistance} (fuera del radio de{" "}
+                        {RADIO_COBERTURA_KM} km). ¡Podés elegir Retiro en
+                        Sucursal!
                       </span>
                     </>
                   )}
@@ -130,7 +146,9 @@ export default function Envios() {
               Horarios de Envío
             </h3>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Realizamos entregas de <strong>Lunes a Sábados de 07:00 a 14:30 hs</strong>. Podés elegir franjas horarias al programar tu compra en el checkout.
+              Realizamos entregas de{" "}
+              <strong>Lunes a Sábados de 07:00 a 14:30 hs</strong>. Podés elegir
+              franjas horarias al programar tu compra en el checkout.
             </p>
           </div>
 
@@ -142,7 +160,9 @@ export default function Envios() {
               Cadena de Frío Segura
             </h3>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Los cortes se fraccionan en el momento del despacho y viajan en bolsas térmicas precintadas para conservar su máxima frescura y calidad original.
+              Los cortes se fraccionan en el momento del despacho y viajan en
+              bolsas térmicas precintadas para conservar su máxima frescura y
+              calidad original.
             </p>
           </div>
 
@@ -154,16 +174,18 @@ export default function Envios() {
               Retiro sin Costo en Sucursal
             </h3>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Si estás fuera de la zona o preferís no esperar el envío, seleccioná <strong>Retiro en Sucursal</strong> en Luis Guillón y retirá tu paquete listo y pesado.
+              Si estás fuera de la zona o preferís no esperar el envío,
+              seleccioná <strong>Retiro en Sucursal</strong> en Luis Guillón y
+              retirá tu paquete listo y pesado.
             </p>
           </div>
         </div>
 
         {/* Preguntas Frecuentes (FAQ) */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-neutral-200/80 shadow-2xs">
+        <div className="bg-white rounded-2xl p-5 sm:p-8 border border-neutral-200/80 shadow-2xs">
           <div className="flex items-center gap-2 mb-6">
-            <HelpCircle className="size-5 text-main-blue" />
-            <h3 className="font-extrabold text-lg text-neutral-900">
+            <HelpCircle className="size-4 text-main-blue" />
+            <h3 className="font-extrabold text-neutral-900">
               Preguntas Frecuentes sobre Envíos
             </h3>
           </div>
@@ -174,7 +196,11 @@ export default function Envios() {
                 ¿Qué pasa si mi pedido se prepara después de las 14:30 hs?
               </p>
               <p className="text-neutral-600 leading-relaxed">
-                Nuestra carnicería abre de 07:00 a 15:00 hs, pero cerramos la toma de pedidos y envíos a las 14:30 hs para asegurar que el último pedido llegue a destino dentro del horario de atención. Cualquier pedido posterior se programa para la mañana del día siguiente.
+                Nuestra carnicería abre de 07:00 a 15:00 hs, pero cerramos la
+                toma de pedidos y envíos a las 14:30 hs para asegurar que el
+                último pedido llegue a destino dentro del horario de atención.
+                Cualquier pedido posterior se programa para la mañana del día
+                siguiente.
               </p>
             </div>
 
@@ -183,7 +209,9 @@ export default function Envios() {
                 ¿Cómo se calcula el peso real de los cortes?
               </p>
               <p className="text-neutral-600 leading-relaxed">
-                Al comprar ves un precio estimado por kilo. En mostrador, el cortador pesa con balanza digital calibrada. Vos pagás exactamente lo acordado en la orden al momento de la compra.
+                Al comprar ves un precio estimado por kilo. En mostrador, el
+                cortador pesa con balanza digital calibrada. Vos pagás
+                exactamente lo acordado en la orden al momento de la compra.
               </p>
             </div>
 
@@ -192,7 +220,10 @@ export default function Envios() {
                 ¿Qué hago si vivo a más de 10 km de la sucursal?
               </p>
               <p className="text-neutral-600 leading-relaxed">
-                Podés realizar tu pedido en la web eligiendo la opción de <strong>Retiro en Sucursal</strong> (Av. Luciano Valette 3910, Luis Guillón). Lo dejamos empaquetado y listo para que lo retires en pocos minutos.
+                Podés realizar tu pedido en la web eligiendo la opción de{" "}
+                <strong>Retiro en Sucursal</strong> (Av. Luciano Valette 3910,
+                Luis Guillón). Lo dejamos empaquetado y listo para que lo
+                retires en pocos minutos.
               </p>
             </div>
           </div>
