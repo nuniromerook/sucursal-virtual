@@ -19,7 +19,11 @@ import {
   Truck,
   Star,
   X,
+  MapPin,
+  Compass,
+  CheckCircle2,
 } from "lucide-react";
+import { useLocationCoverage } from "../context/LocationContext";
 
 const categories = [
   { nameId: "vacuno", label: "Vacuno", emoji: "🥩" },
@@ -34,6 +38,8 @@ const Sidebar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems, openCart } = useCart();
   const { favoritesCount } = useFavorites();
+  const { coords, isInCoverage, distanceKm, detectLocation, isDetecting } =
+    useLocationCoverage();
   const sidebarRef = useRef(null);
 
   // Swipe to close
@@ -133,6 +139,67 @@ const Sidebar = () => {
           >
             <X className="size-5" />
           </button>
+        </div>
+
+        {/* Módulo de Cobertura de Envíos en Mobile (Opaco, alto contraste) */}
+        <div className="px-4 pt-4 pb-2 border-b border-white/10">
+          {coords && isInCoverage === false && (
+            <div className="rounded-xl bg-amber-500 text-neutral-950 p-3 shadow-md border border-amber-600">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="size-4.5 text-neutral-950 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-tight">
+                    Fuera de cobertura (10 km)
+                  </p>
+                  <p className="text-[11px] font-semibold text-neutral-900 mt-0.5 leading-snug">
+                    Estás a {distanceKm} km. ¡Podés pedir online y retirar en sucursal!
+                  </p>
+                  <Link
+                    to="/sucursales"
+                    onClick={handleNavClick}
+                    className="inline-block mt-2 px-2.5 py-1 bg-neutral-950 text-amber-300 hover:bg-neutral-800 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors"
+                  >
+                    Ver sucursal y mapa
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {coords && isInCoverage === true && (
+            <div className="rounded-xl bg-emerald-700 text-white p-3 shadow-md border border-emerald-800">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="size-4.5 text-emerald-200 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-tight">
+                    En zona de entrega
+                  </p>
+                  <p className="text-[11px] font-medium text-emerald-100 mt-0.5 leading-snug">
+                    A {distanceKm} km de la sucursal. Envíos programados de 07:00 a 14:30 hs.
+                  </p>
+                  <Link
+                    to="/envios"
+                    onClick={handleNavClick}
+                    className="inline-block mt-1 text-[10px] font-bold text-white underline hover:text-emerald-100"
+                  >
+                    Detalles de logística
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!coords && (
+            <button
+              type="button"
+              onClick={detectLocation}
+              disabled={isDetecting}
+              className="w-full rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white p-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Compass className={`size-4 ${isDetecting ? "animate-spin" : ""}`} />
+              <span>{isDetecting ? "Detectando..." : "Comprobar cobertura (10 km)"}</span>
+            </button>
+          )}
         </div>
 
         {/* Cuerpo del menú */}

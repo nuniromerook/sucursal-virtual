@@ -11,6 +11,7 @@ import {
   Package,
   Star,
   ChevronDown,
+  MapPin,
 } from "lucide-react";
 import EnvioNavbar from "@/components/EnvioNavbar";
 import { useAppContext } from "../context/AppContext";
@@ -37,12 +38,12 @@ const Navbar = () => {
   const { openNotifications, unreadCount } = useNotifications();
   const { favoritesCount } = useFavorites();
   const { user, isAuthenticated, logout } = useAuth();
-  const { coords, isInCoverage } = useLocationCoverage();
+  const { coords, isInCoverage, distanceKm } = useLocationCoverage();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [categoriasMenuOpen, setCategoriasMenuOpen] = useState(false);
 
   return (
-    <header className="flex sticky top-0 left-0 w-full bg-main-blue z-100">
+    <header className="flex flex-col sticky top-0 left-0 w-full bg-main-blue z-100 shadow-xs">
       <div className="flex w-full items-center max-w-6xl h-14 lg:h-26 gap-6 lg:mx-auto pr-6 pl-4 lg:px-0">
         {/*Logo*/}
         <Link to="/" className="hidden lg:block size-25 aspect-square">
@@ -313,6 +314,45 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* ─── Aviso de Cobertura en Desktop (Sub-barra elegante que no deforma la Navbar) ─── */}
+      {coords && isInCoverage === false && (
+        <div className="hidden lg:block w-full bg-amber-500 text-neutral-950 border-t border-amber-600/30 py-1.5 px-4 shadow-inner animate-in fade-in duration-200">
+          <div className="max-w-6xl mx-auto flex items-center justify-between text-xs font-bold">
+            <div className="flex items-center gap-2">
+              <MapPin className="size-4 shrink-0 text-neutral-950" />
+              <span>
+                Estás a {distanceKm} km (fuera del área de 10 km para envíos a domicilio). ¡Pero podés comprar online y retirar por nuestra sucursal de Luis Guillón! 🥩
+              </span>
+            </div>
+            <Link
+              to="/sucursales"
+              className="bg-neutral-950 hover:bg-neutral-800 text-amber-300 px-3 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider transition-colors shrink-0 ml-4 shadow-2xs"
+            >
+              Ver sucursal y mapa
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {coords && isInCoverage === true && (
+        <div className="hidden lg:block w-full bg-emerald-700 text-white border-t border-emerald-800/40 py-1 px-4 animate-in fade-in duration-200">
+          <div className="max-w-6xl mx-auto flex items-center justify-between text-[11px] font-bold">
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
+              <span>
+                Dentro del área de entrega (a {distanceKm} km de sucursal Luis Guillón). Envíos programados de 07:00 a 14:30 hs.
+              </span>
+            </div>
+            <Link
+              to="/envios"
+              className="underline hover:text-emerald-100 text-[11px] shrink-0 ml-4 font-extrabold"
+            >
+              Detalles de logística
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
