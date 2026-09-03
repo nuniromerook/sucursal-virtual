@@ -7,6 +7,7 @@ import {
   UploadCloud,
   Loader2,
   X,
+  Sparkles,
 } from "lucide-react";
 import Input from "../components/ui/Input";
 import TextArea from "../components/ui/TextArea";
@@ -52,6 +53,8 @@ const ProductEditor = () => {
   const [isFetchingProduct, setIsFetchingProduct] = useState(isEditMode);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isGeneratingIA, setIsGeneratingIA] = useState(false);
+  const [iaSuccessMsg, setIaSuccessMsg] = useState("");
 
   const { isLoading, setIsLoading, navigate, setNavbarTitle } = useAppContext();
 
@@ -254,6 +257,67 @@ const ProductEditor = () => {
     setPromos((prev) => prev.filter((p) => p.id !== promoId));
   };
 
+  const handleGenerarFichaIA = async () => {
+    const nombre = formValues.nombre_producto?.trim();
+    if (!nombre) {
+      setFormError("Ingresá primero el nombre del producto para autocompletar con IA.");
+      return;
+    }
+
+    setIsGeneratingIA(true);
+    setFormError(null);
+    setIaSuccessMsg("");
+
+    try {
+      const res = await fetch(`${VITE_API_URL}/catalogo/generar-ficha-ia`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre_producto: nombre,
+          especie_sugerida: formValues.especie,
+          unidad_sugerida: formValues.unidad_medida,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "No se pudo generar la ficha con IA.");
+      }
+
+      const ia = data.data;
+
+      setFormValues((prev) => ({
+        ...prev,
+        slug: ia.slug || prev.slug,
+        especie: ia.especie || prev.especie,
+        categoria: ia.categoria || prev.categoria,
+        unidad_medida: ia.unidad_medida || prev.unidad_medida,
+        proteinas:
+          ia.proteinas !== undefined && ia.proteinas !== null
+            ? String(ia.proteinas)
+            : prev.proteinas,
+        calorias:
+          ia.calorias !== undefined && ia.calorias !== null
+            ? String(ia.calorias)
+            : prev.calorias,
+        grasas:
+          ia.grasas !== undefined && ia.grasas !== null
+            ? String(ia.grasas)
+            : prev.grasas,
+        descripcion: ia.descripcion || prev.descripcion,
+      }));
+
+      setIaSuccessMsg(
+        "¡Ficha generada exitosamente con IA! Se completaron el slug, especie, categoría, macros y la plantilla de descripción.",
+      );
+    } catch (err) {
+      console.error("Error al generar ficha con IA:", err);
+      setFormError(err.message || "Error al conectar con el asistente de IA.");
+    } finally {
+      setIsGeneratingIA(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -394,19 +458,50 @@ const ProductEditor = () => {
           </div>
         )}
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              label="Nombre del producto"
-              id="nombre_producto"
-              inputName="nombre_producto"
-              inputType="text"
-              autoComplete="nombre_producto"
-              placeholder="Bife Ancho"
-              value={formValues.nombre_producto}
-              setOnChange={handleChange}
-            />
+        {iaSuccessMsg && (
+          <div className="mb-5 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-emerald-600 shrink-0" />
+              <span>{iaSuccessMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIaSuccessMsg("")}
+              className="text-emerald-700 hover:text-emerald-950 text-xs font-black cursor-pointer ml-3 shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
+        <div className="flex flex-col gap-4">
+          {/* Fila del Nombre con Asistente de IA */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 p-3.5 bg-neutral-50 rounded-xl border border-neutral-200/80">
+            <div className="flex-1">
+              <Input
+                label="Nombre del producto"
+                id="nombre_producto"
+                inputName="nombre_producto"
+                inputType="text"
+                autoComplete="nombre_producto"
+                placeholder="Ej: Tira de Asado, Vacio Fino, Bondiola, Pollo Arrollado..."
+                value={formValues.nombre_producto}
+                setOnChange={handleChange}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerarFichaIA}
+              disabled={isGeneratingIA || !formValues.nombre_producto?.trim()}
+              className="h-10 px-4 rounded-lg bg-linear-to-r from-purple-600 to-main-blue hover:from-purple-700 hover:to-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              title="Autocompletar slug, especie, macros y plantilla de descripción con IA de Gemini"
+            >
+              <Sparkles className={`size-4 ${isGeneratingIA ? "animate-spin" : "text-amber-300"}`} />
+              <span>{isGeneratingIA ? "Generando con IA..." : "✨ Autocompletar con IA"}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
             <Input
               label="Slug (URL)"
               id="slug"

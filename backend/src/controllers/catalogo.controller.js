@@ -536,6 +536,101 @@ const sincronizarFavoritos = async (req, res) => {
   }
 };
 
+// POST /catalogo/generar-ficha-ia
+const generarFichaIA = async (req, res) => {
+  try {
+    const { nombre_producto, especie_sugerida, unidad_sugerida } = req.body;
+    if (!nombre_producto || !nombre_producto.trim()) {
+      return res.status(400).json({ error: "El nombre del producto es obligatorio." });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "No se encuentra configurada GEMINI_API_KEY en el servidor.",
+      });
+    }
+
+    const prompt = `
+Eres el carnicero maestro y redactor gastronómico de "Abastecedora Valette", una prestigiosa carnicería tradicional y distribuidora de carnes premium ubicada en Av. Luciano Valette 3910, Luis Guillón, Zona Sur de Buenos Aires, Argentina.
+
+Genera la ficha técnica y gastronómica para el producto: "${nombre_producto.trim()}".
+${especie_sugerida ? `Especie sugerida: ${especie_sugerida}.` : ""}
+${unidad_sugerida ? `Unidad sugerida: ${unidad_sugerida}.` : ""}
+
+Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructura:
+{
+  "slug": "slug-limpio-en-kebab-case",
+  "especie": "vacuno" | "cerdo" | "pollo" | "general",
+  "categoria": "vacuno" | "cerdo" | "pollo" | "preparados" | "almacen",
+  "unidad_medida": "kg" | "u",
+  "proteinas": 20.5,
+  "calorias": 220,
+  "grasas": 15.2,
+  "descripcion": "texto_markdown"
+}
+
+Reglas estrictas para el campo "descripcion":
+Usa exactamente esta plantilla en formato Markdown enriquecido (respetando negritas, saltos de línea y citas de bloque >):
+
+[Un párrafo atractivo y tentador de 2 o 3 oraciones describiendo las cualidades gastronómicas, terneza, veteado y sabor del corte en Argentina. Resalta en negrita 2 o 3 palabras clave como **excelente calidad** o **sabor inigualable**.]
+
+## Información de compra:
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria retirando en sucursal, también tarjetas de débito y billeteras virtuales comprando online y con envío.
+- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
+- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
+> 🔥 **Ideal para:** [Recomendaciones específicas de cocción para este corte, ej: Parrilla a fuego medio, horno suave, a la chapa o estofado]
+> ❄️ Conservación: Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente a -18°C.
+
+Valores nutricionales:
+- Proteínas (g), calorías (kcal) y grasas (g) deben ser números aproximados basados en tablas nutricionales reales de carnes argentinas (cada 100g de producto crudo).
+`;
+
+    const modelos = ["gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest"];
+    let respuestaJSON = null;
+    let ultimoError = null;
+
+    for (const model of modelos) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+            },
+          }),
+          signal: AbortSignal.timeout(12000),
+        });
+
+        const data = await response.json();
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          const rawText = data.candidates[0].content.parts[0].text.trim();
+          respuestaJSON = JSON.parse(rawText);
+          break;
+        } else {
+          ultimoError = data.error?.message || "No hubo respuesta válida";
+        }
+      } catch (err) {
+        ultimoError = err.message;
+      }
+    }
+
+    if (!respuestaJSON) {
+      return res.status(502).json({
+        error: `No se pudo generar la ficha con IA: ${ultimoError || "Servicio temporalmente no disponible."}`,
+      });
+    }
+
+    return res.json({ success: true, data: respuestaJSON });
+  } catch (error) {
+    console.error("Error en generarFichaIA:", error);
+    return res.status(500).json({ error: "Error interno al procesar la solicitud con IA." });
+  }
+};
+
 module.exports = {
   getCatalogo,
   getCatalogoItem,
@@ -550,4 +645,5 @@ module.exports = {
   getFavoritosRanking,
   getFavoritosCliente,
   sincronizarFavoritos,
+  generarFichaIA,
 };

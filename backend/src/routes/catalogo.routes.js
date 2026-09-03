@@ -14,6 +14,7 @@ const {
   getFavoritosRanking,
   getFavoritosCliente,
   sincronizarFavoritos,
+  generarFichaIA,
 } = require("../controllers/catalogo.controller");
 
 const router = Router();
@@ -22,6 +23,7 @@ router.get("/catalogo", getCatalogo);
 router.get("/catalogo/favoritos/ranking", getFavoritosRanking);
 router.get("/catalogo/favoritos/cliente/:clienteId", getFavoritosCliente);
 router.post("/catalogo/favoritos/sincronizar", sincronizarFavoritos);
+router.post("/catalogo/generar-ficha-ia", generarFichaIA);
 router.get("/catalogo/:id", getCatalogoItem);
 router.post("/catalogo", createCatalogoItem);
 router.put("/catalogo/:id", updateCatalogoItem);
