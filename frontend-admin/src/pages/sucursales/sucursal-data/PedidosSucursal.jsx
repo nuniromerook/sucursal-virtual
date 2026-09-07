@@ -43,6 +43,7 @@ export default function PedidosSucursal() {
 
   const [pedidos, setPedidos] = useState([]);
   const [cortadores, setCortadores] = useState([]);
+  const [filtroEstado, setFiltroEstado] = useState("todos");
   const [isLoading, setIsLoading] = useState(true);
   const [actualizandoId, setActualizandoId] = useState(null);
 
