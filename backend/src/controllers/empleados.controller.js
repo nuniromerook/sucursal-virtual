@@ -1,4 +1,5 @@
 // backend/src/controllers/empleados.controller.js
+const crypto = require("crypto");
 const pool = require("../db");
 
 /**
@@ -337,9 +338,26 @@ const recuperarConMasterPin = async (req, res) => {
     return res.status(400).json({ error: "Todos los campos son obligatorios." });
   }
 
-  const expectedPin = process.env.ADMIN_MASTER_PIN || "Valette2026Master!";
-  if (masterPin.trim() !== expectedPin.trim()) {
-    return res.status(401).json({ error: "El PIN Maestro de rescate es incorrecto." });
+  const expectedPin = process.env.ADMIN_MASTER_PIN;
+  if (!expectedPin) {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(503).json({
+        error:
+          "La recuperación por PIN Maestro no está habilitada en este servidor.",
+      });
+    }
+  }
+
+  const pinToCompare = expectedPin || "Valette2026Master!";
+  const pinBuf = Buffer.from(String(masterPin).trim(), "utf8");
+  const expBuf = Buffer.from(String(pinToCompare).trim(), "utf8");
+  if (
+    pinBuf.length !== expBuf.length ||
+    !crypto.timingSafeEqual(pinBuf, expBuf)
+  ) {
+    return res
+      .status(401)
+      .json({ error: "El PIN Maestro de rescate es incorrecto." });
   }
 
   if (newPassword.length < 4) {

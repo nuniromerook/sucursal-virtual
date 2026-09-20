@@ -15,6 +15,7 @@ import RichTextEditor from "../components/ui/RichTextEditor";
 import BasicDropdown from "../components/ui/BasicDropdown";
 import ButtonLoader from "../components/ui/ButtonLoader";
 import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import { VITE_API_URL } from "../config/api";
 import { uploadImageToCloudinary } from "../utils/cloudinary"; // Asumiendo el helper de arriba
 
@@ -41,6 +42,7 @@ const EMPTY_FORM = {
 const ProductEditor = () => {
   const { slug } = useParams();
   const isEditMode = Boolean(slug);
+  const { authHeaders } = useAuth();
 
   const [formValues, setFormValues] = useState(EMPTY_FORM);
   const [promos, setPromos] = useState([]);
@@ -273,7 +275,7 @@ const ProductEditor = () => {
     try {
       const res = await fetch(`${VITE_API_URL}/catalogo/generar-ficha-ia`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           nombre_producto: nombre,
           especie_sugerida: formValues.especie,
@@ -346,7 +348,7 @@ const ProductEditor = () => {
       const res = await fetch(url, {
         method,
         body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
       });
 
       const data = await res.json();
@@ -362,7 +364,7 @@ const ProductEditor = () => {
         for (const promo of promos) {
           await fetch(`${VITE_API_URL}/catalogo/${data.id}/promos`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...authHeaders },
             body: JSON.stringify({
               cantidad_kg: promo.cantidad_kg,
               precio_promocional: promo.precio_promocional,
@@ -394,6 +396,7 @@ const ProductEditor = () => {
     try {
       const res = await fetch(`${VITE_API_URL}/catalogo/${productId}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
       const data = await res.json();
 

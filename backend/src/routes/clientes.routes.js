@@ -14,15 +14,20 @@ const {
   restablecerPassword,
 } = require("../controllers/clientes.controller");
 const { requireAuth } = require("../utils/auth");
+const { authLimiter } = require("../middlewares/rateLimiter");
 
 const router = Router();
 
 // ─── Rutas públicas ─────────────────────────────
-router.post("/clientes/registro", registroCliente);
-router.post("/clientes/login", loginCliente);
+router.post("/clientes/registro", authLimiter, registroCliente);
+router.post("/clientes/login", authLimiter, loginCliente);
 router.post("/clientes/google", googleAuth);
-router.post("/clientes/solicitar-recuperacion", solicitarRecuperacionPassword);
-router.post("/clientes/restablecer-password", restablecerPassword);
+router.post(
+  "/clientes/solicitar-recuperacion",
+  authLimiter,
+  solicitarRecuperacionPassword,
+);
+router.post("/clientes/restablecer-password", authLimiter, restablecerPassword);
 
 // Validar código de referido (público, se llama desde el form de registro)
 router.post("/clientes/referido/validar", validarCodigoReferido);

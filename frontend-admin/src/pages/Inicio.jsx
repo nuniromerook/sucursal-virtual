@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/AuthContext";
 import { VITE_API_URL } from "../config/api";
 import BasicDropdown from "../components/ui/BasicDropdown";
 
@@ -48,6 +49,7 @@ const PERIODOS_DROPDOWN = [
 export default function Inicio() {
   const { setNavbarTitle } = useAppContext();
   const { ultimoPedido } = useSocket();
+  const { authHeaders } = useAuth();
   const navigate = useNavigate();
 
   const [rango, setRango] = useState("hoy");
@@ -89,8 +91,12 @@ export default function Inicio() {
     setIsLoading(true);
     try {
       const [resDash, resAnalytics, resFavs] = await Promise.all([
-        fetch(`${VITE_API_URL}/dashboard/resumen?rango=${rango}`),
-        fetch(`${VITE_API_URL}/analytics/resumen?rango=${rango}`),
+        fetch(`${VITE_API_URL}/dashboard/resumen?rango=${rango}`, {
+          headers: authHeaders,
+        }),
+        fetch(`${VITE_API_URL}/analytics/resumen?rango=${rango}`, {
+          headers: authHeaders,
+        }),
         fetch(`${VITE_API_URL}/catalogo/favoritos/ranking`),
       ]);
 

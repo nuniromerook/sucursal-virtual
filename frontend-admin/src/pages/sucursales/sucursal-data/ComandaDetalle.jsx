@@ -90,7 +90,7 @@ const ESTADOS = [
 export default function ComandaDetalle() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, authHeaders } = useAuth();
   const { setNavbarTitle } = useAppContext();
   const { joinSucursal, leaveSucursal, socket } = useSocket();
 
@@ -181,7 +181,7 @@ export default function ComandaDetalle() {
 
       const res = await fetch(`${VITE_API_URL}/pedidos/${id}/estado`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(bodyData),
       });
 
@@ -206,7 +206,7 @@ export default function ComandaDetalle() {
     try {
       const res = await fetch(`${VITE_API_URL}/pedidos/${id}/estado`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ notas: notasInput }),
       });
 

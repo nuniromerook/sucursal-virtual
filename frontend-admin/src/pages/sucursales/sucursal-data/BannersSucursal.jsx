@@ -19,6 +19,7 @@ import {
   Layers,
 } from "lucide-react";
 import { VITE_API_URL } from "../../../config/api";
+import { useAuth } from "../../../context/AuthContext";
 import { uploadImageToCloudinary } from "../../../utils/cloudinary";
 import Input from "../../../components/ui/Input";
 import ButtonLoader from "../../../components/ui/ButtonLoader";
@@ -52,6 +53,7 @@ const EMPTY_BANNER = {
 };
 
 export default function BannersSucursal() {
+  const { authHeaders } = useAuth();
   const [banners, setBanners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -63,7 +65,9 @@ export default function BannersSucursal() {
   const loadBanners = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${VITE_API_URL}/banners/admin`);
+      const res = await fetch(`${VITE_API_URL}/banners/admin`, {
+        headers: authHeaders,
+      });
       if (!res.ok) {
         // Fallback a /banners si admin no estuviera disponible
         const fallback = await fetch(`${VITE_API_URL}/banners`);
@@ -129,7 +133,7 @@ export default function BannersSucursal() {
     try {
       const res = await fetch(`${VITE_API_URL}/banners/${banner.id}/estado`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ activo: !banner.activo }),
       });
       if (res.ok) {
@@ -153,6 +157,7 @@ export default function BannersSucursal() {
     try {
       const res = await fetch(`${VITE_API_URL}/banners/${id}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
       if (res.ok) {
         setBanners((prev) => prev.filter((b) => b.id !== id));
@@ -204,7 +209,7 @@ export default function BannersSucursal() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(editingBanner),
       });
 

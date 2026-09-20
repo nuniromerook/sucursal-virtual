@@ -11,18 +11,19 @@ const {
   getCortadoresConCarga,
 } = require("../controllers/empleados.controller");
 const { requireAuth } = require("../utils/auth");
+const { authLimiter } = require("../middlewares/rateLimiter");
 
 const router = Router();
 
-router.post("/empleados/login", loginEmpleado);
-router.post("/empleados/recuperar-maestro", recuperarConMasterPin);
+router.post("/empleados/login", authLimiter, loginEmpleado);
+router.post("/empleados/recuperar-maestro", authLimiter, recuperarConMasterPin);
 router.get("/empleados/me", requireAuth, getMeEmpleado);
 router.put("/empleados/cambiar-password", requireAuth, cambiarPasswordEmpleado);
 
-router.get("/sucursales/:id/empleados", getEmpleadosBySucursal);
-router.get("/sucursales/:id/cortadores-carga", getCortadoresConCarga);
-router.post("/sucursales/:id/empleados", createEmpleado);
-router.put("/empleados/:id", updateEmpleado);
-router.delete("/empleados/:id", deleteEmpleado);
+router.get("/sucursales/:id/empleados", requireAuth, getEmpleadosBySucursal);
+router.get("/sucursales/:id/cortadores-carga", requireAuth, getCortadoresConCarga);
+router.post("/sucursales/:id/empleados", requireAuth, createEmpleado);
+router.put("/empleados/:id", requireAuth, updateEmpleado);
+router.delete("/empleados/:id", requireAuth, deleteEmpleado);
 
 module.exports = router;

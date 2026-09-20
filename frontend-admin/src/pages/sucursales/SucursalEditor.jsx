@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import Input from "../../components/ui/Input";
 import ButtonLoader from "../../components/ui/ButtonLoader";
 import { useAppContext } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
 import { VITE_API_URL } from "../../config/api";
 import { Store } from "lucide-react";
 
 const SucursalEditor = () => {
+  const { authHeaders } = useAuth();
   const [formValues, setFormValues] = useState({
     nombre: "",
     slug: "",
@@ -65,7 +67,7 @@ const SucursalEditor = () => {
       const res = await fetch(`${VITE_API_URL}/sucursales`, {
         method: "POST",
         body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
       });
 
       const data = await res.json();

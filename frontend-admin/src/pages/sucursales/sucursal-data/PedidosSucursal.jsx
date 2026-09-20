@@ -187,7 +187,12 @@ export default function PedidosSucursal() {
     if (!sucursal?.id) return;
     setIsLoading(true);
     try {
-      const resPedidos = await fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`);
+      const resPedidos = await fetch(
+        `${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`,
+        {
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        },
+      );
       const dataPedidos = await resPedidos.json();
 
       setPedidos(Array.isArray(dataPedidos) ? dataPedidos : []);

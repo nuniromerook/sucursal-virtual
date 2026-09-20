@@ -137,6 +137,18 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(ADMIN_STORAGE_KEY);
   };
 
+  const authHeaders = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const authFetch = async (url, options = {}) => {
+    const headers = {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    return fetch(url, { ...options, headers });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,6 +156,8 @@ export function AuthProvider({ children }) {
         user,
         isAuthenticated: Boolean(token && user),
         isLoading,
+        authHeaders,
+        authFetch,
         login,
         recuperarConMasterPin,
         cambiarPassword,

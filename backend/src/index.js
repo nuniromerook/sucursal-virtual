@@ -2,7 +2,9 @@ const express = require("express");
 const http = require("http");
 const morgan = require("morgan");
 const cors = require("cors");
+const helmet = require("helmet");
 const { initSocket } = require("./socket");
+const { apiLimiter } = require("./middlewares/rateLimiter");
 
 const catalogoRoutes = require("./routes/catalogo.routes");
 const sucursalRoutes = require("./routes/sucursales.routes");
@@ -17,6 +19,15 @@ const notificacionesRoutes = require("./routes/notificaciones.routes");
 const seoRoutes = require("./routes/seo.routes");
 
 const app = express();
+app.set("trust proxy", 1);
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false,
+  })
+);
+
 const httpServer = http.createServer(app);
 
 // CORS: Permite dominios oficiales, variables de entorno y localhost de desarrollo
@@ -61,6 +72,8 @@ app.use(
 initSocket(httpServer);
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(apiLimiter);
+
 app.use(catalogoRoutes);
 app.use(sucursalRoutes);
 app.use(pedidosRoutes);
@@ -75,6 +88,30 @@ app.use(seoRoutes);
 
 app.get("/", (req, res) => {
   res.send("Sucursal Virtual running with Socket.io!");
+});
+
+// Middleware centralizado de captura de errores
+app.use((err, req, res, next) => {
+  console.error("💥 [Unhandled Express Error]:", err.stack || err.message);
+  if (res.headersSent) {
+    return next(err);
+  }
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Ha ocurrido un error interno en el servidor."
+        : err.message || "Error interno del servidor",
+  });
+});
+
+// Eventos de proceso para prevenir caídas silenciosas
+process.on("unhandledRejection", (reason) => {
+  console.error("💥 [Unhandled Rejection at Promise]:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("💥 [Uncaught Exception]:", err.message, err.stack);
 });
 
 const pool = require("./db");

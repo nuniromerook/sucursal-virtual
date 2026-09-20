@@ -37,7 +37,7 @@ const ESTADOS = [
 
 export default function Comandas() {
   const { slug } = useParams();
-  const { user } = useAuth();
+  const { user, authHeaders } = useAuth();
   const {
     socket,
     isConnected,
@@ -79,7 +79,10 @@ export default function Comandas() {
       }
 
       // Cargar pedidos
-      const resPed = await fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/pedidos`);
+      const resPed = await fetch(
+        `${VITE_API_URL}/sucursales/${dataSuc.id}/pedidos`,
+        { headers: authHeaders },
+      );
       if (resPed.ok) {
         const dataPed = await resPed.json();
         setPedidos(Array.isArray(dataPed) ? dataPed : []);
@@ -89,7 +92,7 @@ export default function Comandas() {
     } finally {
       setIsLoading(false);
     }
-  }, [slug, joinSucursal]);
+  }, [slug, joinSucursal, authHeaders]);
 
   useEffect(() => {
     loadData();
@@ -153,7 +156,10 @@ export default function Comandas() {
     try {
       const res = await fetch(`${VITE_API_URL}/pedidos/${pedidoId}/estado`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
         body: JSON.stringify({
           estado: "en_corte",
         }),

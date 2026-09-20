@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Star, Tag, Edit2 } from "lucide-react";
 import { VITE_API_URL } from "../config/api";
+import { useAuth } from "../context/AuthContext";
 
 const DUMMY_IMAGE =
   "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800";
@@ -15,6 +16,7 @@ const formatPrecio = (value) =>
   });
 
 const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
+  const { authHeaders } = useAuth();
   const [isToggling, setIsToggling] = useState(false);
 
   const price = Number(product.precio ?? 0);
@@ -41,7 +43,7 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
     try {
       const res = await fetch(`${VITE_API_URL}/catalogo/${product.id}/estado`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ activo: !isActivo }),
       });
 

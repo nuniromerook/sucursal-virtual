@@ -5,11 +5,12 @@ const {
   registrarEvento,
   getResumenAnalytics,
 } = require("../controllers/analytics.controller");
+const { requireAuth } = require("../utils/auth");
 
 const router = Router();
 
 router.post("/analytics/visita", registrarVisita);
 router.post("/analytics/evento", registrarEvento);
-router.get("/analytics/resumen", getResumenAnalytics);
+router.get("/analytics/resumen", requireAuth, getResumenAnalytics);
 
 module.exports = router;

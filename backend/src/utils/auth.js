@@ -1,7 +1,21 @@
 // backend/src/utils/auth.js
 const crypto = require("crypto");
 
-const JWT_SECRET = process.env.JWT_SECRET || "valette_super_secret_jwt_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "❌ [FATAL SECURITY ERROR] JWT_SECRET no está definido en variables de entorno de producción.",
+    );
+    process.exit(1);
+  } else {
+    console.warn(
+      "⚠️ [SECURITY WARNING] Usando JWT_SECRET de desarrollo por defecto. Configure JWT_SECRET en su entorno.",
+    );
+  }
+}
+const EFFECTIVE_JWT_SECRET =
+  JWT_SECRET || "valette_super_secret_jwt_key_2026_dev";
 
 /**
  * Hashea una contraseña usando PBKDF2 con salt aleatorio
@@ -19,6 +33,7 @@ function hashPassword(password) {
 
 /**
  * Verifica una contraseña contra su hash almacenado
+ * Utiliza comparación de tiempo constante para evitar timing attacks
  */
 function verifyPassword(password, storedHash) {
   if (!storedHash || !storedHash.includes(":")) return false;
@@ -28,7 +43,11 @@ function verifyPassword(password, storedHash) {
   const hash = crypto
     .pbkdf2Sync(password, salt, parseInt(iterations, 10), keylen, digest)
     .toString("hex");
-  return hash === originalHash;
+
+  const hashBuf = Buffer.from(hash, "utf8");
+  const origBuf = Buffer.from(originalHash, "utf8");
+  if (hashBuf.length !== origBuf.length) return false;
+  return crypto.timingSafeEqual(hashBuf, origBuf);
 }
 
 /**
@@ -50,7 +69,7 @@ function generateToken(payload, expiresInHours = 72) {
   const payloadB64 = encodeBase64Url(fullPayload);
 
   const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", EFFECTIVE_JWT_SECRET)
     .update(`${headerB64}.${payloadB64}`)
     .digest("base64")
     .replace(/=/g, "")
@@ -62,6 +81,7 @@ function generateToken(payload, expiresInHours = 72) {
 
 /**
  * Verifica un token JWT
+ * Utiliza comparación en tiempo constante (crypto.timingSafeEqual)
  */
 function verifyToken(token) {
   if (!token) return null;
@@ -71,14 +91,19 @@ function verifyToken(token) {
   const [headerB64, payloadB64, signatureB64] = parts;
 
   const expectedSignature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", EFFECTIVE_JWT_SECRET)
     .update(`${headerB64}.${payloadB64}`)
     .digest("base64")
     .replace(/=/g, "")
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 
-  if (signatureB64 !== expectedSignature) {
+  const sigBuf = Buffer.from(signatureB64, "utf8");
+  const expBuf = Buffer.from(expectedSignature, "utf8");
+  if (
+    sigBuf.length !== expBuf.length ||
+    !crypto.timingSafeEqual(sigBuf, expBuf)
+  ) {
     return null;
   }
 

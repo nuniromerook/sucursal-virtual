@@ -20,6 +20,7 @@ import {
 import { VITE_API_URL } from "../../../config/api";
 import BasicDropdown from "../../../components/ui/BasicDropdown";
 import { useSocket } from "../../../context/SocketContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const RANGO_ITEMS = [
   { value: "hoy", label: "📅 Hoy (en vivo)" },
@@ -31,6 +32,7 @@ const RANGO_ITEMS = [
 export default function Overview() {
   const { sucursal } = useOutletContext();
   const { ultimoPedido } = useSocket();
+  const { authHeaders } = useAuth();
 
   const [rango, setRango] = useState("hoy");
   const [metricas, setMetricas] = useState(null);
@@ -42,6 +44,7 @@ export default function Overview() {
     try {
       const res = await fetch(
         `${VITE_API_URL}/sucursales/${sucursal.id}/metricas?rango=${rango}`,
+        { headers: authHeaders },
       );
       const data = await res.json();
       setMetricas(data);

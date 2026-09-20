@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { VITE_API_URL } from "../../../config/api";
+import { useAuth } from "../../../context/AuthContext";
 import BasicDropdown from "../../../components/ui/BasicDropdown";
 
 const ROLES_DROPDOWN = [
@@ -41,6 +42,7 @@ const ROL_TABS = [
 
 export default function Empleados() {
   const { sucursal } = useOutletContext();
+  const { authHeaders } = useAuth();
 
   const [empleados, setEmpleados] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +69,7 @@ export default function Empleados() {
     try {
       const res = await fetch(
         `${VITE_API_URL}/sucursales/${sucursal.id}/empleados`,
+        { headers: authHeaders },
       );
       const data = await res.json();
       setEmpleados(Array.isArray(data) ? data : []);
@@ -129,7 +132,7 @@ export default function Empleados() {
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(formValues),
       });
 
@@ -149,7 +152,7 @@ export default function Empleados() {
     try {
       const res = await fetch(`${VITE_API_URL}/empleados/${emp.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ activo: !emp.activo }),
       });
       if (res.ok) {
@@ -170,6 +173,7 @@ export default function Empleados() {
     try {
       const res = await fetch(`${VITE_API_URL}/empleados/${empId}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
       if (res.ok) {
         setEmpleados((prev) => prev.filter((e) => e.id !== empId));

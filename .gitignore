@@ -1,0 +1,41 @@
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Entorno y credenciales sensibles
+.env
+.env.*
+!.env.example
+*.env
+
+# Builds y compilados
+dist/
+*/dist/
+build/
+*/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+logs/
+
+# Backups y dumps de base de datos
+backups/
+*.sql
+*.sql.gz
+*.tar.gz
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
