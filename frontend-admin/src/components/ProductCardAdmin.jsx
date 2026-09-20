@@ -71,6 +71,10 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
         <img
           src={product.imagen_url || DUMMY_IMAGE}
           alt={product.nombre_producto}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = DUMMY_IMAGE;
+          }}
           className="h-full w-full object-center group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />

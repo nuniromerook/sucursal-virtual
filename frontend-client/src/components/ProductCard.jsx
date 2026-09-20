@@ -68,6 +68,10 @@ const ProductCard = ({ product }) => {
           <img
             alt={imageAlt}
             src={imageSrc}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = DUMMY_IMAGE;
+            }}
             className="h-full w-full object-cover object-center aspect-square transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />

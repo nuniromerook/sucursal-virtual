@@ -30,6 +30,10 @@ async function limpiarHuerfanos() {
     });
 
     console.log(`📋 Imágenes activas en la base de datos: ${urlsActivas.size}`);
+    if (urlsActivas.size === 0) {
+      console.warn('⚠️ [Seguridad] No se detectaron imágenes en la base de datos. Operación abortada para evitar borrado accidental.');
+      process.exit(1);
+    }
 
     // 2. Obtener lista de imágenes en Cloudinary
     let nextCursor = null;

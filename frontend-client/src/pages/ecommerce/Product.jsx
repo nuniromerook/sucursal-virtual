@@ -215,6 +215,11 @@ export default function Product() {
                 imagen_url ||
                 "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800"
               }
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src =
+                  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
+              }}
               className="rounded-lg w-full object-cover aspect-square h-fit border border-gray-100"
             />
           </div>

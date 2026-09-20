@@ -871,6 +871,11 @@ const ProductEditor = () => {
                 <img
                   src={formValues.imagen_url}
                   alt="Vista previa"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src =
+                      "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800";
+                  }}
                   className="h-full w-full object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

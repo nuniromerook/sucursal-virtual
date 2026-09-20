@@ -25,20 +25,21 @@ function extraerPublicId(url) {
     const splitUpload = url.split('/upload/');
     if (splitUpload.length < 2) return null;
 
-    // Quitar transformaciones (como f_auto,q_auto/ o v1720000000/)
     const parts = splitUpload[1].split('/');
-    const pathParts = [];
+    const versionIndex = parts.findIndex(part => /^v\d+$/.test(part));
 
-    for (const part of parts) {
-      // Ignorar versiones v12345678 y transformaciones con coma o igual
-      if (/^v\d+$/.test(part) || part.includes(',') || part.includes('_')) {
-        continue;
-      }
-      pathParts.push(part);
+    let pathParts;
+    if (versionIndex !== -1) {
+      // Todo lo posterior al segmento de versión (v12345678) es el public_id (con posibles subcarpetas)
+      pathParts = parts.slice(versionIndex + 1);
+    } else {
+      // Si no tiene segmento de versión, tomar el último segmento (archivo) o filtrar transformaciones
+      const lastPart = parts[parts.length - 1];
+      pathParts = [lastPart];
     }
 
     const fullPath = pathParts.join('/');
-    // Quitar extension (.jpg, .png, .webp)
+    // Quitar extensión final (.jpg, .png, .webp, etc.)
     return fullPath.replace(/\.[^/.]+$/, '');
   } catch (err) {
     console.error('Error al extraer public_id de Cloudinary:', err);

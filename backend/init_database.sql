@@ -266,7 +266,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 > 🔥 **Ideal para:** Parrilla, horno o plancha
-> ❄️ Conservación: Mantener refrigerado entre 0° y 4°C. para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788090412/jt0xwnwpjv2nk2u9cidq.webp', 'kg', 350, '15', '32', '"2026-08-30T14:49:26.361Z"'::jsonb, '"2026-08-31T00:06:06.902Z"'::jsonb, true, true, true, 15, '12900', '0');
+> ❄️ Conservación: Mantener refrigerado entre 0° y 4°C. para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789939735/catalogo/tzk7jgbzhx81afc97y47.jpg', 'kg', 350, '15', '32', '"2026-08-30T14:49:26.361Z"'::jsonb, '"2026-08-31T00:06:06.902Z"'::jsonb, true, true, true, 15, '12900', '0');
 INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (5, 'Tocino', 'tocino', 'Nuestro **tocino de cerdo** de primera calidad es el aliado perfecto para aportar un sabor intenso y una textura extra jugosa a todas tus preparaciones. Ya sea para mechar carnes más magras al horno, enriquecer guisos tradicionales o potenciar el blend de tus hamburguesas caseras, este tocino te garantiza un resultado increíble.
 
 ## Información de compra:
@@ -276,7 +276,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 > 🔥 **Ideal para:** Mechar carnes al horno, saborizar guisados o sumar jugosidad a preparaciones con carne picada.
-> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'cerdo', 'cerdo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788185623/mdajbcv0w8vap25qfffs.jpg', 'kg', 548, '8', '57', '"2026-08-31T17:13:52.785Z"'::jsonb, '"2026-08-31T17:13:52.785Z"'::jsonb, true, false, false, 0, '1500', '0');
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'cerdo', 'cerdo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789940101/catalogo/m4zwz6rsxtf3nahdrlif.jpg', 'kg', 548, '8', '57', '"2026-08-31T17:13:52.785Z"'::jsonb, '"2026-08-31T17:13:52.785Z"'::jsonb, true, false, false, 0, '1500', '0');
 INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (4, 'Hamburguesas de Pollo', 'hamburguesas-de-pollo', 'Nuestras **hamburguesas de pollo** están elaboradas diariamente con carne seleccionada de la mejor calidad. Son la opción perfecta para una comida rápida, rica y más liviana. Súper prácticas para tener siempre a mano y disfrutar en familia, ya sea al plato con guarnición o en un buen sándwich.
 
 ## Información de compra:
@@ -286,7 +286,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 > 🔥 **Ideal para:** Plancha, horno o parrilla. ¡Súper rápidas de cocinar!
-> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o guardar directamente en el freezer.', 'pollo', 'preparados', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788130352/fvopylgwjah9gcmikky0.jpg', 'kg', 165, '17', '9', '"2026-08-31T01:52:41.886Z"'::jsonb, '"2026-08-31T17:18:15.063Z"'::jsonb, true, true, true, 10, '6500', '0');
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o guardar directamente en el freezer.', 'pollo', 'preparados', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789940101/catalogo/ndbmvgj5ejt2bhjjxcfs.jpg', 'kg', 165, '17', '9', '"2026-08-31T01:52:41.886Z"'::jsonb, '"2026-08-31T17:18:15.063Z"'::jsonb, true, true, true, 10, '6500', '0');
 INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (2, 'Matambre', 'matambre', 'Nuestro matambre de novillo se destaca por su **excelente calidad y frescura**. Es un corte clásico y súper versátil, ideal para prepararlo tiernizado a la parrilla (el clásico matambre a la pizza), al horno, o para armar el tradicional matambre arrollado. De sabor intenso y muy rendidor.
 
 ## Información de compra:
@@ -296,7 +296,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 > 🔥 **Ideal para:** Parrilla (a la pizza), horno o arrollado.
-> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788129846/zvnnxetrjoi8boowdaih.jpg', 'kg', 245, '20', '18', '"2026-08-31T01:44:24.880Z"'::jsonb, '"2026-08-31T17:18:31.654Z"'::jsonb, true, true, true, 30, '14500', '0');
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789940099/catalogo/lypepo2ryg4enanzgnu9.jpg', 'kg', 245, '20', '18', '"2026-08-31T01:44:24.880Z"'::jsonb, '"2026-08-31T17:18:31.654Z"'::jsonb, true, true, true, 30, '14500', '0');
 INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (6, 'Bife Ancho', 'bife-ancho', 'Nuestro **bife ancho de novillo** es un corte premium que se destaca por su excelente marmoleo, lo que le aporta una terneza y un sabor inconfundibles. Ideal para los amantes de la buena carne, es el protagonista indiscutido de cualquier asado o comida especial.
 
 ## Información de compra:
@@ -306,7 +306,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 > 🔥 **Ideal para:** Hacer a la parrilla, a la plancha o a la sartén de hierro. Un buen sellado a fuego fuerte es clave para retener todos sus jugos.
-> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788185742/xllryjpxjvfhgoblss5z.jpg', 'kg', 205, '20', '13', '"2026-08-31T17:17:19.802Z"'::jsonb, '"2026-08-31T17:44:15.879Z"'::jsonb, true, false, true, 25, '13700', '0');
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente.', 'vacuno', 'vacuno', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789940102/catalogo/sm9bemz6twqeizmr5xbe.jpg', 'kg', 205, '20', '13', '"2026-08-31T17:17:19.802Z"'::jsonb, '"2026-08-31T17:44:15.879Z"'::jsonb, true, false, true, 25, '13700', '0');
 INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria, imagen_url, unidad_medida, calorias, proteinas, grasas, creado_en, actualizado_en, activo, destacar, gana_puntos, puntos, precio, precio_anterior) VALUES (3, 'Pollo Entero', 'pollo-entero', 'Nuestro pollo entero de primera calidad se destaca por su **frescura y excelente rinde**. Es el comodín perfecto para tus comidas familiares: ideal para hacerlo entero al horno con papas, a la parrilla, o para trozar y aprovechar en distintos platos. Carne tierna, jugosa y de origen rigurosamente seleccionado.
 
 ## Información de compra:
@@ -316,7 +316,7 @@ INSERT INTO catalogo (id, nombre_producto, slug, descripcion, especie, categoria
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 > 🔥 **Ideal para:** Horno, parrilla, estofados o para trozar.
-> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 48hs o congelar inmediatamente.', 'pollo', 'pollo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788130102/tiwz9f0kyuznopv59jqr.webp', 'u', 205, '20', '13', '"2026-08-31T01:48:27.175Z"'::jsonb, '"2026-08-31T17:18:53.276Z"'::jsonb, true, true, false, 0, '4500', '0');
+> ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 48hs o congelar inmediatamente.', 'pollo', 'pollo', 'https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1789940100/catalogo/ekiuihs9oqz7i3qyia48.jpg', 'u', 205, '20', '13', '"2026-08-31T01:48:27.175Z"'::jsonb, '"2026-08-31T17:18:53.276Z"'::jsonb, true, true, false, 0, '4500', '0');
 SELECT setval(pg_get_serial_sequence('catalogo', 'id'), (SELECT COALESCE(MAX(id), 1) FROM catalogo));
 
 -- DATA CATALOGO_PROMOS

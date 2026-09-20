@@ -252,6 +252,10 @@ export default function CartDrawer() {
                       <img
                         src={item.imagen_url || DUMMY_IMAGE}
                         alt={item.nombre_producto}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = DUMMY_IMAGE;
+                        }}
                         className="h-full w-full object-cover object-center"
                       />
                     </div>
