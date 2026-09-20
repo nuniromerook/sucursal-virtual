@@ -30,7 +30,11 @@ async function migrate() {
     console.log('[Migración] Creando columnas latitud y longitud en clientes si no existen...');
     await pool.query('ALTER TABLE clientes ADD COLUMN IF NOT EXISTS latitud NUMERIC, ADD COLUMN IF NOT EXISTS longitud NUMERIC;');
 
-    console.log('✅ [Migración] Horarios, índices y coordenadas guardados exitosamente.');
+    console.log('[Migración] Creando columna banner_id e índice en pedidos si no existe...');
+    await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS banner_id INTEGER REFERENCES banners_publicidad(id) ON DELETE SET NULL;');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pedidos_banner_id ON pedidos (banner_id);');
+
+    console.log('✅ [Migración] Horarios, índices, coordenadas y banner_id guardados exitosamente.');
     process.exit(0);
   } catch (err) {
     console.error('❌ [Migración] Error al migrar sucursales:', err);

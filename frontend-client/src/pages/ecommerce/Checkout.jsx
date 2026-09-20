@@ -235,6 +235,11 @@ export default function Checkout() {
           const bannerTag = bannerRef ? `[Promo Banner #${bannerRef}]` : null;
           return [clientNotes, bannerTag].filter(Boolean).join(" | ") || null;
         })(),
+        banner_id: (() => {
+          const bannerRef = getCookie(COOKIE_BANNER_REF_KEY);
+          const parsed = Number(bannerRef);
+          return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        })(),
         monto_total_estimado: granTotal,
         items: cartItems.map((item) => {
           const calc = calculateItemPrice(item);

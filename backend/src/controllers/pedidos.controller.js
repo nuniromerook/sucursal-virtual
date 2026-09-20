@@ -22,6 +22,7 @@ const createPedido = async (req, res) => {
     notas,
     items,
     monto_total_estimado,
+    banner_id,
   } = req.body;
 
   if (!cliente || !cliente.nombre || !cliente.telefono) {
@@ -165,8 +166,9 @@ const createPedido = async (req, res) => {
          pago_confirmado,
          monto_total_estimado,
          direccion_entrega,
-         notas
-       ) VALUES ($1, $2, 'web', $3, $4, 'solicitado', $5, false, $6, $7, $8)
+         notas,
+         banner_id
+       ) VALUES ($1, $2, 'web', $3, $4, 'solicitado', $5, false, $6, $7, $8, $9)
        RETURNING *`,
       [
         clienteId,
@@ -177,6 +179,7 @@ const createPedido = async (req, res) => {
         montoTotalVerificado,
         direccion_entrega || null,
         notas || null,
+        banner_id ? Number(banner_id) : null,
       ],
     );
 

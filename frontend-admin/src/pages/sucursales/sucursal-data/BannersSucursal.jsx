@@ -1,5 +1,5 @@
 // frontend-admin/src/pages/sucursales/sucursal-data/BannersSucursal.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Sparkles,
   Plus,
@@ -19,10 +19,17 @@ import {
   Layers,
   RotateCcw,
   SlidersHorizontal,
+  Table as TableIcon,
+  LayoutGrid,
+  Search,
+  ShoppingBag,
+  DollarSign,
+  Percent,
 } from "lucide-react";
 import { VITE_API_URL } from "../../../config/api";
 import { useAuth } from "../../../context/AuthContext";
 import { uploadImageToCloudinary } from "../../../utils/cloudinary";
+import { formatMoney } from "../../../utils/formatters";
 import Input from "../../../components/ui/Input";
 import ButtonLoader from "../../../components/ui/ButtonLoader";
 
@@ -67,88 +74,19 @@ export default function BannersSucursal() {
   const [isResetting, setIsResetting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  // Reiniciar métricas de todos los banners
-  const handleResetAllAnalytics = async () => {
-    if (
-      !window.confirm(
-        `¿Confirmás reiniciar a CERO las métricas de todos los banners?\n\nActualmente hay ${totalImpresiones.toLocaleString(
-          "es-AR",
-        )} impresiones y ${totalClics.toLocaleString(
-          "es-AR",
-        )} clics registrados.\nEsta acción pondrá los contadores en 0 para medir desde cero en producción.`,
-      )
-    ) {
-      return;
-    }
+  // Estados de vista y filtros estilo Meta Ads
+  const [viewMode, setViewMode] = useState("table"); // 'table' | 'grid'
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'active' | 'inactive'
 
-    setIsResetting(true);
-    try {
-      const res = await fetch(`${VITE_API_URL}/banners/reset-analytics`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Error al reiniciar analíticas");
-      }
-
-      setSuccessMsg(
-        "¡Analíticas de todos los banners reiniciadas a 0 con éxito!",
-      );
-      setTimeout(() => setSuccessMsg(null), 5000);
-      await loadBanners();
-    } catch (err) {
-      console.error("Error al reiniciar analíticas:", err);
-      alert(err.message);
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // Reiniciar métricas de un solo banner
-  const handleResetSingleBanner = async (banner) => {
-    if (
-      !window.confirm(
-        `¿Confirmás reiniciar a CERO las métricas del banner "${banner.titulo}"?\n(Vistas: ${banner.impresiones}, Clics: ${banner.clics})`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `${VITE_API_URL}/banners/${banner.id}/reset-analytics`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-        },
-      );
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(
-          data.error || "Error al reiniciar analíticas del banner",
-        );
-      }
-
-      setSuccessMsg(
-        `¡Métricas del banner "${banner.titulo}" reiniciadas a 0 con éxito!`,
-      );
-      setTimeout(() => setSuccessMsg(null), 5000);
-      await loadBanners();
-    } catch (err) {
-      console.error("Error al reiniciar analíticas del banner:", err);
-      alert(err.message);
-    }
-  };
-
+  // Cargar banners con estadísticas
   const loadBanners = async () => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const res = await fetch(`${VITE_API_URL}/banners/admin`, {
         headers: authHeaders,
       });
       if (!res.ok) {
-        // Fallback a /banners si admin no estuviera disponible
         const fallback = await fetch(`${VITE_API_URL}/banners`);
         const fbData = await fallback.json();
         setBanners(Array.isArray(fbData) ? fbData : []);
@@ -167,21 +105,128 @@ export default function BannersSucursal() {
     loadBanners();
   }, []);
 
-  // Métricas acumuladas
+  // Métricas acumuladas globales
   const totalBanners = banners.length;
   const activeBanners = banners.filter((b) => b.activo).length;
+  const inactiveBanners = totalBanners - activeBanners;
+
   const totalImpresiones = banners.reduce(
     (acc, b) => acc + (Number(b.impresiones) || 0),
-    0,
+    0
   );
   const totalClics = banners.reduce(
     (acc, b) => acc + (Number(b.clics) || 0),
-    0,
+    0
   );
+  const totalPedidos = banners.reduce(
+    (acc, b) => acc + (Number(b.pedidos_generados) || 0),
+    0
+  );
+  const totalVentas = banners.reduce(
+    (acc, b) => acc + (Number(b.ventas_totales) || 0),
+    0
+  );
+
   const globalCtr =
     totalImpresiones > 0
-      ? ((totalClics / totalImpresiones) * 100).toFixed(1)
-      : "0.0";
+      ? ((totalClics / totalImpresiones) * 100).toFixed(2)
+      : "0.00";
+
+  const globalCvr =
+    totalClics > 0 ? ((totalPedidos / totalClics) * 100).toFixed(2) : "0.00";
+
+  // Banners filtrados según búsqueda y estado
+  const filteredBanners = useMemo(() => {
+    return banners.filter((b) => {
+      // Filtro de estado
+      if (statusFilter === "active" && !b.activo) return false;
+      if (statusFilter === "inactive" && b.activo) return false;
+
+      // Filtro de texto
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = b.titulo?.toLowerCase().includes(q);
+        const matchSub = b.subtitulo?.toLowerCase().includes(q);
+        const matchBadge = b.badge_texto?.toLowerCase().includes(q);
+        const matchUrl = b.enlace_url?.toLowerCase().includes(q);
+        if (!matchTitle && !matchSub && !matchBadge && !matchUrl) return false;
+      }
+
+      return true;
+    });
+  }, [banners, statusFilter, searchQuery]);
+
+  // Reiniciar métricas de todos los banners
+  const handleResetAllAnalytics = async () => {
+    if (
+      !window.confirm(
+        `¿Confirmás reiniciar a CERO las métricas de todos los banners?\n\nActualmente hay ${totalImpresiones.toLocaleString(
+          "es-AR"
+        )} impresiones, ${totalClics.toLocaleString(
+          "es-AR"
+        )} clics y ${totalPedidos} pedidos atribuidos.\nEsta acción pondrá los contadores en 0 para medir desde cero en producción.`
+      )
+    ) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const res = await fetch(`${VITE_API_URL}/banners/reset-analytics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Error al reiniciar analíticas");
+      }
+
+      setSuccessMsg(
+        "¡Analíticas de todos los banners reiniciadas a 0 con éxito!"
+      );
+      setTimeout(() => setSuccessMsg(null), 5000);
+      await loadBanners();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "No se pudieron reiniciar las analíticas.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Reiniciar métricas de un solo banner
+  const handleResetSingleBanner = async (banner) => {
+    if (
+      !window.confirm(
+        `¿Reiniciar métricas del banner "${banner.titulo || "Sin título"}" a 0?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${VITE_API_URL}/banners/${banner.id}/reset-analytics`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Error al reiniciar métricas del banner");
+      }
+
+      setSuccessMsg(
+        `Métricas del banner "${banner.titulo || "ID #" + banner.id}" en cero.`
+      );
+      setTimeout(() => setSuccessMsg(null), 5000);
+      await loadBanners();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "No se pudo reiniciar el banner.");
+    }
+  };
 
   // Abrir modal para crear
   const handleOpenCreate = () => {
@@ -207,7 +252,7 @@ export default function BannersSucursal() {
     setModalOpen(true);
   };
 
-  // Toggle activo directo en tarjeta
+  // Toggle activo directo
   const handleToggleActivo = async (banner) => {
     try {
       const res = await fetch(`${VITE_API_URL}/banners/${banner.id}/estado`, {
@@ -218,8 +263,8 @@ export default function BannersSucursal() {
       if (res.ok) {
         setBanners((prev) =>
           prev.map((b) =>
-            b.id === banner.id ? { ...b, activo: !b.activo } : b,
-          ),
+            b.id === banner.id ? { ...b, activo: !b.activo } : b
+          )
         );
       }
     } catch (err) {
@@ -293,7 +338,7 @@ export default function BannersSucursal() {
       });
 
       if (!res.ok) {
-        let errText = `Error ${res.status}: No se pudo guardar el banner. Verificá que el backend esté actualizado en Render.`;
+        let errText = `Error ${res.status}: No se pudo guardar el banner.`;
         try {
           const errData = await res.json();
           if (errData?.error) errText = errData.error;
@@ -301,48 +346,53 @@ export default function BannersSucursal() {
         throw new Error(errText);
       }
 
+      await loadBanners();
       setModalOpen(false);
-      loadBanners();
     } catch (err) {
-      setErrorMsg(err.message);
+      console.error(err);
+      setErrorMsg(err.message || "Error al procesar la solicitud.");
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* ─── Encabezado y Métricas Principales ─── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-2xs">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* ─── Cabecera Principal ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200/80 pb-5">
         <div>
-          <h1 className="text-xl font-black text-neutral-900 flex items-center gap-2">
-            <Layers className="size-6 text-main-blue" />
-            Gestión de Banners Publicitarios
-          </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Administrá los anuncios y promociones que rotan en la portada de la
-            tienda.
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-blue-50 text-main-blue border border-blue-100">
+              <Layers className="size-5" />
+            </span>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
+                Consola de Anuncios & Banners
+              </h1>
+              <p className="text-xs text-neutral-500">
+                Rendimiento de campañas, conversiones y clics en tiempo real estilo Meta Ads.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+            onClick={() => setShowAdvanced((prev) => !prev)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
               showAdvanced
-                ? "bg-neutral-900 text-white border-neutral-900 shadow-xs"
-                : "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 shadow-2xs"
+                ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50"
             }`}
           >
-            <SlidersHorizontal className="size-4" />
+            <SlidersHorizontal className="size-3.5" />
             <span>Opciones avanzadas</span>
           </button>
 
           <button
-            type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer shrink-0"
+            className="px-4 py-2 bg-main-blue hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-98"
           >
             <Plus className="size-4" />
             <span>Nuevo Banner</span>
@@ -350,7 +400,7 @@ export default function BannersSucursal() {
         </div>
       </div>
 
-      {/* ─── Mensaje de Éxito / Feedback ─── */}
+      {/* ─── Mensaje de Feedback ─── */}
       {successMsg && (
         <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-semibold text-emerald-800 flex items-center justify-between gap-2 shadow-2xs animate-in fade-in duration-200">
           <div className="flex items-center gap-2">
@@ -377,11 +427,11 @@ export default function BannersSucursal() {
               </div>
               <div>
                 <h3 className="text-sm font-black text-neutral-900">
-                  Reinicio de Analíticas de Banners
+                  Reinicio de Analíticas de Campañas
                 </h3>
                 <p className="text-xs text-neutral-600 mt-0.5 max-w-xl leading-relaxed">
-                  Pone en cero las impresiones ({totalImpresiones.toLocaleString("es-AR")}) y clics ({totalClics.toLocaleString("es-AR")}) acumulados en todos los banners.
-                  Ideal para limpiar los datos generados durante el desarrollo y comenzar a medir interacciones reales al lanzar a producción.
+                  Pone en cero las impresiones ({totalImpresiones.toLocaleString("es-AR")}), clics ({totalClics.toLocaleString("es-AR")}) y conversiones acumuladas en todos los banners.
+                  Útil para limpiar datos de prueba y comenzar a medir interacciones reales limpias en producción.
                 </p>
               </div>
             </div>
@@ -399,16 +449,17 @@ export default function BannersSucursal() {
         </div>
       )}
 
-      {/* ─── Tarjetas de Estadísticas de Rendimiento ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">
-              Banners Activos
+      {/* ─── Tarjetas de Rendimiento Global (KPIs Meta Ads) ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Banners Activos */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Activos
             </span>
-            <ImageIcon className="size-4 text-main-blue" />
+            <ImageIcon className="size-3.5 text-main-blue" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-neutral-900">
+          <p className="text-xl font-black text-neutral-900">
             {activeBanners}{" "}
             <span className="text-xs font-normal text-neutral-400">
               / {totalBanners}
@@ -416,201 +467,565 @@ export default function BannersSucursal() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">
-              Impresiones
+        {/* Impresiones */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Alcance (Impr.)
             </span>
-            <Eye className="size-4 text-purple-600" />
+            <Eye className="size-3.5 text-purple-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-neutral-900">
+          <p className="text-xl font-black text-neutral-900 font-mono">
             {totalImpresiones.toLocaleString("es-AR")}
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">
-              Clics Directos
+        {/* Clics */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Resultados (Clics)
             </span>
-            <MousePointerClick className="size-4 text-emerald-600" />
+            <MousePointerClick className="size-3.5 text-emerald-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-neutral-900">
+          <p className="text-xl font-black text-neutral-900 font-mono">
             {totalClics.toLocaleString("es-AR")}
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-neutral-200/80 shadow-2xs">
-          <div className="flex items-center justify-between text-neutral-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">
-              CTR Promedio
+        {/* CTR */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              CTR Global
             </span>
-            <TrendingUp className="size-4 text-amber-500" />
+            <Percent className="size-3.5 text-amber-500" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-neutral-900">
+          <p className="text-xl font-black text-neutral-900 font-mono">
             {globalCtr}%
+          </p>
+        </div>
+
+        {/* Pedidos Atribuidos */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Compras Generadas
+            </span>
+            <ShoppingBag className="size-3.5 text-emerald-600" />
+          </div>
+          <p className="text-xl font-black text-emerald-700 font-mono">
+            {totalPedidos}
+          </p>
+        </div>
+
+        {/* Ventas Atribuidas */}
+        <div className="bg-white p-3.5 rounded-xl border border-neutral-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-neutral-400 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Ventas Atribuidas
+            </span>
+            <DollarSign className="size-3.5 text-emerald-600" />
+          </div>
+          <p className="text-xl font-black text-neutral-900 font-mono">
+            {formatMoney(totalVentas)}
           </p>
         </div>
       </div>
 
-      {/* ─── Listado de Banners en Carrusel ─── */}
-      <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-2xs">
-        <h2 className="text-base font-extrabold text-neutral-900 mb-4">
-          Banners configurados ({banners.length})
-        </h2>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center p-12 text-sm text-neutral-400 animate-pulse">
-            Cargando banners publicitarios...
-          </div>
-        ) : banners.length === 0 ? (
-          <div className="text-center p-10 bg-neutral-50 rounded-xl border border-dashed border-neutral-300">
-            <p className="text-sm font-bold text-neutral-700">
-              No hay banners creados aún.
-            </p>
+      {/* ─── Barra de Control: Filtros y Selector de Vista ─── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-neutral-200/80 shadow-2xs">
+        {/* Pestañas de Estado & Búsqueda */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center p-0.5 bg-neutral-100 rounded-lg border border-neutral-200/60">
             <button
-              onClick={handleOpenCreate}
-              className="mt-3 px-4 py-2 bg-main-blue text-white rounded-lg text-xs font-bold"
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                statusFilter === "all"
+                  ? "bg-white text-neutral-900 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
             >
-              Crear primer banner
+              Todos ({totalBanners})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("active")}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                statusFilter === "active"
+                  ? "bg-white text-emerald-700 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              Activos ({activeBanners})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("inactive")}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+                statusFilter === "inactive"
+                  ? "bg-white text-neutral-700 shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              Pausados ({inactiveBanners})
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {banners.map((banner) => {
-              const ctr =
-                banner.impresiones > 0
-                  ? ((banner.clics / banner.impresiones) * 100).toFixed(1)
-                  : "0.0";
 
-              return (
-                <div
-                  key={banner.id}
-                  className={`flex flex-col rounded-xl border overflow-hidden transition-all shadow-2xs ${
-                    banner.activo
-                      ? "border-neutral-200 bg-white"
-                      : "border-neutral-200/60 bg-neutral-50/70 opacity-65"
-                  }`}
-                >
-                  {/* Vista Previa Visual del Banner */}
-                  <div className="relative aspect-video sm:aspect-[21/9] w-full overflow-hidden bg-neutral-900 group">
-                    <img
-                      src={banner.imagen_desktop_url}
-                      alt={banner.titulo}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
-                      {banner.badge_texto && (
-                        <span
-                          className={`w-fit px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mb-1.5 shadow ${
-                            BADGE_COLOR_OPTIONS.find(
-                              (c) => c.id === banner.badge_color,
-                            )?.bg || "bg-main-red text-white"
-                          }`}
-                        >
-                          {banner.badge_texto}
-                        </span>
-                      )}
-                      <h3 className="text-white font-bold text-sm sm:text-base line-clamp-1">
-                        {banner.titulo}
-                      </h3>
-                      {banner.subtitulo && (
-                        <p className="text-neutral-300 text-xs line-clamp-1 mt-0.5">
-                          {banner.subtitulo}
-                        </p>
-                      )}
-                    </div>
+          <div className="relative flex-1 sm:w-64">
+            <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Buscar por título o badge..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-neutral-200 text-xs text-neutral-800 focus:outline-none focus:border-main-blue"
+            />
+          </div>
+        </div>
 
-                    {/* Badge de Orden */}
-                    <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded">
-                      Orden #{banner.orden}
-                    </span>
-                  </div>
+        {/* Selector de Vista: Tabla vs Cuadrícula */}
+        <div className="flex items-center gap-1 self-end sm:self-auto">
+          <span className="text-[11px] font-medium text-neutral-400 mr-1 hidden sm:inline">
+            Vista:
+          </span>
+          <div className="flex items-center p-0.5 bg-neutral-100 rounded-lg border border-neutral-200/60">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              title="Vista de Tabla Analítica (Estilo Meta Ads)"
+              className={`px-2.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-white text-main-blue shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              <TableIcon className="size-3.5" />
+              <span>Tabla Meta Ads</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              title="Vista de Tarjetas Visuales"
+              className={`px-2.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-white text-main-blue shadow-2xs"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              <LayoutGrid className="size-3.5" />
+              <span>Tarjetas</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-                  {/* Detalles y Métricas de Rendimiento */}
-                  <div className="p-4 flex flex-col justify-between flex-1 gap-3">
-                    <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-neutral-50 rounded-lg text-center border border-neutral-100 text-xs">
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-400 block uppercase">
-                          Vistas
-                        </span>
-                        <span className="font-extrabold text-neutral-800">
-                          {Number(banner.impresiones).toLocaleString("es-AR")}
-                        </span>
+      {/* ─── VISTA 1: TABLA DE RENDIMIENTO ESTILO META ADS ─── */}
+      {viewMode === "table" ? (
+        <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-2xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-neutral-50/80 border-b border-neutral-200 text-[11px] font-bold text-neutral-600 uppercase tracking-wider">
+                  <th className="py-3 px-4 w-16 text-center">Estado</th>
+                  <th className="py-3 px-4 min-w-[280px]">Anuncio / Campaña</th>
+                  <th className="py-3 px-3 w-16 text-center">Orden</th>
+                  <th className="py-3 px-4 text-right">Alcance (Impr.)</th>
+                  <th className="py-3 px-4 text-right">Resultados (Clics)</th>
+                  <th className="py-3 px-4 text-right">CTR</th>
+                  <th className="py-3 px-4 text-right">Compras (Pedidos)</th>
+                  <th className="py-3 px-4 text-right">Tasa Conv. (CVR)</th>
+                  <th className="py-3 px-4 text-right">Ventas Atribuidas</th>
+                  <th className="py-3 px-4 text-center w-28">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="10" className="py-12 text-center text-neutral-400">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="size-4 animate-spin text-main-blue" />
+                        <span>Cargando analíticas de anuncios...</span>
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-400 block uppercase">
-                          Clics
-                        </span>
-                        <span className="font-extrabold text-neutral-800">
-                          {Number(banner.clics).toLocaleString("es-AR")}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-400 block uppercase">
-                          CTR
-                        </span>
-                        <span className="font-extrabold text-amber-600">
-                          {ctr}%
-                        </span>
-                      </div>
-                    </div>
+                    </td>
+                  </tr>
+                ) : filteredBanners.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="py-10 text-center text-neutral-500">
+                      No se encontraron banners con los filtros aplicados.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBanners.map((banner) => {
+                    const impr = Number(banner.impresiones) || 0;
+                    const clics = Number(banner.clics) || 0;
+                    const pedidos = Number(banner.pedidos_generados) || 0;
+                    const ventas = Number(banner.ventas_totales) || 0;
 
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleActivo(banner)}
-                          className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-colors border ${
-                            banner.activo
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              : "bg-neutral-100 text-neutral-500 border-neutral-300 hover:bg-neutral-200"
-                          }`}
-                        >
-                          {banner.activo ? "Visible en portada" : "Pausado"}
-                        </button>
+                    const ctrNum = impr > 0 ? (clics / impr) * 100 : 0;
+                    const cvrNum = clics > 0 ? (pedidos / clics) * 100 : 0;
 
-                        {banner.enlace_url && (
-                          <span className="text-[11px] text-neutral-400 truncate max-w-[140px]">
-                            {banner.enlace_url}
+                    return (
+                      <tr
+                        key={banner.id}
+                        className={`hover:bg-blue-50/30 transition-colors ${
+                          !banner.activo ? "bg-neutral-50/50 opacity-70" : ""
+                        }`}
+                      >
+                        {/* Switch de Estado estilo Meta */}
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActivo(banner)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              banner.activo ? "bg-emerald-600" : "bg-neutral-300"
+                            }`}
+                            title={banner.activo ? "Pausar anuncio" : "Activar anuncio"}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                banner.activo ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </td>
+
+                        {/* Anuncio / Creativo */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative size-12 sm:w-16 sm:h-10 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-900 shrink-0 group">
+                              <img
+                                src={banner.imagen_desktop_url}
+                                alt={banner.titulo}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="font-bold text-neutral-900 truncate">
+                                  {banner.titulo || "Sin título"}
+                                </span>
+                                {banner.badge_texto && (
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 ${
+                                      BADGE_COLOR_OPTIONS.find(
+                                        (c) => c.id === banner.badge_color
+                                      )?.bg || "bg-main-red text-white"
+                                    }`}
+                                  >
+                                    {banner.badge_texto}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+                                {banner.subtitulo && (
+                                  <span className="truncate max-w-[180px]">
+                                    {banner.subtitulo}
+                                  </span>
+                                )}
+                                {banner.enlace_url && (
+                                  <span className="text-neutral-400 font-mono text-[10px] flex items-center gap-0.5 hover:text-main-blue">
+                                    <ExternalLink className="size-2.5" />
+                                    {banner.enlace_url}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Orden */}
+                        <td className="py-3 px-3 text-center">
+                          <span className="inline-block px-1.5 py-0.5 bg-neutral-100 text-neutral-600 rounded font-mono font-bold text-[10px]">
+                            #{banner.orden}
                           </span>
+                        </td>
+
+                        {/* Alcance (Impresiones) */}
+                        <td className="py-3 px-4 text-right font-mono text-neutral-700">
+                          {impr.toLocaleString("es-AR")}
+                        </td>
+
+                        {/* Resultados (Clics) */}
+                        <td className="py-3 px-4 text-right font-mono font-black text-neutral-900">
+                          {clics.toLocaleString("es-AR")}
+                        </td>
+
+                        {/* CTR */}
+                        <td className="py-3 px-4 text-right">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full font-mono font-bold text-[11px] ${
+                              ctrNum >= 3
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : ctrNum >= 1
+                                ? "bg-blue-50 text-main-blue border border-blue-200"
+                                : "bg-neutral-100 text-neutral-600"
+                            }`}
+                          >
+                            {ctrNum.toFixed(2)}%
+                          </span>
+                        </td>
+
+                        {/* Compras Atribuidas */}
+                        <td className="py-3 px-4 text-right font-mono font-black text-emerald-700">
+                          {pedidos > 0 ? (
+                            <span className="inline-flex items-center gap-1">
+                              <ShoppingBag className="size-3 text-emerald-600" />
+                              {pedidos}
+                            </span>
+                          ) : (
+                            <span className="text-neutral-300 font-normal">0</span>
+                          )}
+                        </td>
+
+                        {/* Tasa Conversión (CVR) */}
+                        <td className="py-3 px-4 text-right font-mono text-neutral-600">
+                          {cvrNum > 0 ? `${cvrNum.toFixed(2)}%` : "-"}
+                        </td>
+
+                        {/* Ventas Atribuidas */}
+                        <td className="py-3 px-4 text-right font-mono font-bold text-neutral-900">
+                          {ventas > 0 ? (
+                            <span className="text-emerald-800">
+                              {formatMoney(ventas)}
+                            </span>
+                          ) : (
+                            <span className="text-neutral-300 font-normal">$0</span>
+                          )}
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleResetSingleBanner(banner)}
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                              title="Reiniciar analíticas de este banner a cero"
+                            >
+                              <RotateCcw className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(banner)}
+                              className="p-1.5 rounded-lg text-neutral-500 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
+                              title="Editar configuración del banner"
+                            >
+                              <Edit2 className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(banner.id)}
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Eliminar banner"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+
+              {/* Fila Fija de Resumen / Totales (Estilo Meta Ads) */}
+              {filteredBanners.length > 0 && (
+                <tfoot>
+                  <tr className="bg-neutral-100/90 border-t-2 border-neutral-300 font-bold text-neutral-900 text-xs">
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-block size-2 rounded-full bg-emerald-500"></span>
+                    </td>
+                    <td className="py-3 px-4">
+                      Total ({filteredBanners.length} banners)
+                    </td>
+                    <td className="py-3 px-3 text-center">-</td>
+                    <td className="py-3 px-4 text-right font-mono">
+                      {totalImpresiones.toLocaleString("es-AR")}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono font-black">
+                      {totalClics.toLocaleString("es-AR")}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-main-blue">
+                      {globalCtr}%
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-emerald-700">
+                      {totalPedidos}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono text-neutral-700">
+                      {globalCvr}%
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono font-black text-emerald-800">
+                      {formatMoney(totalVentas)}
+                    </td>
+                    <td className="py-3 px-4 text-center text-neutral-400 font-normal">
+                      Acumulado
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* ─── VISTA 2: CUADRÍCULA DE TARJETAS VISUALES ─── */
+        <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-2xs">
+          <h2 className="text-base font-extrabold text-neutral-900 mb-4">
+            Banners configurados ({filteredBanners.length})
+          </h2>
+
+          {filteredBanners.length === 0 ? (
+            <div className="text-center p-10 bg-neutral-50 rounded-xl border border-dashed border-neutral-300">
+              <p className="text-sm font-bold text-neutral-700">
+                No se encontraron banners.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {filteredBanners.map((banner) => {
+                const ctr =
+                  banner.impresiones > 0
+                    ? ((banner.clics / banner.impresiones) * 100).toFixed(1)
+                    : "0.0";
+
+                return (
+                  <div
+                    key={banner.id}
+                    className={`flex flex-col rounded-xl border overflow-hidden transition-all shadow-2xs ${
+                      banner.activo
+                        ? "border-neutral-200 bg-white"
+                        : "border-neutral-200/60 bg-neutral-50/70 opacity-65"
+                    }`}
+                  >
+                    {/* Vista Previa Visual del Banner */}
+                    <div className="relative aspect-video sm:aspect-[21/9] w-full overflow-hidden bg-neutral-900 group">
+                      <img
+                        src={banner.imagen_desktop_url}
+                        alt={banner.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+                        {banner.badge_texto && (
+                          <span
+                            className={`w-fit px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mb-1.5 shadow ${
+                              BADGE_COLOR_OPTIONS.find(
+                                (c) => c.id === banner.badge_color
+                              )?.bg || "bg-main-red text-white"
+                            }`}
+                          >
+                            {banner.badge_texto}
+                          </span>
+                        )}
+                        <h3 className="text-white font-bold text-sm sm:text-base line-clamp-1">
+                          {banner.titulo}
+                        </h3>
+                        {banner.subtitulo && (
+                          <p className="text-neutral-300 text-xs line-clamp-1 mt-0.5">
+                            {banner.subtitulo}
+                          </p>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleResetSingleBanner(banner)}
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                          title="Reiniciar métricas de este banner a cero"
-                        >
-                          <RotateCcw className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(banner)}
-                          className="p-1.5 rounded-lg text-neutral-600 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
-                          title="Editar banner"
-                        >
-                          <Edit2 className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(banner.id)}
-                          className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Eliminar banner"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                      {/* Badge de Orden */}
+                      <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded">
+                        Orden #{banner.orden}
+                      </span>
+                    </div>
+
+                    {/* Detalles y Métricas de Rendimiento */}
+                    <div className="p-4 flex flex-col justify-between flex-1 gap-3">
+                      <div className="grid grid-cols-4 gap-2 py-2 px-3 bg-neutral-50 rounded-lg text-center border border-neutral-100 text-xs font-mono">
+                        <div>
+                          <span className="text-[10px] font-bold text-neutral-400 block uppercase">
+                            Vistas
+                          </span>
+                          <span className="font-extrabold text-neutral-800">
+                            {Number(banner.impresiones).toLocaleString("es-AR")}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-neutral-400 block uppercase">
+                            Clics
+                          </span>
+                          <span className="font-extrabold text-neutral-800">
+                            {Number(banner.clics).toLocaleString("es-AR")}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-neutral-400 block uppercase">
+                            CTR
+                          </span>
+                          <span className="font-extrabold text-amber-600">
+                            {ctr}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-neutral-400 block uppercase">
+                            Ventas ($)
+                          </span>
+                          <span className="font-extrabold text-emerald-700 truncate block">
+                            {formatMoney(banner.ventas_totales || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActivo(banner)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-colors border ${
+                              banner.activo
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-neutral-100 text-neutral-500 border-neutral-300 hover:bg-neutral-200"
+                            }`}
+                          >
+                            {banner.activo ? "Visible en portada" : "Pausado"}
+                          </button>
+
+                          {banner.enlace_url && (
+                            <span className="text-[11px] text-neutral-400 truncate max-w-[140px]">
+                              {banner.enlace_url}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleResetSingleBanner(banner)}
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                            title="Reiniciar métricas de este banner a cero"
+                          >
+                            <RotateCcw className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(banner)}
+                            className="p-1.5 rounded-lg text-neutral-600 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
+                            title="Editar banner"
+                          >
+                            <Edit2 className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(banner.id)}
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Eliminar banner"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Modal de Creación / Edición de Banner ─── */}
       {modalOpen && (
@@ -626,7 +1041,7 @@ export default function BannersSucursal() {
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100"
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 cursor-pointer"
               >
                 <X className="size-5" />
               </button>

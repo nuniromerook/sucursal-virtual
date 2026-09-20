@@ -24,18 +24,49 @@ const getBanners = async (req, res) => {
 const getBannersAdmin = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT *,
+      `SELECT b.*,
               CASE 
-                WHEN impresiones > 0 THEN ROUND((clics::numeric / impresiones::numeric) * 100, 2)
+                WHEN b.impresiones > 0 THEN ROUND((b.clics::numeric / b.impresiones::numeric) * 100, 2)
                 ELSE 0
-              END AS ctr
-       FROM banners_publicidad
-       ORDER BY orden ASC, id ASC`
+              END AS ctr,
+              COALESCE(p_stats.pedidos_count, 0)::integer AS pedidos_generados,
+              COALESCE(p_stats.total_ventas, 0)::numeric(12,2) AS ventas_totales,
+              CASE
+                WHEN b.clics > 0 THEN ROUND((COALESCE(p_stats.pedidos_count, 0)::numeric / b.clics::numeric) * 100, 2)
+                ELSE 0
+              END AS conversion_rate
+       FROM banners_publicidad b
+       LEFT JOIN (
+         SELECT banner_id,
+                COUNT(id) AS pedidos_count,
+                SUM(COALESCE(monto_total_final, monto_total_estimado, 0)) AS total_ventas
+         FROM pedidos
+         WHERE banner_id IS NOT NULL
+         GROUP BY banner_id
+       ) p_stats ON p_stats.banner_id = b.id
+       ORDER BY b.orden ASC, b.id ASC`
     );
     res.json(result.rows);
   } catch (error) {
-    console.error("Error al obtener banners admin:", error.message);
-    res.status(500).json({ error: "Error al obtener banners" });
+    // Si la columna banner_id aún estuviera en migración, responder con métricas estándar
+    try {
+      const fallback = await pool.query(
+        `SELECT *,
+                CASE 
+                  WHEN impresiones > 0 THEN ROUND((clics::numeric / impresiones::numeric) * 100, 2)
+                  ELSE 0
+                END AS ctr,
+                0 AS pedidos_generados,
+                0 AS ventas_totales,
+                0 AS conversion_rate
+         FROM banners_publicidad
+         ORDER BY orden ASC, id ASC`
+      );
+      return res.json(fallback.rows);
+    } catch (fbErr) {
+      console.error("Error al obtener banners admin:", fbErr.message);
+      res.status(500).json({ error: "Error al obtener banners" });
+    }
   }
 };
 
