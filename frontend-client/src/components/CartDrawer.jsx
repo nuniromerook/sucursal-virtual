@@ -110,10 +110,10 @@ export default function CartDrawer() {
         }`}
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
+      <div className="fixed inset-y-0 right-0 flex w-full sm:w-sm pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
-          className={`w-full max-w-xs bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
+          className={`flex flex-col w-full sm:max-w-sm bg-white shadow-2xl justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
             isCartOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >

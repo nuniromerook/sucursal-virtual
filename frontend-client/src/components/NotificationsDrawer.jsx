@@ -38,17 +38,50 @@ const formatTiempoRelativo = (fechaStr) => {
 
 // Configuración de badges según estado de pedido
 const ESTADOS_PEDIDO_BADGES = {
-  solicitado: { label: "Solicitado", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  pendiente: { label: "Solicitado", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  en_corte: { label: "En preparación", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  en_preparacion: { label: "En preparación", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  pesado: { label: "Pesado & Listo", color: "bg-indigo-100 text-indigo-800 border-indigo-300" },
-  listo: { label: "Listo para empaque", color: "bg-indigo-100 text-indigo-800 border-indigo-300" },
-  en_camino: { label: "En camino", color: "bg-purple-100 text-purple-800 border-purple-300" },
-  listo_retiro: { label: "Listo para retirar", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  entregado: { label: "Entregado", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  completado: { label: "Entregado", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  cancelado: { label: "Cancelado", color: "bg-red-100 text-red-800 border-red-300" },
+  solicitado: {
+    label: "Solicitado",
+    color: "bg-amber-100 text-amber-800 border-amber-300",
+  },
+  pendiente: {
+    label: "Solicitado",
+    color: "bg-amber-100 text-amber-800 border-amber-300",
+  },
+  en_corte: {
+    label: "En preparación",
+    color: "bg-blue-100 text-blue-800 border-blue-300",
+  },
+  en_preparacion: {
+    label: "En preparación",
+    color: "bg-blue-100 text-blue-800 border-blue-300",
+  },
+  pesado: {
+    label: "Pesado & Listo",
+    color: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  },
+  listo: {
+    label: "Listo para empaque",
+    color: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  },
+  en_camino: {
+    label: "En camino",
+    color: "bg-purple-100 text-purple-800 border-purple-300",
+  },
+  listo_retiro: {
+    label: "Listo para retirar",
+    color: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  },
+  entregado: {
+    label: "Entregado",
+    color: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  },
+  completado: {
+    label: "Entregado",
+    color: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  },
+  cancelado: {
+    label: "Cancelado",
+    color: "bg-red-100 text-red-800 border-red-300",
+  },
 };
 
 export default function NotificationsDrawer() {
@@ -170,7 +203,9 @@ export default function NotificationsDrawer() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEndEvent}
       className={`fixed inset-0 z-101 overflow-hidden transition-all duration-300 ${
-        isDrawerOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+        isDrawerOpen
+          ? "pointer-events-auto visible"
+          : "pointer-events-none invisible"
       }`}
     >
       {/* Backdrop */}
@@ -182,7 +217,7 @@ export default function NotificationsDrawer() {
         }`}
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
+      <div className="fixed inset-y-0 right-0 flex w-full sm:max-w-sm pl-6 sm:pl-10 pointer-events-none">
         <div
           ref={drawerRef}
           className={`w-full max-w-sm bg-white shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out pointer-events-auto ${
@@ -237,7 +272,12 @@ export default function NotificationsDrawer() {
                   Conexión insegura detectada
                 </p>
                 <p className="text-[11px] text-orange-800 mt-0.5 leading-relaxed">
-                  Estás accediendo por IP local (<code className="font-mono text-[10px]">http://</code>). Los navegadores móviles bloquean las notificaciones por seguridad. Para activarlas necesitás acceder desde <strong>localhost</strong> o un dominio con <strong>HTTPS</strong>.
+                  Estás accediendo por IP local (
+                  <code className="font-mono text-[10px]">http://</code>). Los
+                  navegadores móviles bloquean las notificaciones por seguridad.
+                  Para activarlas necesitás acceder desde{" "}
+                  <strong>localhost</strong> o un dominio con{" "}
+                  <strong>HTTPS</strong>.
                 </p>
               </div>
             </div>
@@ -254,7 +294,8 @@ export default function NotificationsDrawer() {
                   ¿Querés enterarte cuando tu pedido esté listo?
                 </p>
                 <p className="text-[11px] text-neutral-600 mt-0.5">
-                  Activá las alertas para recibir el estado de tus cortes al instante.
+                  Activá las alertas para recibir el estado de tus cortes al
+                  instante.
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <button
@@ -285,7 +326,8 @@ export default function NotificationsDrawer() {
                   Notificaciones bloqueadas en el navegador
                 </p>
                 <p className="text-[11px] text-red-800 mt-0.5 leading-relaxed">
-                  Para reactivarlas, andá a la configuración del navegador → Privacidad → Notificaciones → Permitir para este sitio.
+                  Para reactivarlas, andá a la configuración del navegador →
+                  Privacidad → Notificaciones → Permitir para este sitio.
                 </p>
               </div>
             </div>
@@ -300,9 +342,12 @@ export default function NotificationsDrawer() {
                   Notificaciones en iPhone
                 </p>
                 <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  1. Tocá <strong>Compartir</strong> ⎙ en Safari.<br />
-                  2. Elegí <strong>"Agregar a pantalla de inicio"</strong>.<br />
-                  3. Abrí la App desde el ícono que aparece en tu pantalla. <br />
+                  1. Tocá <strong>Compartir</strong> ⎙ en Safari.
+                  <br />
+                  2. Elegí <strong>"Agregar a pantalla de inicio"</strong>.
+                  <br />
+                  3. Abrí la App desde el ícono que aparece en tu pantalla.{" "}
+                  <br />
                   Luego el botón de activar aparecerá acá.
                 </p>
               </div>
@@ -340,7 +385,10 @@ export default function NotificationsDrawer() {
             {isLoading ? (
               <div className="space-y-3 py-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse flex gap-3 p-3 rounded-lg bg-neutral-50">
+                  <div
+                    key={i}
+                    className="animate-pulse flex gap-3 p-3 rounded-lg bg-neutral-50"
+                  >
                     <div className="size-8 rounded-full bg-neutral-200 shrink-0" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3.5 bg-neutral-200 rounded w-3/4" />
@@ -368,7 +416,8 @@ export default function NotificationsDrawer() {
             ) : (
               notificacionesFiltradas.map((notif) => {
                 const estadoBadge =
-                  notif.estado_pedido && ESTADOS_PEDIDO_BADGES[notif.estado_pedido.toLowerCase()]
+                  notif.estado_pedido &&
+                  ESTADOS_PEDIDO_BADGES[notif.estado_pedido.toLowerCase()]
                     ? ESTADOS_PEDIDO_BADGES[notif.estado_pedido.toLowerCase()]
                     : null;
 
@@ -385,7 +434,7 @@ export default function NotificationsDrawer() {
                     {/* Icono temático (estilo Avatar) */}
                     <div
                       className={`size-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${getIconBg(
-                        notif.tipo
+                        notif.tipo,
                       )}`}
                     >
                       {renderIcon(notif.tipo, notif.icono)}
@@ -396,23 +445,32 @@ export default function NotificationsDrawer() {
                       <div className="flex items-center justify-between gap-2">
                         <h4
                           className={`text-sm truncate ${
-                            !notif.leida ? "font-bold text-neutral-900" : "font-semibold text-neutral-700"
+                            !notif.leida
+                              ? "font-bold text-neutral-900"
+                              : "font-semibold text-neutral-700"
                           }`}
                         >
                           {notif.titulo}
                         </h4>
                         <span
                           className={`text-xs shrink-0 whitespace-nowrap ${
-                            !notif.leida ? "font-bold text-main-blue" : "text-neutral-500"
+                            !notif.leida
+                              ? "font-bold text-main-blue"
+                              : "text-neutral-500"
                           }`}
                         >
-                          {formatTiempoRelativo(notif.creada_en).replace("Hace ", "")}
+                          {formatTiempoRelativo(notif.creada_en).replace(
+                            "Hace ",
+                            "",
+                          )}
                         </span>
                       </div>
 
                       <p
                         className={`text-xs line-clamp-2 mt-0.5 leading-snug ${
-                          !notif.leida ? "font-semibold text-neutral-800" : "text-neutral-500"
+                          !notif.leida
+                            ? "font-semibold text-neutral-800"
+                            : "text-neutral-500"
                         }`}
                       >
                         {notif.mensaje}

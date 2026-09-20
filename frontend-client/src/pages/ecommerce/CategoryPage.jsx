@@ -139,7 +139,15 @@ export default function CategoryPage() {
   // Resetear la cantidad visible cuando cambia la categoría o los filtros
   useEffect(() => {
     setVisibleCount(12);
-  }, [categoria, queryParam, filtroOfertas, filtroPuntos, filtroCombos, filtroFavoritos, orden]);
+  }, [
+    categoria,
+    queryParam,
+    filtroOfertas,
+    filtroPuntos,
+    filtroCombos,
+    filtroFavoritos,
+    orden,
+  ]);
 
   // Identificador de la sección actual
   const currentKey = (categoria || "productos").toLowerCase().trim();
@@ -180,7 +188,9 @@ export default function CategoryPage() {
   // 1. Filtrar los productos que pertenecen a esta categoría y búsqueda inteligente multi-término
   const categoryProducts = useMemo(() => {
     const rawQueryNorm = normalizarTexto(queryParam);
-    const tokens = rawQueryNorm ? rawQueryNorm.split(/\s+/).filter(Boolean) : [];
+    const tokens = rawQueryNorm
+      ? rawQueryNorm.split(/\s+/).filter(Boolean)
+      : [];
 
     const listWithScores = productos
       .map((prod) => {
@@ -198,7 +208,7 @@ export default function CategoryPage() {
               nombre.includes(t) ||
               desc.includes(t) ||
               especie.includes(t) ||
-              categoria.includes(t)
+              categoria.includes(t),
           );
 
           if (!todosCoinciden) return null;
@@ -224,7 +234,8 @@ export default function CategoryPage() {
         if (target === "productos") {
           matchCategory = true;
         } else if (target === "vacuno") {
-          matchCategory = prodCategoria === "vacuno" || prodEspecie === "vacuno";
+          matchCategory =
+            prodCategoria === "vacuno" || prodEspecie === "vacuno";
         } else if (target === "cerdo") {
           matchCategory = prodCategoria === "cerdo" || prodEspecie === "cerdo";
         } else if (target === "embutidos") {
@@ -243,12 +254,14 @@ export default function CategoryPage() {
             prodNombre.includes("milanesa") ||
             prodNombre.includes("hamburguesa");
         } else if (target === "almacen") {
-          matchCategory = prodCategoria === "almacen" || prodCategoria === "despensa";
+          matchCategory =
+            prodCategoria === "almacen" || prodCategoria === "despensa";
         } else if (target === "ofertas") {
           const anterior = Number(prod.precio_anterior);
           const actual = Number(prod.precio);
           const hasDiscount = anterior > 0 && anterior > actual;
-          const hasPromos = Array.isArray(prod.promos) && prod.promos.length > 0;
+          const hasPromos =
+            Array.isArray(prod.promos) && prod.promos.length > 0;
           const hasDescuentoPorcentaje = Number(prod.descuento_porcentaje) > 0;
           matchCategory =
             hasDiscount ||
@@ -466,7 +479,7 @@ export default function CategoryPage() {
             inCategoryPage={true}
             placeholder={
               currentKey === "productos"
-                ? "¿Qué corte o preparado buscás hoy? (ej. Asado, Vacío, Milanesa, Parrilla...)"
+                ? "¿Qué corte o preparado buscás hoy?"
                 : `Buscar en ${meta.title.toLowerCase()} o por preparación (ej. asado, horno, milanesa)...`
             }
           />
@@ -662,7 +675,8 @@ export default function CategoryPage() {
                   <ChevronDown className="size-4 text-neutral-400 group-hover:text-main-blue group-hover:translate-y-0.5 transition-all" />
                 </button>
                 <p className="text-xs text-neutral-400 font-medium">
-                  Mostrando {Math.min(visibleCount, filteredProducts.length)} de {filteredProducts.length} cortes
+                  Mostrando {Math.min(visibleCount, filteredProducts.length)} de{" "}
+                  {filteredProducts.length} cortes
                 </p>
               </div>
             )}

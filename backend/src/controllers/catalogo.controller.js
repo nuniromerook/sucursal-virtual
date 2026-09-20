@@ -301,12 +301,10 @@ const updateCatalogoItem = async (req, res) => {
     }
 
     console.error("Error al actualizar el producto:", error.message);
-    res
-      .status(500)
-      .json({
-        error: "Error al actualizar el producto",
-        detalle: error.message,
-      });
+    res.status(500).json({
+      error: "Error al actualizar el producto",
+      detalle: error.message,
+    });
   }
 };
 
@@ -622,11 +620,6 @@ Estructura estricta del campo "descripcion" (en este orden exacto):
 
 > 🔥 **Ideal para:** [Recomendaciones prácticas y concretas de cocción, tipo de fuego o método para este corte]
 > ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente a -18°C.
-
-## Información de compra:
-- **Formas de pago**: Aceptamos efectivo y transferencia bancaria pagando y retirando en sucursal, también tarjetas de débito y billeteras virtuales comprando online.
-- **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
-- **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
 Valores nutricionales:
 - Proteínas (g), calorías (kcal) y grasas (g) deben ser números aproximados basados en tablas nutricionales reales de carnes argentinas (cada 100g de producto crudo).

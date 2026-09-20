@@ -44,37 +44,16 @@ export default function UrgencyTimer({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-red-50 border border-red-200 p-3 my-6">
-      <div className="flex items-center gap-1.5 text-main-red">
-        <Clock className="size-4 animate-pulse" />
+    <div className="flex w-full items-center justify-between bg-red-50 border border-red-200 px-3 py-1 mb-1">
+      <div className="flex w-fit items-center gap-1.5 text-main-red">
+        <Clock className="size-3 animate-pulse" />
         <span className="text-xs font-extrabold uppercase tracking-wide">
           {title}
         </span>
       </div>
       <div className="flex gap-2 text-red-900 text-sm font-black">
-        <div className="flex flex-col items-center bg-white border border-red-100 rounded px-2 py-1 flex-1">
-          <span className="text-xl tabular-nums">{timeLeft.hours}</span>
-          <span className="text-[10px] font-semibold text-red-700 uppercase">
-            Horas
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center text-lg font-bold pb-4">
-          :
-        </div>
-        <div className="flex flex-col items-center bg-white border border-red-100 rounded px-2 py-1 flex-1">
-          <span className="text-xl tabular-nums">{timeLeft.minutes}</span>
-          <span className="text-[10px] font-semibold text-red-700 uppercase">
-            Minutos
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center text-lg font-bold pb-4">
-          :
-        </div>
-        <div className="flex flex-col items-center bg-white border border-red-100 rounded px-2 py-1 flex-1">
-          <span className="text-xl tabular-nums">{timeLeft.seconds}</span>
-          <span className="text-[10px] font-semibold text-red-700 uppercase">
-            Segundos
-          </span>
+        <div className="flex text-sm font-bold">
+          {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
         </div>
       </div>
     </div>

@@ -205,7 +205,10 @@ export default function Product() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {/* Imagen principal */}
-          <div className="flex lg:col-span-1">
+          <div className="flex flex-col lg:col-span-1">
+            {(hasDiscount || promos.length > 0) && (
+              <UrgencyTimer endDate={new Date().setHours(23, 59, 59, 999)} />
+            )}
             <img
               alt={nombre_producto}
               src={
@@ -255,10 +258,6 @@ export default function Product() {
                   </p>
                 )}
               </div>
-
-              {(hasDiscount || promos.length > 0) && (
-                <UrgencyTimer endDate={new Date().setHours(23, 59, 59, 999)} />
-              )}
 
               {unidad_medida == "kg" ? (
                 <p className="mt-1 text-xs text-gray-500">
@@ -391,19 +390,17 @@ export default function Product() {
 
         {/* Descripción del producto con formato enriquecido */}
         {descripcion && (
-          <div className="pt-8 border-t border-neutral-100 mt-6">
+          <div className="pt-8 border-t border-neutral-100 mt-2">
             <h3 className="text-sm uppercase tracking-wider font-extrabold text-neutral-900 mb-3 flex items-center gap-2">
               Detalle y Preparación
             </h3>
-            <div className="rounded-2xl bg-neutral-50/60 border border-neutral-200/70 p-4 sm:p-6 shadow-2xs">
-              <FormattedDescription content={descripcion} />
-            </div>
+            <FormattedDescription content={descripcion} />
           </div>
         )}
 
         {/* Información nutricional */}
         {nutricion.length > 0 && (
-          <div className="py-10">
+          <div className="pt-10">
             <h3 className="text-sm uppercase tracking-wider font-extrabold text-neutral-900 mb-3 flex items-center gap-2">
               Información nutricional
               <span

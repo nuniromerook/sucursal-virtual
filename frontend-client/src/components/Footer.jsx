@@ -314,7 +314,7 @@ export default function Footer() {
             <span>•</span>
             <span className="flex items-center gap-1 font-semibold text-neutral-600">
               <CreditCard className="size-3.5 text-main-blue" />
-              <span>Débito / Crédito</span>
+              <span>Débito</span>
             </span>
             <span>•</span>
             <span className="font-semibold text-neutral-600">
