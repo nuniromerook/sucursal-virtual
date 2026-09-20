@@ -34,7 +34,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { formatMoney } from "../../../utils/formatters";
-import ModalAsignacionCortador from "../../../components/ModalAsignacionCortador";
 import ButtonLoader from "../../../components/ui/ButtonLoader";
 
 const ESTADOS = [
@@ -96,7 +95,6 @@ export default function ComandaDetalle() {
   const { joinSucursal, leaveSucursal, socket } = useSocket();
 
   const [pedido, setPedido] = useState(null);
-  const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -104,7 +102,6 @@ export default function ComandaDetalle() {
   // Estados de edición para encargados
   const [montoRealInput, setMontoRealInput] = useState("");
   const [notasInput, setNotasInput] = useState("");
-  const [modalCortadorOpen, setModalCortadorOpen] = useState(false);
 
   // ¿El usuario es Encargado / Admin?
   const esEncargado = Boolean(
@@ -141,26 +138,6 @@ export default function ComandaDetalle() {
     }
   }, [id, joinSucursal]);
 
-  const fetchCortadores = useCallback(async () => {
-    if (!esEncargado) return;
-    const targetSucursal = slug || pedido?.sucursal_id;
-    if (!targetSucursal) return;
-
-    try {
-      const res = await fetch(
-        `${VITE_API_URL}/sucursales/${targetSucursal}/cortadores-carga`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setCortadores(data);
-        }
-      }
-    } catch (err) {
-      console.error("Error al cargar cortadores:", err);
-    }
-  }, [esEncargado, slug, pedido?.sucursal_id]);
-
   useEffect(() => {
     setNavbarTitle(`Comanda #${id}`);
     fetchPedido();
@@ -171,10 +148,6 @@ export default function ComandaDetalle() {
       }
     };
   }, [id, setNavbarTitle]);
-
-  useEffect(() => {
-    fetchCortadores();
-  }, [fetchCortadores]);
 
   // Escuchar cambios de estado en tiempo real vía Socket.io
   useEffect(() => {
@@ -222,26 +195,6 @@ export default function ComandaDetalle() {
       }
     } catch (err) {
       alert(err.message || "No se pudo actualizar el estado.");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Asignar cortador
-  const handleAsignarCortador = async (cortador) => {
-    setIsUpdating(true);
-    try {
-      const res = await fetch(`${VITE_API_URL}/pedidos/${id}/estado`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cortador_id: cortador.id }),
-      });
-
-      if (!res.ok) throw new Error("Error al asignar cortador");
-      setModalCortadorOpen(false);
-      fetchPedido();
-    } catch (err) {
-      alert(err.message);
     } finally {
       setIsUpdating(false);
     }
@@ -560,7 +513,7 @@ export default function ComandaDetalle() {
           )}
         </div>
 
-        {/* Columna 3: Información de Cliente (Protegida) & Cortador Asignado */}
+        {/* Columna 3: Información de Cliente (Protegida) */}
         <div className="space-y-6">
           {/* Información del Cliente */}
           <div className="bg-white p-5 rounded-xl border border-neutral-200/80 shadow-2xs space-y-4">
@@ -656,60 +609,8 @@ export default function ComandaDetalle() {
             </div>
           </div>
 
-          {/* Asignación de Cortador */}
-          <div className="bg-white p-5 rounded-xl border border-neutral-200/80 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
-              <div className="flex items-center gap-2">
-                <Scissors className="size-4 text-blue-600" />
-                <h3 className="font-extrabold text-sm text-neutral-900">
-                  Cortador Asignado
-                </h3>
-              </div>
-              {esEncargado && (
-                <button
-                  type="button"
-                  onClick={() => setModalCortadorOpen(true)}
-                  className="text-xs font-bold text-main-blue hover:underline cursor-pointer"
-                >
-                  Cambiar
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-100">
-              <div className="size-9 rounded-full bg-blue-100 text-blue-800 font-black flex items-center justify-center text-xs shrink-0">
-                {pedido.cortador_apodo || pedido.cortador_nombre
-                  ? (pedido.cortador_apodo || pedido.cortador_nombre)
-                      .slice(0, 2)
-                      .toUpperCase()
-                  : "AV"}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-extrabold text-neutral-900 truncate">
-                  {pedido.cortador_apodo ||
-                    pedido.cortador_nombre ||
-                    "Sin asignar"}
-                </p>
-                <p className="text-[11px] text-neutral-500">
-                  {pedido.cortador_nombre
-                    ? `Encargado del corte y pesado`
-                    : `Hacé clic en Cambiar para asignar a un cortador`}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
-
-      {/* ─── Modal de Selección de Cortador para Encargados ─── */}
-      <ModalAsignacionCortador
-        isOpen={modalCortadorOpen}
-        onClose={() => setModalCortadorOpen(false)}
-        pedido={pedido}
-        cortadores={cortadores}
-        onAssign={handleAsignarCortador}
-        isAssigning={isUpdating}
-      />
     </div>
   );
 }

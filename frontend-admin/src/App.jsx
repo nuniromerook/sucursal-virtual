@@ -16,7 +16,6 @@ import BannersSucursal from "./pages/sucursales/sucursal-data/BannersSucursal";
 import Comandas from "./pages/sucursales/sucursal-data/Comandas";
 import ComandaDetalle from "./pages/sucursales/sucursal-data/ComandaDetalle";
 import CombosBuilder from "./pages/sucursales/sucursal-data/CombosBuilder";
-import RendimientoCortadores from "./pages/sucursales/sucursal-data/RendimientoCortadores";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -53,7 +52,6 @@ function App() {
           <Route path="banners" element={<BannersSucursal />} />
           <Route path="ajustes" element={<Informacion />} />
           <Route path="equipo" element={<Empleados />} />
-          <Route path="rendimiento" element={<RendimientoCortadores />} />
         </Route>
 
         <Route

@@ -25,7 +25,6 @@ import { VITE_API_URL } from "../../../config/api";
 import { useSocket } from "../../../context/SocketContext";
 import { useAuth } from "../../../context/AuthContext";
 import { formatMoney } from "../../../utils/formatters";
-import ModalAsignacionCortador from "../../../components/ModalAsignacionCortador";
 
 const ESTADOS = [
   { key: "todos", label: "Todos los pedidos" },
@@ -51,18 +50,9 @@ export default function Comandas() {
 
   const [sucursal, setSucursal] = useState(null);
   const [pedidos, setPedidos] = useState([]);
-  const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [actualizandoId, setActualizandoId] = useState(null);
-
-  // Modal de Asignación de Cortador
-  const [modalAsignacion, setModalAsignacion] = useState({
-    open: false,
-    pedido: null,
-  });
-  const [ordenCortadores, setOrdenCortadores] = useState("menos_pedidos"); // "menos_pedidos" | "alfabetico"
-  const [filtroTextoCortador, setFiltroTextoCortador] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const puedeGestionar = Boolean(
@@ -88,19 +78,11 @@ export default function Comandas() {
         joinSucursal(dataSuc.id);
       }
 
-      // Cargar pedidos y cortadores con carga
-      const [resPed, resCort] = await Promise.all([
-        fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/pedidos`),
-        fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/cortadores-carga`),
-      ]);
-
+      // Cargar pedidos
+      const resPed = await fetch(`${VITE_API_URL}/sucursales/${dataSuc.id}/pedidos`);
       if (resPed.ok) {
         const dataPed = await resPed.json();
         setPedidos(Array.isArray(dataPed) ? dataPed : []);
-      }
-      if (resCort.ok) {
-        const dataCort = await resCort.json();
-        setCortadores(Array.isArray(dataCort) ? dataCort : []);
       }
     } catch (err) {
       console.error("Error al cargar comandas:", err);
@@ -164,31 +146,24 @@ export default function Comandas() {
     }
   }, [ultimoPedido, sucursal?.id]);
 
-  // 3. Asignar cortador al pedido
-  const handleAsignarCortador = async (cortador) => {
-    if (!modalAsignacion.pedido) return;
-    setActualizandoId(modalAsignacion.pedido.id);
+  // 3. Pasar pedido a corte
+  const handlePasarACorte = async (pedidoId) => {
+    setActualizandoId(pedidoId);
 
     try {
-      const res = await fetch(
-        `${VITE_API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cortador_id: cortador.id,
-            estado: "en_corte",
-          }),
-        },
-      );
+      const res = await fetch(`${VITE_API_URL}/pedidos/${pedidoId}/estado`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estado: "en_corte",
+        }),
+      });
 
-      const data = await res.json();
       if (res.ok) {
-        setModalAsignacion({ open: false, pedido: null });
         loadData();
       }
     } catch (err) {
-      console.error("Error al asignar cortador:", err);
+      console.error("Error al pasar pedido a corte:", err);
     } finally {
       setActualizandoId(null);
     }
@@ -203,13 +178,12 @@ export default function Comandas() {
   // Atajos de teclado para KDS
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignorar si el usuario está escribiendo en un input o el modal está abierto
+      // Ignorar si el usuario está escribiendo en un input
       if (
         document.activeElement.tagName === "INPUT" ||
         document.activeElement.tagName === "TEXTAREA"
       )
         return;
-      if (modalAsignacion.open) return;
 
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         e.preventDefault();
@@ -232,7 +206,7 @@ export default function Comandas() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pedidosFiltrados, focusedIndex, modalAsignacion.open, slug, navigate]);
+  }, [pedidosFiltrados, focusedIndex, slug, navigate]);
 
   // Contadores para las pestañas
   const conteoPorEstado = useMemo(() => {
@@ -247,33 +221,6 @@ export default function Comandas() {
     });
     return counts;
   }, [pedidos]);
-
-  // Cortadores ordenados para el modal
-  const cortadoresOrdenados = useMemo(() => {
-    let list = [...cortadores];
-
-    if (filtroTextoCortador.trim()) {
-      const q = filtroTextoCortador.toLowerCase().trim();
-      list = list.filter(
-        (c) =>
-          (c.nombre || "").toLowerCase().includes(q) ||
-          (c.apodo || "").toLowerCase().includes(q),
-      );
-    }
-
-    if (ordenCortadores === "menos_pedidos") {
-      list.sort((a, b) => {
-        if (a.pedidos_en_corte !== b.pedidos_en_corte) {
-          return a.pedidos_en_corte - b.pedidos_en_corte;
-        }
-        return a.pedidos_hoy - b.pedidos_hoy;
-      });
-    } else {
-      list.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-    }
-
-    return list;
-  }, [cortadores, ordenCortadores, filtroTextoCortador]);
 
   const badgeEstado = (estado) => {
     const map = {
@@ -462,10 +409,6 @@ export default function Comandas() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pedidosFiltrados.map((pedido, idx) => {
-              const cortadorAsignado =
-                pedido.cortador_apodo ||
-                pedido.cortador_nombre ||
-                pedido.empleado_nombre;
               const items = Array.isArray(pedido.items) ? pedido.items : [];
               const estadoActual =
                 pedido.estado || pedido.estado_local || "solicitado";
@@ -503,30 +446,6 @@ export default function Comandas() {
                       </div>
                       {badgeEstado(estadoActual)}
                     </div>
-
-                    {/* Cortador asignado badge */}
-                    {cortadorAsignado && (
-                      <div className="mb-3 flex items-center justify-between gap-1.5 bg-blue-50/70 border border-blue-200/70 px-2.5 py-1 rounded-lg text-sm font-bold text-blue-900">
-                        <div className="flex items-center gap-1.5">
-                          <Scissors className="size-3.5 text-blue-700 shrink-0" />
-                          <span>
-                            Cortador: <strong>{cortadorAsignado}</strong>
-                          </span>
-                        </div>
-                        {puedeGestionar && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setModalAsignacion({ open: true, pedido });
-                            }}
-                            className="text-xs text-blue-700 hover:text-blue-900 underline cursor-pointer font-medium"
-                          >
-                            Cambiar
-                          </button>
-                        )}
-                      </div>
-                    )}
 
                     {/* Datos del Cliente */}
                     <div className="flex items-center gap-2 mb-3">
@@ -649,40 +568,29 @@ export default function Comandas() {
                       </span>
                     </div>
 
-                    {/* Botón ¿Quién fracciona? -> Solo para Encargado / Admin */}
-                    {puedeGestionar &&
-                      !cortadorAsignado &&
-                      estadoActual === "solicitado" && (
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setModalAsignacion({ open: true, pedido });
-                            }}
-                            className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
-                          >
-                            <Scissors className="size-4" />
-                            <span>Asignar Cortador</span>
-                          </button>
-                        </div>
-                      )}
+                    {/* Botón Pasar a Corte -> Solo para Encargado / Admin */}
+                    {puedeGestionar && estadoActual === "solicitado" && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          disabled={actualizandoId === pedido.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePasarACorte(pedido.id);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-lg bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01] disabled:opacity-50"
+                        >
+                          <Scissors className="size-4" />
+                          <span>Pasar a Corte</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* ─── Modal de Asignación de Cortador con Balanceo de Carga ─── */}
-      <ModalAsignacionCortador
-        isOpen={modalAsignacion.open && modalAsignacion.pedido}
-        onClose={() => setModalAsignacion({ open: false, pedido: null })}
-        pedido={modalAsignacion.pedido}
-        cortadores={cortadores}
-        onAssign={handleAsignarCortador}
-        isAssigning={actualizandoId === modalAsignacion.pedido?.id}
-      />
       </div>
     </div>
   );

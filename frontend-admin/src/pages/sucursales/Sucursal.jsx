@@ -12,7 +12,6 @@ import {
   Megaphone,
   Layers,
   Tv,
-  Activity,
 } from "lucide-react";
 
 const NavLinkTab = ({ to, text, icon: Icon, badge, end }) => {
@@ -160,13 +159,6 @@ const Sucursal = () => {
         />
 
         <NavLinkTab to="equipo" text="Equipo" icon={Users} end={true} />
-
-        <NavLinkTab
-          to="rendimiento"
-          text="Rendimiento"
-          icon={Activity}
-          end={true}
-        />
 
         <NavLinkTab to="ajustes" text="Ajustes" icon={Settings} end={true} />
       </div>

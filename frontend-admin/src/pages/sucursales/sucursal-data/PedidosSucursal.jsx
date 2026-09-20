@@ -34,7 +34,6 @@ const ESTADOS = [
 ];
 
 import { useAuth } from "../../../context/AuthContext";
-import ModalAsignacionCortador from "../../../components/ModalAsignacionCortador";
 
 export default function PedidosSucursal() {
   const { sucursal, setPedidosPendientes } = useOutletContext();
@@ -42,7 +41,6 @@ export default function PedidosSucursal() {
   const { token } = useAuth();
 
   const [pedidos, setPedidos] = useState([]);
-  const [cortadores, setCortadores] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [isLoading, setIsLoading] = useState(true);
   const [actualizandoId, setActualizandoId] = useState(null);
@@ -189,16 +187,10 @@ export default function PedidosSucursal() {
     if (!sucursal?.id) return;
     setIsLoading(true);
     try {
-      const [resPedidos, resCortadores] = await Promise.all([
-        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`),
-        fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/cortadores-carga`),
-      ]);
-
+      const resPedidos = await fetch(`${VITE_API_URL}/sucursales/${sucursal.id}/pedidos`);
       const dataPedidos = await resPedidos.json();
-      const dataCortadores = await resCortadores.json();
 
       setPedidos(Array.isArray(dataPedidos) ? dataPedidos : []);
-      setCortadores(Array.isArray(dataCortadores) ? dataCortadores : []);
 
       const pendientes = Array.isArray(dataPedidos)
         ? dataPedidos.filter(
@@ -237,37 +229,6 @@ export default function PedidosSucursal() {
       }
     }
   }, [ultimoPedido?.id, sucursal?.id]);
-
-  const [modalAsignacion, setModalAsignacion] = useState({ open: false, pedido: null });
-
-  const handleAsignarCortador = async (cortador) => {
-    if (!modalAsignacion.pedido) return;
-    setActualizandoId(modalAsignacion.pedido.id);
-    try {
-      const res = await fetch(
-        `${VITE_API_URL}/pedidos/${modalAsignacion.pedido.id}/estado`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            estado_local: "en_corte",
-            cortador_id: cortador.id,
-          }),
-        }
-      );
-      if (res.ok) {
-        setModalAsignacion({ open: false, pedido: null });
-        loadData();
-      }
-    } catch (error) {
-      console.error("Error asignando cortador:", error);
-    } finally {
-      setActualizandoId(null);
-    }
-  };
 
   // Cambiar estado operativo del pedido
   const handleCambiarEstado = async (pedidoId, nuevoEstado, extraData = {}) => {
@@ -504,8 +465,6 @@ export default function PedidosSucursal() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pedidosPaginados.map((pedido) => {
             const isPendingAction = actualizandoId === pedido.id;
-            const cortadorAsignado =
-              pedido.cortador_apodo || pedido.cortador_nombre;
 
             return (
               <div
@@ -529,16 +488,6 @@ export default function PedidosSucursal() {
                     </div>
                     {badgeEstado(pedido.estado)}
                   </div>
-
-                  {/* Cortador asignado badge */}
-                  {cortadorAsignado && (
-                    <div className="mb-3 flex items-center gap-1.5 bg-blue-50/70 border border-blue-200/70 px-2.5 py-1 rounded-lg text-sm font-bold text-blue-900">
-                      <Scissors className="size-3.5 text-blue-700 shrink-0" />
-                      <span>
-                        Cortador: <strong>{cortadorAsignado}</strong>
-                      </span>
-                    </div>
-                  )}
 
                   {/* Datos del Cliente */}
                   <div className="flex items-center gap-2 mb-3">
@@ -650,24 +599,19 @@ export default function PedidosSucursal() {
 
                   {/* Botones según el estado actual */}
                   <div className="grid grid-cols-1 gap-1.5 mt-5">
-                    {/* PASO 1: Solicitado -> Botonera de Cortadores Designados */}
+                    {/* PASO 1: Solicitado -> Pasar a Corte */}
                     {pedido.estado === "solicitado" && (
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-sm font-bold text-neutral-600 flex items-center gap-1">
-                          <Scissors className="size-3 text-blue-600" />
-                          ¿Quién fracciona este pedido?
-                        </span>
-
-                        <button
-                          type="button"
-                          disabled={isPendingAction}
-                          onClick={() => setModalAsignacion({ open: true, pedido })}
-                          className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs mt-2"
-                        >
-                          <Scissors className="size-3.5" />
-                          <span>Asignar Cortador</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        disabled={isPendingAction}
+                        onClick={() =>
+                          handleCambiarEstado(pedido.id, "en_corte")
+                        }
+                        className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs mt-2"
+                      >
+                        <Scissors className="size-3.5" />
+                        <span>Pasar a Corte</span>
+                      </button>
                     )}
 
                     {/* PASO 2: En Corte -> Cargar Pesaje Real y Marcar Listo */}
@@ -939,15 +883,6 @@ export default function PedidosSucursal() {
           </div>
         );
       })()}
-
-      <ModalAsignacionCortador
-        isOpen={modalAsignacion.open && modalAsignacion.pedido}
-        onClose={() => setModalAsignacion({ open: false, pedido: null })}
-        pedido={modalAsignacion.pedido}
-        cortadores={cortadores}
-        onAssign={handleAsignarCortador}
-        isAssigning={actualizandoId === modalAsignacion.pedido?.id}
-      />
     </div>
   );
 }

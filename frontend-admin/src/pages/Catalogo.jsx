@@ -226,13 +226,13 @@ const Catalogo = () => {
           />
         </div>
 
-        <div className="w-full sm:w-56">
+        <div className="w-fit sm:w-56">
           <BasicDropdown
             id="sortBy"
             items={SORT_OPTIONS}
             value={sortBy}
             onChange={(val) => setSortBy(val)}
-            buttonClassName="py-2 text-xs font-bold shadow-2xs"
+            buttonClassName="py-2 gap-6 font-bold"
           />
         </div>
       </div>
@@ -282,7 +282,7 @@ const Catalogo = () => {
 
       {/* ─── Grilla de Productos ─── */}
       {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
           {[...Array(10)].map((_, i) => (
             <div
               key={i}
@@ -301,7 +301,7 @@ const Catalogo = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
           {visibleProducts.map((product) => (
             <ProductCardAdmin
               key={product.id}

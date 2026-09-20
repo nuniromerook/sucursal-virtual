@@ -59,22 +59,22 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
   return (
     <Link
       to={`/catalogo/editar/${product.slug}`}
-      className={`group flex flex-col h-full rounded-lg border bg-white shadow-2xs transition-all hover:border-main-blue/60 hover:shadow-xs ${
+      className={`group flex flex-col h-full rounded-lg border bg-white transition-all hover:border-main-blue/60 p-2 ${
         isActivo
           ? "border-neutral-200/80"
           : "border-neutral-200 opacity-60 bg-neutral-50/50"
       }`}
     >
-      <div className="relative w-full aspect-square shrink-0 overflow-hidden bg-neutral-100 rounded-t-lg">
+      <div className="relative w-full aspect-square shrink-0 overflow-hidden rounded-md">
         <img
           src={product.imagen_url || DUMMY_IMAGE}
           alt={product.nombre_producto}
-          className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+          className="h-full w-full object-center group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
 
         {/* Badges superiores */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+        <div className="absolute top-0 left-0 flex flex-col gap-1 z-10">
           {hasDiscount && (
             <span className="w-fit rounded px-2 py-0.5 text-[11px] font-bold text-white bg-main-red shadow-2xs">
               {discountPercent}% OFF
@@ -106,7 +106,7 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
           onClick={handleToggleActivo}
           disabled={isToggling}
           title={isActivo ? "Desactivar producto" : "Activar producto"}
-          className={`absolute top-2 right-2 rounded-md px-2.5 py-0.5 text-[11px] font-bold border transition-colors shadow-2xs ${
+          className={`absolute top-0 right-0 rounded-md px-2.5 py-0.5 text-[11px] font-bold border transition-colors shadow-2xs ${
             isActivo
               ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
               : "bg-neutral-100 text-neutral-600 border-neutral-300 hover:bg-neutral-200"
@@ -116,14 +116,16 @@ const ProductCardAdmin = ({ product, onEstadoActualizado }) => {
         </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:p-3.5">
+      <div className="flex min-w-0 flex-1 flex-col justify-between pt-3">
         <div>
           <h2 className="text-sm font-bold text-neutral-900 line-clamp-1 group-hover:text-main-blue transition-colors">
             {product.nombre_producto}
           </h2>
 
           <p className="text-[11px] text-neutral-500 capitalize mt-0.5">
-            {product.especie} · {product.categoria}
+            {product.especie === product.categoria
+              ? product.categoria
+              : `${product.especie} · ${product.categoria}`}
           </p>
 
           {/* Promo por cantidad */}

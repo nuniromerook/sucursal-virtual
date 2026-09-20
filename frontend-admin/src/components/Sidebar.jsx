@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Tv,
   ArrowUpRight,
+  PackagePlus,
+  ListOrderedIcon,
 } from "lucide-react";
 import ButtonLoader from "./ui/ButtonLoader";
 
@@ -108,10 +110,10 @@ const Sidebar = () => {
   }, [sidebarOpen]);
 
   const linkClassName = ({ isActive }) =>
-    `block rounded-lg px-3.5 py-2 text-xs sm:text-sm font-bold transition-all flex gap-x-2.5 items-center ${
+    `block rounded-lg px-3.5 py-2 text-sm font-bold transition-all flex gap-x-2.5 items-center ${
       isActive
         ? "bg-main-blue/10 text-main-blue shadow-2xs"
-        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+        : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
     }`;
 
   return (
@@ -145,172 +147,182 @@ const Sidebar = () => {
               alt=""
               className="size-40 aspect-square mx-auto"
             />
-          <p className="flex w-fit mx-auto text-lg">Panel de Administración</p>
+            <p className="flex w-fit mx-auto text-lg">
+              Panel de Administración
+            </p>
 
-          <ul className="mt-8 space-y-1">
-            <li>
-              <NavLink to="/" onClick={handleNavClick} className={linkClassName}>
-                <Home className={iconStyle} /> Inicio
-              </NavLink>
-            </li>
+            <ul className="mt-8 space-y-1">
+              <li>
+                <NavLink
+                  to="/"
+                  onClick={handleNavClick}
+                  className={linkClassName}
+                >
+                  <Home className={iconStyle} /> Inicio
+                </NavLink>
+              </li>
 
-            <li>
-              <details
-                open
-                className="group [&_summary::-webkit-details-marker]:hidden"
-              >
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2 font-semibold">
-                    <Store className={iconStyle} />
-                    Sucursales
-                  </p>
-                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
-                </summary>
+              <li>
+                <details
+                  open
+                  className="group [&_summary::-webkit-details-marker]:hidden"
+                >
+                  <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
+                    <p className="flex items-center gap-x-2 font-semibold">
+                      <Store className={iconStyle} />
+                      Sucursales
+                    </p>
+                    <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
+                  </summary>
 
-                <ul className="mt-2 space-y-1.5 px-3">
-                  {sucursales.map((sucursal) => (
-                    <li key={sucursal.id} className="space-y-1">
+                  <ul className="mt-2 space-y-1.5 px-3">
+                    {sucursales.map((sucursal) => (
+                      <li
+                        key={sucursal.id}
+                        className="space-y-1 border border-neutral-200 rounded-lg p-1"
+                      >
+                        <NavLink
+                          to={`/sucursal/${sucursal.slug}`}
+                          onClick={handleNavClick}
+                          className={linkClassName}
+                        >
+                          {sucursal.nombre}
+                        </NavLink>
+                        <a
+                          href={`/comandas/${sucursal.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-lg px-3 py-1 text-sm font-bold text-neutral-600 hover:bg-amber-50 hover:text-amber-900 flex items-center justify-between transition-colors border border-neutral-100 bg-neutral-50/50"
+                          title="Abrir pantalla KDS para Smart TV"
+                        >
+                          <span className="flex items-center gap-1.5 font-bold text-amber-800">
+                            <Tv className="size-3.5 text-amber-600 shrink-0" />
+                            <span>Comandas TV</span>
+                          </span>
+                          <ArrowUpRight className="size-3 text-neutral-400" />
+                        </a>
+                      </li>
+                    ))}
+
+                    <li className="pt-1">
                       <NavLink
-                        to={`/sucursal/${sucursal.slug}`}
+                        to="/sucursales/nueva"
                         onClick={handleNavClick}
                         className={linkClassName}
                       >
-                        {sucursal.nombre}
+                        <Plus className={iconStyle} /> Agregar Sucursal
                       </NavLink>
-                      <a
-                        href={`/comandas/${sucursal.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg px-3 py-1 text-xs font-bold text-neutral-600 hover:bg-amber-50 hover:text-amber-900 flex items-center justify-between transition-colors ml-1 border border-neutral-100 bg-neutral-50/50"
-                        title="Abrir pantalla KDS para Smart TV"
-                      >
-                        <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-amber-800">
-                          <Tv className="size-3.5 text-amber-600 shrink-0" />
-                          <span>Comandas TV</span>
-                        </span>
-                        <ArrowUpRight className="size-3 text-neutral-400" />
-                      </a>
                     </li>
-                  ))}
+                  </ul>
+                </details>
+              </li>
 
-                  <li className="pt-1">
-                    <NavLink
-                      to="/sucursales/nueva"
-                      onClick={handleNavClick}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} /> Agregar Sucursal
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
+              <li>
+                <details className="group [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
+                    <p className="flex items-center gap-x-2 font-semibold">
+                      <List className={iconStyle} />
+                      Catálogo
+                    </p>
+                    <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
+                  </summary>
 
-            <li>
-              <details className="group [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                  <p className="flex items-center gap-x-2 font-semibold">
-                    <List className={iconStyle} />
-                    Catálogo
+                  <ul className="mt-2 space-y-1 px-4">
+                    <li>
+                      <NavLink
+                        to="/catalogo/nuevo-producto"
+                        onClick={handleNavClick}
+                        className={linkClassName}
+                      >
+                        <Plus className={iconStyle} /> Nuevo producto
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/catalogo"
+                        onClick={handleNavClick}
+                        className={linkClassName}
+                        end
+                      >
+                        <ListOrderedIcon className={iconStyle} /> Todos los
+                        productos
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/catalogo/combos"
+                        onClick={handleNavClick}
+                        className={linkClassName}
+                      >
+                        <Package className={iconStyle} /> Creador de Combos
+                      </NavLink>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </div>
+
+          <div className="sticky inset-x-0 bottom-0 border-t border-gray-100 bg-white p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-9 rounded-full bg-main-blue/10 text-main-blue font-black text-xs flex items-center justify-center border border-main-blue/20 shrink-0">
+                  {user?.nombre
+                    ? user.nombre
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()
+                    : "AV"}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-gray-900 truncate">
+                    {user?.nombre || "Administrador"}
                   </p>
-                  <ChevronDown className="shrink-0 size-4 text-neutral-600 transition duration-300 group-open:-rotate-180" />
-                </summary>
-
-                <ul className="mt-2 space-y-1 px-4">
-                  <li>
-                    <NavLink
-                      to="/catalogo"
-                      onClick={handleNavClick}
-                      className={linkClassName}
-                      end
-                    >
-                      Todos los productos
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink
-                      to="/catalogo/nuevo-producto"
-                      onClick={handleNavClick}
-                      className={linkClassName}
-                    >
-                      <Plus className={iconStyle} /> Nuevo producto
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink
-                      to="/catalogo/combos"
-                      onClick={handleNavClick}
-                      className={linkClassName}
-                    >
-                      <Package className={iconStyle} /> Creador de Combos
-                    </NavLink>
-                  </li>
-                </ul>
-              </details>
-            </li>
-          </ul>
-        </div>
-
-        <div className="sticky inset-x-0 bottom-0 border-t border-gray-100 bg-white p-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="size-9 rounded-full bg-main-blue/10 text-main-blue font-black text-xs flex items-center justify-center border border-main-blue/20 shrink-0">
-                {user?.nombre
-                  ? user.nombre
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()
-                  : "AV"}
+                  <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
+                    <span className="capitalize font-semibold text-main-blue">
+                      {user?.rol || "Admin"}
+                    </span>
+                    {user?.email && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate">{user.email}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-gray-900 truncate">
-                  {user?.nombre || "Administrador"}
-                </p>
-                <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
-                  <span className="capitalize font-semibold text-main-blue">
-                    {user?.rol || "Admin"}
-                  </span>
-                  {user?.email && (
-                    <>
-                      <span>·</span>
-                      <span className="truncate">{user.email}</span>
-                    </>
-                  )}
-                </p>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPassError(null);
+                    setPassSuccess(null);
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmPassword("");
+                    setModalSeguridadOpen(true);
+                  }}
+                  title="Cambiar contraseña"
+                  className="p-2 rounded-lg text-gray-400 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  <KeyRound className="size-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={logout}
+                  title="Cerrar sesión"
+                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                  <LogOut className="size-4" />
+                </button>
               </div>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setPassError(null);
-                  setPassSuccess(null);
-                  setCurrentPassword("");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                  setModalSeguridadOpen(true);
-                }}
-                title="Cambiar contraseña"
-                className="p-2 rounded-lg text-gray-400 hover:text-main-blue hover:bg-neutral-100 transition-colors cursor-pointer"
-              >
-                <KeyRound className="size-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={logout}
-                title="Cerrar sesión"
-                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-              >
-                <LogOut className="size-4" />
-              </button>
             </div>
           </div>
-        </div>
         </div>
       </div>
 
