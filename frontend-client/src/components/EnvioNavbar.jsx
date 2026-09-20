@@ -120,7 +120,7 @@ export default function EnvioNavbar() {
           <span className="text-[10px] font-bold text-main-blue lg:text-blue-100 uppercase tracking-wider">
             Enviar a
           </span>
-          <span className="text-xs font-bold text-neutral-900 lg:text-white truncate">
+          <span className="text-xs max-w-65 font-bold text-neutral-900 lg:text-white truncate">
             {direccionActual || "Ingresá tu dirección"}
           </span>
         </div>

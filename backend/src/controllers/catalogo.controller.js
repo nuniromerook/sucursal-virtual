@@ -93,7 +93,9 @@ const getCatalogo = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("Error al obtener el catálogo:", error.message);
-    res.status(500).json({ error: "Error al obtener el catálogo", detalle: error.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener el catálogo", detalle: error.message });
   }
 };
 
@@ -139,7 +141,9 @@ const getCatalogoItem = async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Error al obtener el producto:", error.message);
-    res.status(500).json({ error: "Error al obtener el producto", detalle: error.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener el producto", detalle: error.message });
   }
 };
 
@@ -297,7 +301,12 @@ const updateCatalogoItem = async (req, res) => {
     }
 
     console.error("Error al actualizar el producto:", error.message);
-    res.status(500).json({ error: "Error al actualizar el producto", detalle: error.message });
+    res
+      .status(500)
+      .json({
+        error: "Error al actualizar el producto",
+        detalle: error.message,
+      });
   }
 };
 
@@ -458,25 +467,27 @@ const toggleFavorito = async (req, res) => {
   const { cliente_id } = req.body;
 
   if (!cliente_id) {
-    return res.status(400).json({ error: "cliente_id es requerido para guardar en la cuenta" });
+    return res
+      .status(400)
+      .json({ error: "cliente_id es requerido para guardar en la cuenta" });
   }
 
   try {
     const existe = await pool.query(
       `SELECT id FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
-      [cliente_id, id]
+      [cliente_id, id],
     );
 
     if (existe.rows.length > 0) {
       await pool.query(
         `DELETE FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
-        [cliente_id, id]
+        [cliente_id, id],
       );
       return res.json({ isFavorite: false, message: "Eliminado de favoritos" });
     } else {
       await pool.query(
         `INSERT INTO cliente_favoritos (cliente_id, catalogo_id) VALUES ($1, $2)`,
-        [cliente_id, id]
+        [cliente_id, id],
       );
       return res.json({ isFavorite: true, message: "Guardado en favoritos" });
     }
@@ -501,10 +512,15 @@ const getFavoritosRanking = async (req, res) => {
        JOIN cliente_favoritos f ON c.id = f.catalogo_id
        GROUP BY c.id, c.nombre_producto, c.especie, c.precio, c.imagen_url
        ORDER BY total_favoritos DESC
-       LIMIT 6`
+       LIMIT 6`,
     );
 
-    res.json(result.rows.map((r) => ({ ...r, total_favoritos: Number(r.total_favoritos) })));
+    res.json(
+      result.rows.map((r) => ({
+        ...r,
+        total_favoritos: Number(r.total_favoritos),
+      })),
+    );
   } catch (error) {
     console.error("Error al obtener ranking de favoritos:", error.message);
     res.status(500).json({ error: "Error al obtener ranking de favoritos" });
@@ -517,7 +533,7 @@ const getFavoritosCliente = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT catalogo_id FROM cliente_favoritos WHERE cliente_id = $1`,
-      [clienteId]
+      [clienteId],
     );
     const ids = result.rows.map((r) => r.catalogo_id);
     res.json({ favoritos: ids });
@@ -541,14 +557,14 @@ const sincronizarFavoritos = async (req, res) => {
           `INSERT INTO cliente_favoritos (cliente_id, catalogo_id) 
            VALUES ($1, $2) 
            ON CONFLICT (cliente_id, catalogo_id) DO NOTHING`,
-          [cliente_id, catId]
+          [cliente_id, catId],
         );
       }
     }
 
     const result = await pool.query(
       `SELECT catalogo_id FROM cliente_favoritos WHERE cliente_id = $1`,
-      [cliente_id]
+      [cliente_id],
     );
     const favs = result.rows.map((r) => r.catalogo_id);
     res.json({ success: true, favoritos: favs });
@@ -563,7 +579,9 @@ const generarFichaIA = async (req, res) => {
   try {
     const { nombre_producto, especie_sugerida, unidad_sugerida } = req.body;
     if (!nombre_producto || !nombre_producto.trim()) {
-      return res.status(400).json({ error: "El nombre del producto es obligatorio." });
+      return res
+        .status(400)
+        .json({ error: "El nombre del producto es obligatorio." });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -594,9 +612,9 @@ Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructu
 }
 
 Reglas estrictas para el tono y estilo:
-- Habla en tono cotidiano, argentino y apetitoso. Que se sienta como el carnicero recomendándole a un vecino cómo cocinarlo.
+- Habla en tono cotidiano, argentino y apetitoso. Que se sienta como el carnicero con años de experiencia recomendándole a un vecino cómo cocinarlo.
 - PROHIBIDO usar frases trilladas o grandilocuentes como: "terneza excepcional", "joya de las pampas", "perfil de sabor inigualable", "experiencia gourmet", "obra de arte", "deleitar los paladares".
-- Resalta en negrita 2 o 3 palabras claves naturales (ej: **bien tierno**, **grasa justa**, **sabor auténtico**, **muy rendidor**).
+- Opcional: resalta en negrita 2 o 3 palabras claves naturales del corte (ej: **bien tierno**, **grasa justa**, **sabor auténtico**, **muy rendidor**).
 
 Estructura estricta del campo "descripcion" (en este orden exacto):
 
@@ -606,7 +624,7 @@ Estructura estricta del campo "descripcion" (en este orden exacto):
 > ❄️ **Conservación:** Mantener refrigerado entre 0° y 4°C para consumir dentro de las 72hs o congelar inmediatamente a -18°C.
 
 ## Información de compra:
-- **Formas de pago**: Aceptamos efectivo y transferencia bancaria retirando en sucursal, también tarjetas de débito y billeteras virtuales comprando online y con envío.
+- **Formas de pago**: Aceptamos efectivo y transferencia bancaria pagando y retirando en sucursal, también tarjetas de débito y billeteras virtuales comprando online.
 - **Envíos a domicilio**: Llevamos tu pedido refrigerado a todo Luis Guillón y alrededores (Zona Sur) para garantizar la frescura de la carne.
 - **Retiro en sucursal**: Podés retirar tu compra **sin cargo** directamente en nuestro local.
 
@@ -614,7 +632,11 @@ Valores nutricionales:
 - Proteínas (g), calorías (kcal) y grasas (g) deben ser números aproximados basados en tablas nutricionales reales de carnes argentinas (cada 100g de producto crudo).
 `;
 
-    const modelos = ["gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest"];
+    const modelos = [
+      "gemini-3.1-flash-lite",
+      "gemini-flash-lite-latest",
+      "gemini-flash-latest",
+    ];
     let respuestaJSON = null;
     let ultimoError = null;
 
@@ -655,7 +677,9 @@ Valores nutricionales:
     return res.json({ success: true, data: respuestaJSON });
   } catch (error) {
     console.error("Error en generarFichaIA:", error);
-    return res.status(500).json({ error: "Error interno al procesar la solicitud con IA." });
+    return res
+      .status(500)
+      .json({ error: "Error interno al procesar la solicitud con IA." });
   }
 };
 
