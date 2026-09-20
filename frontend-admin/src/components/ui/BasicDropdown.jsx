@@ -12,6 +12,8 @@ const BasicDropdown = ({
   onChange,
   placeholder = "Seleccionar",
   buttonClassName = "",
+  containerClassName = "",
+  menuClassName = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { isLoading } = useAppContext();
@@ -32,7 +34,7 @@ const BasicDropdown = ({
   };
 
   return (
-    <div className="relative flex flex-col w-full">
+    <div className={`relative flex flex-col w-full ${containerClassName}`}>
       {isOpen && (
         <div onClick={() => setIsOpen(false)} className="fixed inset-0 z-20" />
       )}
@@ -65,7 +67,7 @@ const BasicDropdown = ({
       {isOpen && (
         <ul
           role="listbox"
-          className="absolute top-full left-0 z-30 mt-1.5 max-h-60 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95 text-sm"
+          className={`absolute top-full left-0 z-30 mt-1.5 max-h-60 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95 text-sm ${menuClassName}`}
         >
           {items.map((item) => {
             const isSelected = String(item.value) === String(value);

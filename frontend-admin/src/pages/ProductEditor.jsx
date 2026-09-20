@@ -260,7 +260,9 @@ const ProductEditor = () => {
   const handleGenerarFichaIA = async () => {
     const nombre = formValues.nombre_producto?.trim();
     if (!nombre) {
-      setFormError("Ingresá primero el nombre del producto para autocompletar con IA.");
+      setFormError(
+        "Ingresá primero el nombre del producto para autocompletar con IA.",
+      );
       return;
     }
 
@@ -447,11 +449,7 @@ const ProductEditor = () => {
         </div>
       </div>
 
-      <form
-        id="product-editor-form"
-        className="rounded-lg border border-neutral-200/80 bg-white p-5 sm:p-6 shadow-2xs"
-        onSubmit={handleSubmit}
-      >
+      <form id="product-editor-form" className="" onSubmit={handleSubmit}>
         {formError && (
           <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
             {formError}
@@ -476,7 +474,7 @@ const ProductEditor = () => {
 
         <div className="flex flex-col gap-4">
           {/* Fila del Nombre con Asistente de IA */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 p-3.5 bg-neutral-50 rounded-xl border border-neutral-200/80">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 p-3.5 bg-white rounded-xl border border-neutral-200">
             <div className="flex-1">
               <Input
                 label="Nombre del producto"
@@ -484,6 +482,7 @@ const ProductEditor = () => {
                 inputName="nombre_producto"
                 inputType="text"
                 autoComplete="nombre_producto"
+                className="bg-neutral-50"
                 placeholder="Ej: Tira de Asado, Vacio Fino, Bondiola, Pollo Arrollado..."
                 value={formValues.nombre_producto}
                 setOnChange={handleChange}
@@ -496,8 +495,9 @@ const ProductEditor = () => {
               className="h-10 px-4 rounded-lg bg-linear-to-r from-purple-600 to-main-blue hover:from-purple-700 hover:to-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               title="Autocompletar slug, especie, macros y plantilla de descripción con IA de Gemini"
             >
-              <Sparkles className={`size-4 ${isGeneratingIA ? "animate-spin" : "text-amber-300"}`} />
-              <span>{isGeneratingIA ? "Generando con IA..." : "✨ Autocompletar con IA"}</span>
+              {isGeneratingIA
+                ? "Generando con IA... ✨"
+                : "✨ Autocompletar con IA"}
             </button>
           </div>
 
@@ -582,7 +582,7 @@ const ProductEditor = () => {
         </div>
 
         {/* Sección de Precios y Tramos por Cantidad */}
-        <div className="mt-6 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+        <div className="mt-6 flex flex-col gap-4 border-y border-gray-200 py-8">
           <h2 className="font-semibold text-gray-900">Precios y Ofertas</h2>
 
           <div className="flex flex-col md:flex-row gap-4">
@@ -612,12 +612,15 @@ const ProductEditor = () => {
           </div>
 
           {/* Gestión de Promociones por Volumen */}
-          <div className="mt-2 border-t border-gray-100 pt-4">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Promociones por cantidad (ej: Llevar 2 kg por $15.000)
+          <div className="mt-2 border-t border-gray-200 pt-4">
+            <label className="flex flex-col font-semibold text-neutral-900 mb-2">
+              Promociones por cantidad{" "}
+              <span className="text-neutral-500 text-sm">
+                (ej: Llevar 2 kg por $15.000)
+              </span>
             </label>
 
-            <div className="flex flex-col md:flex-row items-end gap-3 mb-3">
+            <div className="flex flex-col md:flex-row items-end gap-3 mb-3 mt-4">
               <Input
                 label={`Cantidad (${formValues.unidad_medida})`}
                 id="promo_cantidad"
@@ -683,7 +686,7 @@ const ProductEditor = () => {
         </div>
 
         {/* Visibilidad y Puntos */}
-        <div className="mt-4 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col gap-4 border-y border-gray-200 py-8">
           <h2 className="font-semibold text-gray-900">
             Visibilidad y promoción
           </h2>
@@ -779,7 +782,7 @@ const ProductEditor = () => {
         </div>
 
         {/* Carga de Imagen con Cloudinary (Drag & Drop + Explorador) */}
-        <div className="mt-4 flex flex-col gap-4 rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col gap-4 border-y border-gray-200 py-8">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-900">Imagen del Producto</h2>
             {formValues.imagen_url && (

@@ -10,11 +10,15 @@ import {
   Lightbulb,
   Snowflake,
   Sparkles,
-  Eye,
-  Edit3,
   HelpCircle,
 } from "lucide-react";
 import FormattedDescription from "./FormattedDescription";
+import BasicDropdown from "./BasicDropdown";
+
+const MODOS_VISTA = [
+  { value: "editor", label: "✏️ Modo Editor" },
+  { value: "preview", label: "👁️ Vista Previa" },
+];
 
 export default function RichTextEditor({
   label = "Descripción del producto",
@@ -101,37 +105,20 @@ export default function RichTextEditor({
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-900">
+      <div className="flex items-center justify-between gap-3">
+        <label className="block text-sm font-semibold text-neutral-900 truncate">
           {label}
         </label>
 
-        {/* Selector de pestañas: Editar / Vista Previa */}
-        <div className="flex items-center rounded-lg bg-gray-100 p-0.5 border border-gray-200 text-xs">
-          <button
-            type="button"
-            onClick={() => setTab("editor")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
-              tab === "editor"
-                ? "bg-white text-main-blue shadow-2xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <Edit3 className="size-3.5" />
-            <span>Editor</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("preview")}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
-              tab === "preview"
-                ? "bg-white text-main-blue shadow-2xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <Eye className="size-3.5" />
-            <span>Vista previa</span>
-          </button>
+        {/* Selector de modo: Editor / Vista Previa con BasicDropdown (óptimo para mobile) */}
+        <div className="w-36 sm:w-40 shrink-0">
+          <BasicDropdown
+            items={MODOS_VISTA}
+            value={tab}
+            onChange={(val) => setTab(val)}
+            buttonClassName="!py-1.5 !px-3 !text-xs font-bold bg-neutral-50 hover:bg-white text-neutral-800 border-neutral-300 shadow-2xs"
+            menuClassName="!text-xs"
+          />
         </div>
       </div>
 
