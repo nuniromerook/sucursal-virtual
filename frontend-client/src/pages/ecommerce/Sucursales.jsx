@@ -19,6 +19,7 @@ import { useLocationCoverage } from "../../context/LocationContext";
 import { calcularDistanciaKm, formatearDistancia } from "../../utils/geolocation";
 
 const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const DIAS_ORDEN_SEMANAL = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
 
 export default function Sucursales() {
   const { coords, detectLocation, isDetecting, detectError } = useLocationCoverage();
@@ -285,9 +286,14 @@ export default function Sucursales() {
                             <span>Horarios de atención de mostrador</span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-flow-col sm:grid-rows-4 gap-x-6 gap-y-1.5 text-xs">
                             {sucursal.horarios_apertura ? (
-                              Object.entries(sucursal.horarios_apertura).map(([dia, h]) => {
+                              DIAS_ORDEN_SEMANAL.map((dia) => {
+                                const h = sucursal.horarios_apertura[dia] || {
+                                  abierto: dia !== "domingo",
+                                  apertura: "07:00",
+                                  cierre: "14:30",
+                                };
                                 const esHoy = dia.toLowerCase() === nombreDiaActual;
                                 return (
                                   <div
@@ -298,7 +304,14 @@ export default function Sucursales() {
                                         : "text-neutral-600"
                                     }`}
                                   >
-                                    <span className="capitalize">{dia}:</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="capitalize">{dia}:</span>
+                                      {esHoy && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider bg-main-blue text-white px-1.5 py-0.5 rounded leading-none">
+                                          Hoy
+                                        </span>
+                                      )}
+                                    </div>
                                     <span>
                                       {h.abierto
                                         ? `${h.apertura || "07:00"} a ${h.cierre || "14:30"} hs`
