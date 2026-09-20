@@ -68,28 +68,19 @@ export default function BannerCarousel() {
     return () => clearInterval(interval);
   }, [isPaused, banners.length, handleNext]);
 
-  // REGISTRO DE IMPRESIÓN PRECISO: Solo cuenta cuando el banner está visible en pantalla y 1 vez por sesión
+  // REGISTRO DE IMPRESIÓN PRECISO: Cuenta 1 impresión por banner visible en la vista actual
   useEffect(() => {
     if (banners.length === 0) return;
     const currentBanner = banners[currentIndex];
-    if (!currentBanner) return;
+    if (!currentBanner || !currentBanner.id) return;
 
-    const sessionKey = `valette_banner_seen_${currentBanner.id}`;
     if (!viewedBannersRef.current.has(currentBanner.id)) {
-      try {
-        if (!sessionStorage.getItem(sessionKey)) {
-          sessionStorage.setItem(sessionKey, "1");
-          fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
-            method: "POST",
-          }).catch(() => {});
-        }
-      } catch {
-        // Fallback si sessionStorage está deshabilitado
-        fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
-          method: "POST",
-        }).catch(() => {});
-      }
       viewedBannersRef.current.add(currentBanner.id);
+
+      // Enviar registro de impresión de forma asíncrona no bloqueante
+      fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
+        method: "POST",
+      }).catch(() => {});
     }
   }, [currentIndex, banners]);
 

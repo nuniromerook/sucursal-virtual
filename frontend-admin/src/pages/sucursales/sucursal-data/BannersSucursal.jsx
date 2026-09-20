@@ -25,6 +25,7 @@ import {
   ShoppingBag,
   DollarSign,
   Percent,
+  RefreshCw,
 } from "lucide-react";
 import { VITE_API_URL } from "../../../config/api";
 import { useAuth } from "../../../context/AuthContext";
@@ -377,6 +378,17 @@ export default function BannersSucursal() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={loadBanners}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 shadow-2xs cursor-pointer active:scale-98 disabled:opacity-50"
+            title="Refrescar métricas en tiempo real"
+          >
+            <RefreshCw className={`size-3.5 text-main-blue ${isLoading ? "animate-spin" : ""}`} />
+            <span>{isLoading ? "Actualizando..." : "Actualizar"}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowAdvanced((prev) => !prev)}
