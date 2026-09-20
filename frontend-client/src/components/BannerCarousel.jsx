@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { VITE_API_URL } from "../config/api";
+import { setCookie, COOKIE_BANNER_REF_KEY } from "../utils/cookies";
 
 const BADGE_COLORS = {
   rojo: "bg-main-red text-white border-red-400/50 shadow-red-900/30",
@@ -95,6 +96,12 @@ export default function BannerCarousel() {
   // Manejo de clicks en banner
   const handleBannerClick = (banner) => {
     if (!banner) return;
+
+    // Guardar cookie de atribución publicitaria (duración: 24 horas)
+    try {
+      setCookie(COOKIE_BANNER_REF_KEY, String(banner.id), 1);
+    } catch {}
+
     // Registrar clic en el backend
     fetch(`${VITE_API_URL}/banners/${banner.id}/click`, {
       method: "POST",

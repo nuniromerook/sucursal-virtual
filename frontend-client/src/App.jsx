@@ -12,6 +12,7 @@ import Envios from "@/pages/ecommerce/Envios";
 import NotFound from "@/pages/NotFound";
 import { Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
+import CookieBanner from "./components/common/CookieBanner";
 import { useAnalytics } from "./hooks/useAnalytics";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
+      <CookieBanner />
       <Routes>
         <Route path="/" element={<EcommerceLayout />}>
           <Route index element={<Home />} />

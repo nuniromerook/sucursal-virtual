@@ -25,6 +25,7 @@ import {
   formatPrecioPorUnidad,
 } from "../../utils/formatters";
 import TimeSlotSelector from "../../components/TimeSlotSelector";
+import { getCookie, COOKIE_BANNER_REF_KEY } from "../../utils/cookies";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -228,7 +229,12 @@ export default function Checkout() {
         medio_pago: medioPago,
         direccion_entrega:
           tipoEntrega !== "retiro_sucursal" ? direccionFormalCompleta : null,
-        notas: direccionForm.notas ? direccionForm.notas.trim() : null,
+        notas: (() => {
+          const clientNotes = direccionForm.notas ? direccionForm.notas.trim() : null;
+          const bannerRef = getCookie(COOKIE_BANNER_REF_KEY);
+          const bannerTag = bannerRef ? `[Promo Banner #${bannerRef}]` : null;
+          return [clientNotes, bannerTag].filter(Boolean).join(" | ") || null;
+        })(),
         monto_total_estimado: granTotal,
         items: cartItems.map((item) => {
           const calc = calculateItemPrice(item);

@@ -301,10 +301,19 @@ export default function Footer() {
       {/* ─── 3. Barra Inferior Legal & Medios de Pago ─── */}
       <div className="border-t border-neutral-100 bg-neutral-50/80 py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 text-center sm:text-left">
-          <p>
-            © 2026 <strong>Abastecedora Valette</strong> · Todos los derechos
-            reservados.
-          </p>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span>
+              © 2026 <strong>Abastecedora Valette</strong> · Todos los derechos reservados.
+            </span>
+            <span className="hidden sm:inline text-neutral-300">·</span>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("valette_open_cookie_banner"))}
+              className="hover:text-neutral-900 underline underline-offset-2 transition-colors cursor-pointer text-[11px] text-neutral-500"
+            >
+              Preferencias de Cookies
+            </button>
+          </div>
 
           <div className="flex items-center gap-2 text-neutral-400 text-[11px]">
             <span className="flex items-center gap-1 font-semibold text-neutral-600">
