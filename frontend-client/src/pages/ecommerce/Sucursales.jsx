@@ -16,13 +16,33 @@ import {
 } from "lucide-react";
 import { VITE_API_URL } from "../../config/api";
 import { useLocationCoverage } from "../../context/LocationContext";
-import { calcularDistanciaKm, formatearDistancia } from "../../utils/geolocation";
+import {
+  calcularDistanciaKm,
+  formatearDistancia,
+} from "../../utils/geolocation";
 
-const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
-const DIAS_ORDEN_SEMANAL = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+const DIAS_SEMANA = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+  "sabado",
+];
+const DIAS_ORDEN_SEMANAL = [
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+  "sabado",
+  "domingo",
+];
 
 export default function Sucursales() {
-  const { coords, detectLocation, isDetecting, detectError } = useLocationCoverage();
+  const { coords, detectLocation, isDetecting, detectError } =
+    useLocationCoverage();
   const [sucursales, setSucursales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +57,9 @@ export default function Sucursales() {
         setSucursales(data);
       } catch (err) {
         console.error("Error al cargar sucursales:", err);
-        setError("No pudimos cargar las sucursales. Intenta recargar la página.");
+        setError(
+          "No pudimos cargar las sucursales. Intenta recargar la página.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -50,7 +72,9 @@ export default function Sucursales() {
     try {
       const loc = await detectLocation();
       if (loc) {
-        setLocationSuccessMsg("¡Ubicación detectada con éxito! Te mostramos la distancia a cada sucursal.");
+        setLocationSuccessMsg(
+          "¡Ubicación detectada con éxito! Te mostramos la distancia a cada sucursal.",
+        );
       }
     } catch {
       // Manejado en detectError
@@ -58,14 +82,23 @@ export default function Sucursales() {
   };
 
   const obtenerEstadoAtencion = (horarios) => {
-    if (!horarios) return { abierto: false, texto: "Horarios no especificados", color: "text-neutral-500 bg-neutral-100 border-neutral-200" };
+    if (!horarios)
+      return {
+        abierto: false,
+        texto: "Horarios no especificados",
+        color: "text-neutral-500 bg-neutral-100 border-neutral-200",
+      };
 
     const ahora = new Date();
     const diaHoy = DIAS_SEMANA[ahora.getDay()];
     const horarioHoy = horarios[diaHoy];
 
     if (!horarioHoy || !horarioHoy.abierto) {
-      return { abierto: false, texto: "Cerrado hoy", color: "text-neutral-500 bg-neutral-100 border-neutral-200" };
+      return {
+        abierto: false,
+        texto: "Cerrado hoy",
+        color: "text-neutral-500 bg-neutral-100 border-neutral-200",
+      };
     }
 
     const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
@@ -96,15 +129,19 @@ export default function Sucursales() {
   };
 
   const sucursalesConDistancia = useMemo(() => {
-    return sucursales.map((s) => {
-      const dist = coords && s.latitud && s.longitud
-        ? calcularDistanciaKm(coords.lat, coords.lng, s.latitud, s.longitud)
-        : null;
-      return { ...s, distanciaKm: dist };
-    }).sort((a, b) => {
-      if (a.distanciaKm !== null && b.distanciaKm !== null) return a.distanciaKm - b.distanciaKm;
-      return 0;
-    });
+    return sucursales
+      .map((s) => {
+        const dist =
+          coords && s.latitud && s.longitud
+            ? calcularDistanciaKm(coords.lat, coords.lng, s.latitud, s.longitud)
+            : null;
+        return { ...s, distanciaKm: dist };
+      })
+      .sort((a, b) => {
+        if (a.distanciaKm !== null && b.distanciaKm !== null)
+          return a.distanciaKm - b.distanciaKm;
+        return 0;
+      });
   }, [sucursales, coords]);
 
   const diaActualIndex = new Date().getDay();
@@ -122,7 +159,9 @@ export default function Sucursales() {
               </Link>
               <ChevronRight className="size-4 shrink-0 text-gray-400 mx-1" />
             </li>
-            <li className="text-neutral-900 font-bold capitalize">Sucursales</li>
+            <li className="text-neutral-900 font-bold capitalize">
+              Sucursales
+            </li>
           </ol>
         </nav>
 
@@ -138,7 +177,9 @@ export default function Sucursales() {
                 Nuestras Sucursales
               </h1>
               <p className="text-xs sm:text-sm text-neutral-500 mt-1 max-w-2xl leading-relaxed">
-                Conocé nuestras carnicerías, visitá el mostrador tradicional, consultá los horarios de atención en vivo o pedí online para retirar sin demoras.
+                Conocé nuestras carnicerías, visitá el mostrador tradicional,
+                consultá los horarios de atención en vivo o pedí online para
+                retirar sin demoras.
               </p>
             </div>
 
@@ -150,9 +191,13 @@ export default function Sucursales() {
                 disabled={isDetecting}
                 className="w-full sm:w-auto px-5 py-3 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-98 disabled:opacity-50"
               >
-                <Compass className={`size-4 ${isDetecting ? "animate-spin" : ""}`} />
+                <Compass
+                  className={`size-4 ${isDetecting ? "animate-spin" : ""}`}
+                />
                 <span>
-                  {isDetecting ? "Detectando ubicación..." : "Detectar sucursal más cercana"}
+                  {isDetecting
+                    ? "Detectando ubicación..."
+                    : "Detectar sucursal más cercana"}
                 </span>
               </button>
 
@@ -203,12 +248,14 @@ export default function Sucursales() {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {sucursalesConDistancia.map((sucursal) => {
-              const estadoAtencion = obtenerEstadoAtencion(sucursal.horarios_apertura);
-              const lat = sucursal.latitud || -34.7926481;
-              const lng = sucursal.longitud || -58.4569658;
+              const estadoAtencion = obtenerEstadoAtencion(
+                sucursal.horarios_apertura,
+              );
+              const lat = sucursal.latitud || -34.7926278;
+              const lng = sucursal.longitud || -58.4569312;
               const telefonoLimpio = sucursal.telefono || "1135534033";
               const whatsappLink = `https://wa.me/549${telefonoLimpio}?text=${encodeURIComponent(
-                `¡Hola Abastecedora Valette! Quería hacer una consulta sobre la sucursal ${sucursal.nombre}.`
+                `¡Hola Abastecedora Valette! Quería hacer una consulta sobre la sucursal ${sucursal.nombre}.`,
               )}`;
               const googleMapsRouteLink = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
@@ -251,7 +298,10 @@ export default function Sucursales() {
                         {sucursal.distanciaKm !== null && (
                           <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-main-blue text-xs font-bold">
                             <Sparkles className="size-3.5" />
-                            <span>A solo {formatearDistancia(sucursal.distanciaKm)} de tu ubicación</span>
+                            <span>
+                              A solo {formatearDistancia(sucursal.distanciaKm)}{" "}
+                              de tu ubicación
+                            </span>
                           </div>
                         )}
 
@@ -286,7 +336,7 @@ export default function Sucursales() {
                             <span>Horarios de atención de mostrador</span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-flow-col sm:grid-rows-4 gap-x-6 gap-y-1.5 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-flow-col sm:grid-rows-4 gap-x-6 gap-y-1.5 text-xs">
                             {sucursal.horarios_apertura ? (
                               DIAS_ORDEN_SEMANAL.map((dia) => {
                                 const h = sucursal.horarios_apertura[dia] || {
@@ -294,7 +344,8 @@ export default function Sucursales() {
                                   apertura: "07:00",
                                   cierre: "14:30",
                                 };
-                                const esHoy = dia.toLowerCase() === nombreDiaActual;
+                                const esHoy =
+                                  dia.toLowerCase() === nombreDiaActual;
                                 return (
                                   <div
                                     key={dia}
@@ -312,7 +363,7 @@ export default function Sucursales() {
                                         </span>
                                       )}
                                     </div>
-                                    <span>
+                                    <span className="flex-1 text-end">
                                       {h.abierto
                                         ? `${h.apertura || "07:00"} a ${h.cierre || "14:30"} hs`
                                         : "Cerrado"}
@@ -322,7 +373,8 @@ export default function Sucursales() {
                               })
                             ) : (
                               <p className="text-xs text-neutral-500">
-                                Lunes a Sábados de 07:00 a 14:30 hs. Domingos cerrado.
+                                Lunes a Sábados de 07:00 a 14:30 hs. Domingos
+                                cerrado.
                               </p>
                             )}
                           </div>
@@ -365,7 +417,7 @@ export default function Sucursales() {
                     <div className="lg:col-span-5 h-64 sm:h-80 lg:h-auto min-h-[260px] bg-neutral-100 border-t lg:border-t-0 lg:border-l border-neutral-200/80 relative">
                       <iframe
                         title={`Mapa de sucursal ${sucursal.nombre}`}
-                        src={`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`}
+                        src={`https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`}
                         className="w-full h-full border-0 absolute inset-0"
                         loading="lazy"
                         referrerPolicy="no-referrer-when-downgrade"

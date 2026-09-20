@@ -244,7 +244,7 @@ CREATE TABLE metricas_eventos (
 );
 
 -- DATA SUCURSALES
-INSERT INTO sucursales (id, nombre, slug, direccion, ciudad, latitud, longitud, telefono, horario_atencion, activa, creado_en, actualizado_en) VALUES (1, 'Luis Guillon', 'luis-guillon', 'Av. Luciano Valette 1696', 'Luis Guillon', NULL, NULL, '1135534033', 'Lun a sáb 7 a 15hs', true, '"2026-08-30T14:35:11.718Z"'::jsonb, '"2026-08-30T14:35:11.718Z"'::jsonb);
+INSERT INTO sucursales (id, nombre, slug, direccion, ciudad, latitud, longitud, telefono, horario_atencion, activa, creado_en, actualizado_en) VALUES (1, 'Luis Guillon', 'luis-guillon', 'Av. Luciano Valette 1696', 'Luis Guillon', -34.7926278, -58.4569312, '1135534033', 'Lun a sáb 7 a 15hs', true, '"2026-08-30T14:35:11.718Z"'::jsonb, '"2026-08-30T14:35:11.718Z"'::jsonb);
 SELECT setval(pg_get_serial_sequence('sucursales', 'id'), (SELECT COALESCE(MAX(id), 1) FROM sucursales));
 
 -- DATA EMPLEADOS
