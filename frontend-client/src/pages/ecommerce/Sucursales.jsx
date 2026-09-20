@@ -417,10 +417,15 @@ export default function Sucursales() {
                     <div className="lg:col-span-5 h-64 sm:h-80 lg:h-auto min-h-[260px] bg-neutral-100 border-t lg:border-t-0 lg:border-l border-neutral-200/80 relative">
                       <iframe
                         title={`Mapa de sucursal ${sucursal.nombre}`}
-                        src={`https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`}
+                        src={
+                          sucursal.id === 1
+                            ? "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3276.5291164906866!2d-58.4569312!3d-34.7926278!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcd39c777c7fcb%3A0x529e7e33bca5fc6b!2sAbastecedora%20fair!5e0!3m2!1ses-419!2sar!4v1789944368649!5m2!1ses-419!2sar"
+                            : `https://maps.google.com/maps?q=${lat},${lng}&z=17&output=embed`
+                        }
                         className="w-full h-full border-0 absolute inset-0"
+                        allowFullScreen=""
                         loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
+                        referrerPolicy="strict-origin-when-cross-origin"
                       />
                     </div>
                   </div>
