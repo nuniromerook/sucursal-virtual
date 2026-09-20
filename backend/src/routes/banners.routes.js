@@ -8,6 +8,8 @@ const {
   updateBanner,
   toggleActivoBanner,
   deleteBanner,
+  resetBannersAnalytics,
+  resetSingleBannerAnalytics,
 } = require("../controllers/banners.controller");
 
 const { requireAuth } = require("../utils/auth");
@@ -16,6 +18,8 @@ const router = Router();
 
 router.get("/banners", getBanners);
 router.get("/banners/admin", requireAuth, getBannersAdmin);
+router.post("/banners/reset-analytics", requireAuth, resetBannersAnalytics);
+router.post("/banners/:id/reset-analytics", requireAuth, resetSingleBannerAnalytics);
 router.post("/banners/:id/impresion", registrarImpresionBanner);
 router.post("/banners/:id/click", registrarClickBanner);
 router.post("/banners", requireAuth, createBanner);

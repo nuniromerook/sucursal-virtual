@@ -17,6 +17,8 @@ import {
   X,
   ArrowRight,
   Layers,
+  RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 import { VITE_API_URL } from "../../../config/api";
 import { useAuth } from "../../../context/AuthContext";
@@ -61,6 +63,83 @@ export default function BannersSucursal() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
+
+  // Reiniciar métricas de todos los banners
+  const handleResetAllAnalytics = async () => {
+    if (
+      !window.confirm(
+        `¿Confirmás reiniciar a CERO las métricas de todos los banners?\n\nActualmente hay ${totalImpresiones.toLocaleString(
+          "es-AR",
+        )} impresiones y ${totalClics.toLocaleString(
+          "es-AR",
+        )} clics registrados.\nEsta acción pondrá los contadores en 0 para medir desde cero en producción.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const res = await fetch(`${VITE_API_URL}/banners/reset-analytics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Error al reiniciar analíticas");
+      }
+
+      setSuccessMsg(
+        "¡Analíticas de todos los banners reiniciadas a 0 con éxito!",
+      );
+      setTimeout(() => setSuccessMsg(null), 5000);
+      await loadBanners();
+    } catch (err) {
+      console.error("Error al reiniciar analíticas:", err);
+      alert(err.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Reiniciar métricas de un solo banner
+  const handleResetSingleBanner = async (banner) => {
+    if (
+      !window.confirm(
+        `¿Confirmás reiniciar a CERO las métricas del banner "${banner.titulo}"?\n(Vistas: ${banner.impresiones}, Clics: ${banner.clics})`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${VITE_API_URL}/banners/${banner.id}/reset-analytics`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(
+          data.error || "Error al reiniciar analíticas del banner",
+        );
+      }
+
+      setSuccessMsg(
+        `¡Métricas del banner "${banner.titulo}" reiniciadas a 0 con éxito!`,
+      );
+      setTimeout(() => setSuccessMsg(null), 5000);
+      await loadBanners();
+    } catch (err) {
+      console.error("Error al reiniciar analíticas del banner:", err);
+      alert(err.message);
+    }
+  };
 
   const loadBanners = async () => {
     setIsLoading(true);
@@ -246,15 +325,79 @@ export default function BannersSucursal() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="size-4" />
-          <span>Nuevo Banner</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition-all cursor-pointer shrink-0 ${
+              showAdvanced
+                ? "bg-neutral-900 text-white border-neutral-900 shadow-xs"
+                : "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 shadow-2xs"
+            }`}
+          >
+            <SlidersHorizontal className="size-4" />
+            <span>Opciones avanzadas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="size-4" />
+            <span>Nuevo Banner</span>
+          </button>
+        </div>
       </div>
+
+      {/* ─── Mensaje de Éxito / Feedback ─── */}
+      {successMsg && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-semibold text-emerald-800 flex items-center justify-between gap-2 shadow-2xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccessMsg(null)}
+            className="text-emerald-600 hover:text-emerald-900 p-1 cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ─── Panel de Opciones Avanzadas (Reinicio de Analíticas) ─── */}
+      {showAdvanced && (
+        <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-2xs animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
+                <RotateCcw className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-neutral-900">
+                  Reinicio de Analíticas de Banners
+                </h3>
+                <p className="text-xs text-neutral-600 mt-0.5 max-w-xl leading-relaxed">
+                  Pone en cero las impresiones ({totalImpresiones.toLocaleString("es-AR")}) y clics ({totalClics.toLocaleString("es-AR")}) acumulados en todos los banners.
+                  Ideal para limpiar los datos generados durante el desarrollo y comenzar a medir interacciones reales al lanzar a producción.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={isResetting || (totalImpresiones === 0 && totalClics === 0)}
+              onClick={handleResetAllAnalytics}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-all disabled:opacity-40 cursor-pointer shrink-0 active:scale-98"
+            >
+              <RotateCcw className={`size-4 ${isResetting ? "animate-spin" : ""}`} />
+              <span>{isResetting ? "Reiniciando..." : "Reiniciar todas las métricas a 0"}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─── Tarjetas de Estadísticas de Rendimiento ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -435,6 +578,14 @@ export default function BannersSucursal() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleResetSingleBanner(banner)}
+                          className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                          title="Reiniciar métricas de este banner a cero"
+                        >
+                          <RotateCcw className="size-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(banner)}

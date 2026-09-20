@@ -221,6 +221,48 @@ const deleteBanner = async (req, res) => {
   }
 };
 
+/**
+ * POST /banners/reset-analytics
+ * Restablece a 0 las impresiones y clics de todos los banners (Admin)
+ */
+const resetBannersAnalytics = async (req, res) => {
+  try {
+    await pool.query(`UPDATE banners_publicidad SET impresiones = 0, clics = 0`);
+    res.json({
+      success: true,
+      message: "Todas las métricas de banners han sido reiniciadas a cero.",
+    });
+  } catch (error) {
+    console.error("Error al reiniciar analíticas de banners:", error.message);
+    res.status(500).json({ error: "Error al reiniciar analíticas de banners" });
+  }
+};
+
+/**
+ * POST /banners/:id/reset-analytics
+ * Restablece a 0 las impresiones y clics de un banner individual (Admin)
+ */
+const resetSingleBannerAnalytics = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE banners_publicidad SET impresiones = 0, clics = 0 WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Banner no encontrado" });
+    }
+    res.json({
+      success: true,
+      message: `Métricas del banner '${result.rows[0].titulo}' reiniciadas a cero.`,
+      banner: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al reiniciar métricas de banner:", error.message);
+    res.status(500).json({ error: "Error al reiniciar métricas del banner" });
+  }
+};
+
 module.exports = {
   getBanners,
   getBannersAdmin,
@@ -230,5 +272,7 @@ module.exports = {
   updateBanner,
   toggleActivoBanner,
   deleteBanner,
+  resetBannersAnalytics,
+  resetSingleBannerAnalytics,
 };
 
