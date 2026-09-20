@@ -11,6 +11,7 @@ let io = null;
 const initSocket = (httpServer) => {
   const defaultAllowedOrigins = [
     "https://abastecedoravalette.digital",
+    "https://www.abastecedoravalette.digital",
     "https://admin.abastecedoravalette.digital",
     "https://api.abastecedoravalette.digital",
   ];
@@ -19,19 +20,24 @@ const initSocket = (httpServer) => {
     : [];
   const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]));
 
+  const isOriginAllowed = (origin) => {
+    if (!origin) return true;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return true;
+    return false;
+  };
+
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        if (isOriginAllowed(origin)) {
           return callback(null, true);
         }
-        if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
+        console.warn(`[Socket CORS] Origen bloqueado: ${origin}`);
         callback(new Error(`Socket CORS bloqueado: ${origin}`));
       },
-      methods: ["GET", "POST", "PUT", "DELETE"],
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
       credentials: true,
     },
     pingTimeout: 60000,

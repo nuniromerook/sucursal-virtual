@@ -33,6 +33,7 @@ const httpServer = http.createServer(app);
 // CORS: Permite dominios oficiales, variables de entorno y localhost de desarrollo
 const defaultAllowedOrigins = [
   "https://abastecedoravalette.digital",
+  "https://www.abastecedoravalette.digital",
   "https://admin.abastecedoravalette.digital",
   "https://api.abastecedoravalette.digital",
 ];
@@ -43,19 +44,21 @@ const envAllowed = process.env.ALLOWED_ORIGINS
 
 const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowed]));
 
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  // Permitir localhost / 127.0.0.1 en cualquier puerto
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  // Permitir cualquier subdominio o dominio principal abastecedoravalette.digital (con o sin www)
+  if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
+  // Permitir lista configurada o wildcard
+  if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return true;
+  return false;
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permitir peticiones sin origen (como Postman, apps móviles o llamadas internas)
-      if (!origin) return callback(null, true);
-
-      // Permitir cualquier localhost / 127.0.0.1 en cualquier puerto para desarrollo
-      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-        return callback(null, true);
-      }
-
-      // Permitir dominios configurados
-      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
       }
 
@@ -63,7 +66,7 @@ app.use(
       callback(new Error(`CORS bloqueado: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true,
   })
 );
