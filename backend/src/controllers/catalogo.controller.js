@@ -612,7 +612,7 @@ Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructu
 Reglas estrictas para el tono y estilo:
 - Habla en tono cotidiano, argentino y apetitoso. Que se sienta como el carnicero con años de experiencia recomendándole a un vecino cómo cocinarlo.
 - PROHIBIDO usar frases trilladas o grandilocuentes como: "terneza excepcional", "joya de las pampas", "perfil de sabor inigualable", "experiencia gourmet", "obra de arte", "deleitar los paladares".
-- Opcional: resalta en negrita 2 o 3 palabras claves naturales del corte (ej: **bien tierno**, **grasa justa**, **sabor auténtico**, **muy rendidor**).
+- Opcional: resalta en negrita 2 o 3 palabras claves naturales del corte "**frase**".
 
 Estructura estricta del campo "descripcion" (en este orden exacto):
 
