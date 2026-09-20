@@ -18,7 +18,7 @@ export default function Footer() {
   return (
     <footer className="w-full bg-white border-t border-neutral-200/80 text-neutral-600">
       {/* ─── 1. Franja Superior de Beneficios / Compromiso ─── */}
-      <div className="border-b border-neutral-100 bg-neutral-50/50">
+      <div className="hidden sm:block border-b border-neutral-100 bg-neutral-50/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex items-center gap-3.5">
@@ -92,8 +92,12 @@ export default function Footer() {
                 className="size-28 sm:size-32 aspect-square object-contain group-hover:scale-105 transition-transform"
               />
             </Link>
+            <p className="text-sm font-semibold text-black leading-relaxed max-w-sm mb-2">
+              Una experiencia de compra directa, sin intermediarios.
+            </p>
             <p className="text-xs text-neutral-500 leading-relaxed max-w-sm mb-4">
-              Tradición, frescura y cortes seleccionados directamente desde nuestro mostrador a tu mesa. Envíos programados en el día o retiro express en sucursal.
+              Tradición, frescura y seleccionados directamente del campo a tu
+              mesa. Envíos programados en el día o retiro express en sucursal.
             </p>
 
             {/* Redes Sociales */}
@@ -110,7 +114,11 @@ export default function Footer() {
                 aria-label="Instagram de Abastecedora Valette"
                 className="size-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-colors"
               >
-                <img src={icons.instagram} alt="Instagram" className="size-4.5" />
+                <img
+                  src={icons.instagram}
+                  alt="Instagram"
+                  className="size-4.5"
+                />
               </a>
               <a
                 href="#"
@@ -129,37 +137,58 @@ export default function Footer() {
             </h3>
             <ul className="flex flex-col gap-2 text-xs">
               <li>
-                <Link to="/productos" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/productos"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Todos los Cortes
                 </Link>
               </li>
               <li>
-                <Link to="/vacuno" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/vacuno"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Carne Vacuna
                 </Link>
               </li>
               <li>
-                <Link to="/cerdo" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/cerdo"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Cortes de Cerdo
                 </Link>
               </li>
               <li>
-                <Link to="/pollo" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/pollo"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Pollo & Granja
                 </Link>
               </li>
               <li>
-                <Link to="/embutidos" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/embutidos"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Embutidos & Achuras
                 </Link>
               </li>
               <li>
-                <Link to="/combos" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/combos"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Combos de Ahorro
                 </Link>
               </li>
               <li>
-                <Link to="/ofertas" className="hover:text-main-blue text-main-red font-bold transition-colors">
+                <Link
+                  to="/ofertas"
+                  className="hover:text-main-blue text-main-red font-bold transition-colors"
+                >
                   Ofertas Especiales
                 </Link>
               </li>
@@ -173,29 +202,44 @@ export default function Footer() {
             </h3>
             <ul className="flex flex-col gap-2 text-xs">
               <li>
-                <Link to="/sucursales" className="hover:text-main-blue transition-colors flex items-center gap-1.5">
+                <Link
+                  to="/sucursales"
+                  className="hover:text-main-blue transition-colors flex items-center gap-1.5"
+                >
                   <Store className="size-3.5 text-main-blue" />
                   <span>Nuestras Sucursales</span>
                 </Link>
               </li>
               <li>
-                <Link to="/envios" className="hover:text-main-blue transition-colors flex items-center gap-1.5">
+                <Link
+                  to="/envios"
+                  className="hover:text-main-blue transition-colors flex items-center gap-1.5"
+                >
                   <Truck className="size-3.5 text-emerald-600" />
                   <span>Envíos & Cobertura 10 km</span>
                 </Link>
               </li>
               <li>
-                <Link to="/perfil" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/perfil"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Mi Perfil & Compras
                 </Link>
               </li>
               <li>
-                <Link to="/perfil" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/perfil"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Programa de Puntos Valette
                 </Link>
               </li>
               <li>
-                <Link to="/favoritos" className="hover:text-main-blue transition-colors">
+                <Link
+                  to="/favoritos"
+                  className="hover:text-main-blue transition-colors"
+                >
                   Mis Favoritos
                 </Link>
               </li>
@@ -210,7 +254,9 @@ export default function Footer() {
             <div className="flex flex-col gap-3 text-xs text-neutral-600">
               <div className="flex items-start gap-2">
                 <MapPin className="size-4 text-main-red shrink-0 mt-0.5" />
-                <span>Av. Luciano Valette 3910, Luis Guillón, Buenos Aires</span>
+                <span>
+                  Av. Luciano Valette 3910, Luis Guillón, Buenos Aires
+                </span>
               </div>
 
               <div className="flex items-start gap-2">
@@ -222,7 +268,9 @@ export default function Footer() {
                   <p className="text-[11px] text-neutral-500">
                     Envíos y pedidos web hasta las 14:30 hs
                   </p>
-                  <p className="text-[11px] text-neutral-400">Domingos: Cerrado</p>
+                  <p className="text-[11px] text-neutral-400">
+                    Domingos: Cerrado
+                  </p>
                 </div>
               </div>
 
@@ -254,7 +302,8 @@ export default function Footer() {
       <div className="border-t border-neutral-100 bg-neutral-50/80 py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 text-center sm:text-left">
           <p>
-            © 2026 <strong>Abastecedora Valette</strong> · Todos los derechos reservados.
+            © 2026 <strong>Abastecedora Valette</strong> · Todos los derechos
+            reservados.
           </p>
 
           <div className="flex items-center gap-2 text-neutral-400 text-[11px]">
@@ -268,7 +317,9 @@ export default function Footer() {
               <span>Débito / Crédito</span>
             </span>
             <span>•</span>
-            <span className="font-semibold text-neutral-600">Transferencia / QR</span>
+            <span className="font-semibold text-neutral-600">
+              Transferencia / QR
+            </span>
           </div>
         </div>
       </div>

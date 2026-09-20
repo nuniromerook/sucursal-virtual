@@ -96,7 +96,7 @@ export default function EnvioNavbar() {
   const direccionActual = selectedDireccion || user?.direccion_default || "";
 
   return (
-    <div ref={dropdownRef} className="relative z-30">
+    <div ref={dropdownRef} className="flex relative w-full z-30">
       {/* Botón selector de dirección */}
       <button
         type="button"
@@ -107,7 +107,7 @@ export default function EnvioNavbar() {
             setIsOpen((prev) => !prev);
           }
         }}
-        className="flex items-center gap-2 p-1.5 lg:p-1 rounded-md transition-all cursor-pointer group bg-white lg:bg-transparent text-neutral-800 lg:text-white border border-neutral-200/80 lg:border-transparent hover:bg-neutral-50 lg:hover:bg-white/10 shadow-2xs lg:shadow-none"
+        className="flex w-full items-center gap-2 p-1.5 lg:p-1 rounded transition-all cursor-pointer group text-neutral-800 lg:text-white hover:bg-white/10"
         aria-label="Seleccionar dirección de entrega"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -116,8 +116,8 @@ export default function EnvioNavbar() {
           <MapPin className="size-4" />
         </div>
 
-        <div className="flex flex-col text-left -space-y-0.5 min-w-0 max-w-2xs sm:max-w-xs lg:max-w-65">
-          <span className="text-[10px] font-bold text-neutral-400 lg:text-blue-100 uppercase tracking-wider">
+        <div className="flex flex-col text-left -space-y-0.5">
+          <span className="text-[10px] font-bold text-main-blue lg:text-blue-100 uppercase tracking-wider">
             Enviar a
           </span>
           <span className="text-xs font-bold text-neutral-900 lg:text-white truncate">
@@ -126,7 +126,7 @@ export default function EnvioNavbar() {
         </div>
 
         <ChevronDown
-          className={`size-3.5 text-neutral-400 lg:text-white/80 shrink-0 transition-transform duration-200 ${
+          className={`ml-auto mr-2 size-4.5 text-neutral-400 lg:text-white/80 shrink-0 transition-transform duration-200 ${
             isOpen ? "rotate-180 text-main-blue lg:text-white" : ""
           }`}
         />

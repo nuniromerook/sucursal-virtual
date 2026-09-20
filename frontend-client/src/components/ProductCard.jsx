@@ -58,7 +58,7 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-lg border border-neutral-200/80 bg-white p-2.5 shadow-2xs hover:border-main-blue/50 hover:shadow-xs transition-all duration-200 h-full">
+    <div className="group relative flex flex-col justify-between rounded-lg border border-neutral-200/80 bg-white p-2.5 hover:border-main-blue/50 hover:shadow-xs transition-all duration-200 h-full">
       <div className="flex flex-col h-full gap-2">
         {/* Imagen del corte */}
         <Link

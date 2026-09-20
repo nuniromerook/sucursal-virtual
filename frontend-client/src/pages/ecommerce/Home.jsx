@@ -8,7 +8,14 @@ import ProductCard from "../../components/ProductCard.jsx";
 import BannerCarousel from "../../components/BannerCarousel.jsx";
 import { VITE_API_URL } from "../../config/api.js";
 import { useSocket } from "../../context/SocketContext";
-import { Sparkles, Flame, Tag, ArrowRight, Layers, ChevronDown } from "lucide-react";
+import {
+  Sparkles,
+  Flame,
+  Tag,
+  ArrowRight,
+  Layers,
+  ChevronDown,
+} from "lucide-react";
 
 export default function Home() {
   const { catalogoVersion } = useSocket();
@@ -70,7 +77,7 @@ export default function Home() {
         <div className="flex justify-center sm:justify-start pb-2">
           <EnvioNavbar />
         </div>
-        <div className="py-2 w-full">
+        <div className="pt-4 pb-2 lg:py-2 w-full">
           <SearchInput />
         </div>
       </div>
@@ -102,7 +109,7 @@ export default function Home() {
           {isLoading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
               {data.destacados.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -132,17 +139,15 @@ export default function Home() {
               <ArrowRight className="size-3.5" />
             </Link>
           </div>
-          <div className="rounded-lg border border-main-blue/20 bg-blue-50/40 p-1.5 sm:p-6 shadow-2xs">
-            {isLoading ? (
-              <SkeletonGrid />
-            ) : (
-              <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
-                {data.ofertas.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </div>
+          {isLoading ? (
+            <SkeletonGrid />
+          ) : (
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
+              {data.ofertas.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -164,7 +169,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((category, index) => (
             <Link
               key={index}
@@ -206,7 +211,7 @@ export default function Home() {
           <SkeletonGrid />
         ) : (
           <div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
               {data.todos.slice(0, visibleCountTodos).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -223,7 +228,8 @@ export default function Home() {
                   <ChevronDown className="size-4 text-neutral-400 group-hover:text-main-blue group-hover:translate-y-0.5 transition-all" />
                 </button>
                 <p className="text-xs text-neutral-400 font-medium">
-                  Mostrando {Math.min(visibleCountTodos, data.todos.length)} de {data.todos.length} cortes
+                  Mostrando {Math.min(visibleCountTodos, data.todos.length)} de{" "}
+                  {data.todos.length} cortes
                 </p>
               </div>
             )}

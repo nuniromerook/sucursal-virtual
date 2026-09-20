@@ -63,7 +63,7 @@ const SearchInput = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`relative flex items-center w-full h-10 bg-white rounded-full border border-neutral-200/90 shadow-2xs hover:border-neutral-300 focus-within:border-main-red focus-within:ring-2 focus-within:ring-main-red/15 transition-all pl-3 pr-1.5 ${className}`}
+      className={`relative flex items-center w-full h-10 bg-white rounded border border-neutral-200/90 shadow-2xs hover:border-neutral-300 focus-within:border-main-red focus-within:ring-2 focus-within:ring-main-red/15 transition-all pl-3 ${className}`}
       aria-label="Búsqueda de productos"
       role="search"
     >
@@ -74,7 +74,7 @@ const SearchInput = ({
         placeholder={placeholder}
         value={query}
         onChange={handleInputChange}
-        className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 font-medium pr-1"
+        className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-neutral-900 placeholder:text-neutral-400 font-medium pr-1"
         aria-label="Campo para buscar productos"
       />
 
@@ -92,10 +92,9 @@ const SearchInput = ({
       <button
         type="submit"
         aria-label="Buscar"
-        className="flex items-center justify-center gap-1.5 bg-main-red hover:bg-red-700 text-white px-3 sm:px-3.5 h-7.5 rounded-full text-xs font-extrabold shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+        className="flex items-center justify-center gap-1.5 bg-main-red hover:bg-red-700 text-white px-6 h-full rounded-e text-xs sm:text-sm font-bold shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
       >
-        <span className="hidden sm:inline">Buscar</span>
-        <Search className="size-3.5 sm:hidden" />
+        <span className="text-neutral-50">Buscar</span>
       </button>
     </form>
   );

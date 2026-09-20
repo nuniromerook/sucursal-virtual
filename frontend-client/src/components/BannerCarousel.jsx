@@ -129,7 +129,7 @@ export default function BannerCarousel() {
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-video md:aspect-[348/110] max-h-[460px] bg-neutral-200 animate-pulse rounded-2xl mb-8" />
+      <div className="w-full aspect-video md:aspect-[348/110] max-h-[460px] bg-neutral-200 animate-pulse rounded mb-8" />
     );
   }
 
@@ -137,7 +137,7 @@ export default function BannerCarousel() {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl group select-none mb-8 bg-neutral-900 shadow-md border border-neutral-200/60"
+      className="relative w-full overflow-hidden rounded group select-none mb-8 bg-neutral-900 shadow-md border border-neutral-200/60"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -229,7 +229,7 @@ export default function BannerCarousel() {
               handlePrev();
             }}
             aria-label="Anterior banner"
-            className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
+            className="absolute left-4 sm:left-6 top-4 sm:top-6 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
             <ChevronLeft className="size-6 sm:size-6" />
           </button>
@@ -240,7 +240,7 @@ export default function BannerCarousel() {
               handleNext();
             }}
             aria-label="Siguiente banner"
-            className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
+            className="absolute right-4 sm:right-6 top-4 sm:top-6 size-9 sm:size-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg z-20"
           >
             <ChevronRight className="size-6 sm:size-6" />
           </button>
