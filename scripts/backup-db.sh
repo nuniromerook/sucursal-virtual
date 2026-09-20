@@ -17,7 +17,7 @@ if [ -f "$ENV_FILE" ]; then
   set +a
 fi
 
-DB_NAME="${DB_NAME:-sucursal_virtual}"
+DB_NAME="${DB_NAME:-valette_db}"
 DB_USER="${DB_USER:-postgres}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
@@ -28,10 +28,12 @@ echo "📦 [$(date)] Iniciando respaldo de la base de datos '${DB_NAME}'..."
 
 if [ -n "$DATABASE_URL" ]; then
   pg_dump "$DATABASE_URL" | gzip > "$BACKUP_PATH"
-else
+elif [ -n "$DB_PASSWORD" ]; then
   export PGPASSWORD="${DB_PASSWORD}"
   pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" | gzip > "$BACKUP_PATH"
   unset PGPASSWORD
+else
+  sudo -u postgres pg_dump "$DB_NAME" | gzip > "$BACKUP_PATH"
 fi
 
 # Verificar tamaño del archivo
