@@ -144,3 +144,28 @@ export function hasConsent(category) {
   if (!consent) return false;
   return Boolean(consent[category]);
 }
+
+export const DEVICE_ID_KEY = "valette_device_id";
+
+/**
+ * Obtiene o genera un identificador persistente único para este dispositivo
+ * @returns {string}
+ */
+export function getOrCreateDeviceId() {
+  try {
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) {
+      deviceId = getCookie(DEVICE_ID_KEY);
+    }
+    if (!deviceId) {
+      deviceId = "dev_" + Math.random().toString(36).substring(2, 12) + "_" + Date.now().toString(36);
+      try {
+        localStorage.setItem(DEVICE_ID_KEY, deviceId);
+      } catch {}
+      setCookie(DEVICE_ID_KEY, deviceId, 365);
+    }
+    return deviceId;
+  } catch {
+    return "dev_fallback";
+  }
+}

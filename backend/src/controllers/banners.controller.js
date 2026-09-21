@@ -76,15 +76,49 @@ const getBannersAdmin = async (req, res) => {
  */
 const registrarImpresionBanner = async (req, res) => {
   const { id } = req.params;
+  const rawDeviceId =
+    req.body?.device_id ||
+    req.query?.device_id ||
+    req.headers["x-device-id"] ||
+    req.ip ||
+    req.headers["x-forwarded-for"] ||
+    "anon";
+
+  const deviceId = String(rawDeviceId).trim().slice(0, 255);
+
   try {
-    await pool.query(
-      `UPDATE banners_publicidad SET impresiones = impresiones + 1 WHERE id = $1`,
-      [id]
+    // 1. Intentar registrar vista única por dispositivo en la tabla de control
+    const insertRes = await pool.query(
+      `INSERT INTO banner_vistas_dispositivos (banner_id, device_id)
+       VALUES ($1, $2)
+       ON CONFLICT (banner_id, device_id) DO NOTHING
+       RETURNING *`,
+      [id, deviceId]
     );
-    res.json({ success: true });
+
+    // 2. Solo incrementar contador si este dispositivo aún no había visto este banner
+    if (insertRes.rowCount > 0) {
+      await pool.query(
+        `UPDATE banners_publicidad SET impresiones = impresiones + 1 WHERE id = $1`,
+        [id]
+      );
+      return res.json({ success: true, unique_view: true });
+    }
+
+    // Ya estaba contabilizado para este dispositivo
+    res.json({ success: true, unique_view: false, already_seen: true });
   } catch (error) {
-    console.error("Error al registrar impresión:", error.message);
-    res.status(500).json({ error: "Error al registrar impresión" });
+    // Fallback defensivo si la tabla estuviera en proceso de migración
+    try {
+      await pool.query(
+        `UPDATE banners_publicidad SET impresiones = impresiones + 1 WHERE id = $1`,
+        [id]
+      );
+      return res.json({ success: true, fallback: true });
+    } catch (fallbackErr) {
+      console.error("Error al registrar impresión:", error.message);
+      res.status(500).json({ error: "Error al registrar impresión" });
+    }
   }
 };
 
@@ -259,6 +293,7 @@ const deleteBanner = async (req, res) => {
 const resetBannersAnalytics = async (req, res) => {
   try {
     await pool.query(`UPDATE banners_publicidad SET impresiones = 0, clics = 0`);
+    await pool.query(`DELETE FROM banner_vistas_dispositivos`).catch(() => {});
     res.json({
       success: true,
       message: "Todas las métricas de banners han sido reiniciadas a cero.",
@@ -283,6 +318,7 @@ const resetSingleBannerAnalytics = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Banner no encontrado" });
     }
+    await pool.query(`DELETE FROM banner_vistas_dispositivos WHERE banner_id = $1`, [id]).catch(() => {});
     res.json({
       success: true,
       message: `Métricas del banner '${result.rows[0].titulo}' reiniciadas a cero.`,

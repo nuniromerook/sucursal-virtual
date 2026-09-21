@@ -34,7 +34,18 @@ async function migrate() {
     await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS banner_id INTEGER REFERENCES banners_publicidad(id) ON DELETE SET NULL;');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pedidos_banner_id ON pedidos (banner_id);');
 
-    console.log('✅ [Migración] Horarios, índices, coordenadas y banner_id guardados exitosamente.');
+    console.log('[Migración] Creando tabla banner_vistas_dispositivos para alcance único...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS banner_vistas_dispositivos (
+        banner_id INTEGER NOT NULL REFERENCES banners_publicidad(id) ON DELETE CASCADE,
+        device_id VARCHAR(255) NOT NULL,
+        creado_en TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
+        PRIMARY KEY (banner_id, device_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_banner_vistas_banner ON banner_vistas_dispositivos(banner_id);
+    `);
+
+    console.log('✅ [Migración] Horarios, índices, coordenadas, banner_id y vistas únicas guardados exitosamente.');
     process.exit(0);
   } catch (err) {
     console.error('❌ [Migración] Error al migrar sucursales:', err);

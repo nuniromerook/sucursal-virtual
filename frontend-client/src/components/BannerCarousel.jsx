@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { VITE_API_URL } from "../config/api";
-import { setCookie, COOKIE_BANNER_REF_KEY } from "../utils/cookies";
+import { setCookie, COOKIE_BANNER_REF_KEY, getOrCreateDeviceId } from "../utils/cookies";
 
 const BADGE_COLORS = {
   rojo: "bg-main-red text-white border-red-400/50 shadow-red-900/30",
@@ -68,20 +68,49 @@ export default function BannerCarousel() {
     return () => clearInterval(interval);
   }, [isPaused, banners.length, handleNext]);
 
-  // REGISTRO DE IMPRESIÓN PRECISO: Cuenta 1 impresión por banner visible en la vista actual
+  // REGISTRO DE ALCANCE ÚNICO POR DISPOSITIVO (Estilo Meta Ads)
   useEffect(() => {
     if (banners.length === 0) return;
     const currentBanner = banners[currentIndex];
     if (!currentBanner || !currentBanner.id) return;
 
-    if (!viewedBannersRef.current.has(currentBanner.id)) {
-      viewedBannersRef.current.add(currentBanner.id);
+    // Control local en memoria para no repetir peticiones mientras el carrusel gira
+    if (viewedBannersRef.current.has(currentBanner.id)) return;
+    viewedBannersRef.current.add(currentBanner.id);
 
-      // Enviar registro de impresión de forma asíncrona no bloqueante
-      fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
-        method: "POST",
-      }).catch(() => {});
+    // Obtener identificador único y persistente del dispositivo
+    const deviceId = getOrCreateDeviceId();
+    const storageKey = `valette_device_viewed_banner_${currentBanner.id}`;
+
+    // Si el banner en el servidor está en 0 (fue reiniciado por el admin), limpiar flag local
+    if (Number(currentBanner.impresiones) === 0) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {}
     }
+
+    // Si este dispositivo ya vio este banner en este navegador, evitar llamada innecesaria
+    try {
+      if (localStorage.getItem(storageKey)) {
+        return;
+      }
+    } catch {}
+
+    // Enviar registro de vista única con el ID del dispositivo
+    fetch(`${VITE_API_URL}/banners/${currentBanner.id}/impresion`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: deviceId }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          try {
+            localStorage.setItem(storageKey, "1");
+          } catch {}
+        }
+      })
+      .catch(() => {});
   }, [currentIndex, banners]);
 
   // Manejo de clicks en banner
