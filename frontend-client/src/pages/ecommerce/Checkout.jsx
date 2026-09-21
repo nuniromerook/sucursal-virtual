@@ -25,7 +25,7 @@ import {
   formatPrecioPorUnidad,
 } from "../../utils/formatters";
 import TimeSlotSelector from "../../components/TimeSlotSelector";
-import { getCookie, COOKIE_BANNER_REF_KEY } from "../../utils/cookies";
+import { getCookie, deleteCookie, COOKIE_BANNER_REF_KEY } from "../../utils/cookies";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -266,8 +266,11 @@ export default function Checkout() {
         );
       }
 
-      // Vaciar carrito
+      // Vaciar carrito y consumir atribución del banner
       clearCart();
+      try {
+        deleteCookie(COOKIE_BANNER_REF_KEY);
+      } catch {}
 
       // Redirigir a página de confirmación
       navigate(`/pedido/${data.pedido.id}/confirmacion`);

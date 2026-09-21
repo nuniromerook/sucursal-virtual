@@ -294,9 +294,10 @@ const resetBannersAnalytics = async (req, res) => {
   try {
     await pool.query(`UPDATE banners_publicidad SET impresiones = 0, clics = 0`);
     await pool.query(`DELETE FROM banner_vistas_dispositivos`).catch(() => {});
+    await pool.query(`UPDATE pedidos SET banner_id = NULL WHERE banner_id IS NOT NULL`).catch(() => {});
     res.json({
       success: true,
-      message: "Todas las métricas de banners han sido reiniciadas a cero.",
+      message: "Todas las métricas de banners y ventas atribuidas han sido reiniciadas a cero.",
     });
   } catch (error) {
     console.error("Error al reiniciar analíticas de banners:", error.message);
@@ -306,7 +307,7 @@ const resetBannersAnalytics = async (req, res) => {
 
 /**
  * POST /banners/:id/reset-analytics
- * Restablece a 0 las impresiones y clics de un banner individual (Admin)
+ * Restablece a 0 las impresiones, clics y ventas atribuidas de un banner individual (Admin)
  */
 const resetSingleBannerAnalytics = async (req, res) => {
   const { id } = req.params;
@@ -319,6 +320,7 @@ const resetSingleBannerAnalytics = async (req, res) => {
       return res.status(404).json({ error: "Banner no encontrado" });
     }
     await pool.query(`DELETE FROM banner_vistas_dispositivos WHERE banner_id = $1`, [id]).catch(() => {});
+    await pool.query(`UPDATE pedidos SET banner_id = NULL WHERE banner_id = $1`, [id]).catch(() => {});
     res.json({
       success: true,
       message: `Métricas del banner '${result.rows[0].titulo}' reiniciadas a cero.`,
