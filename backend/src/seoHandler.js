@@ -252,7 +252,7 @@ const renderSeoHtml = async (req, res) => {
     <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 220px; background: #f8fafc;">
       <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Sucursal Moreno</h3>
       <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. del Libertador 4200</p>
-      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 07:00 a 15:00 hs</p>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 06:00 a 15:00 hs</p>
     </div>
   </div>
 </body>

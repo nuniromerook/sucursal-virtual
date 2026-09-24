@@ -115,7 +115,7 @@ export default function MaintenanceScreen({ onUnlock }) {
             </p>
             <p className="text-xs text-neutral-500 flex items-center gap-2">
               <Clock className="size-3.5 text-neutral-400 shrink-0" />
-              <span>Lun. a Sáb. de 07:00 a 15:00 hs</span>
+              <span>Lun. a Sáb. de 06:00 a 15:00 hs</span>
             </p>
           </div>
         </div>
