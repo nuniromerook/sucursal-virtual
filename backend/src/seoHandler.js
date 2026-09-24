@@ -213,6 +213,8 @@ const CATEGORIA_NOMBRES = {
   productos: "Catálogo General de Productos"
 };
 
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE !== "false"; // Activo por defecto mientras está en preparación
+
 /**
  * Renderizador de HTML Estático y Semántico para Bots (Googlebot, Bing, redes sociales)
  */
@@ -223,6 +225,28 @@ const renderSeoHtml = async (req, res) => {
   }
   
   if (!requestPath || requestPath === "") requestPath = "/";
+
+  // ─── MODO MANTENIMIENTO ACTIVO PARA BOTS ───
+  if (MAINTENANCE_MODE) {
+    const html = `<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <title>Abastecedora Valette — Próximamente Nueva Tienda Online</title>
+  <meta name="description" content="Estamos preparando nuestra nueva tienda online de cortes de carne seleccionados. Visitá nuestro sitio oficial en abastecedoravalette.com">
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 40px auto; padding: 24px; text-align: center; color: #1e293b;">
+  <h1>Abastecedora Valette</h1>
+  <p style="font-size: 18px; font-weight: bold; color: #003366;">Estamos preparando nuestra nueva tienda virtual 🥩</p>
+  <p>Actualmente nos encontramos en mantenimiento y puesta a punto de nuestro sistema de pedidos online.</p>
+  <p style="margin: 24px 0;"><a href="https://abastecedoravalette.com" style="display: inline-block; padding: 12px 24px; background: #f59e0b; color: #0f172a; font-weight: bold; text-decoration: none; border-radius: 8px;">Visitar Sitio Oficial (abastecedoravalette.com) →</a></p>
+  <p style="font-size: 14px; color: #64748b;">Sucursal Luis Guillón: Av. Luciano Valette 1696</p>
+</body>
+</html>`;
+    res.header("Content-Type", "text/html; charset=utf-8");
+    return res.send(html);
+  }
 
   // Obtenemos info base de la sucursal
   let sucursal = null;
@@ -453,6 +477,19 @@ const renderSeoHtml = async (req, res) => {
  */
 const generateSitemap = async (req, res) => {
   try {
+    if (MAINTENANCE_MODE) {
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${SITE_URL}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
+      res.header("Content-Type", "application/xml; charset=utf-8");
+      return res.send(sitemap);
+    }
+
     const productos = await pool.query(
       `SELECT slug, categoria, especie, nombre_producto, descripcion, imagen_url, actualizado_en 
        FROM catalogo 

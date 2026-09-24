@@ -13,13 +13,14 @@ import NotFound from "@/pages/NotFound";
 import { Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
 import CookieBanner from "./components/common/CookieBanner";
+import MaintenanceGate from "./components/MaintenanceGate";
 import { useAnalytics } from "./hooks/useAnalytics";
 
 function App() {
   useAnalytics();
 
   return (
-    <>
+    <MaintenanceGate>
       <ScrollToTop />
       <CookieBanner />
       <Routes>
@@ -46,7 +47,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-    </>
+    </MaintenanceGate>
   );
 }
 
