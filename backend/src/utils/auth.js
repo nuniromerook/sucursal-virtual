@@ -52,8 +52,9 @@ function verifyPassword(password, storedHash) {
 
 /**
  * Genera un token JWT firmado con HMAC-SHA256
+ * Expiración por defecto: 30 días (720 horas) para persistencia óptima de sesión cliente
  */
-function generateToken(payload, expiresInHours = 72) {
+function generateToken(payload, expiresInHours = 720) {
   const header = { alg: "HS256", typ: "JWT" };
   const exp = Math.floor(Date.now() / 1000) + expiresInHours * 3600;
   const fullPayload = { ...payload, exp };

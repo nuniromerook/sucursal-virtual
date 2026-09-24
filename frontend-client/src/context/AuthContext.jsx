@@ -52,6 +52,32 @@ export function AuthContextProvider({ children }) {
   }, [authState]);
 
   /**
+   * Cerrar sesión
+   */
+  const logout = useCallback(() => {
+    // 1. Limpiar estado de autenticación
+    setAuthState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    });
+
+    // 2. Purgar completamente las claves de sesión y memoria en localStorage
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem("valette_cart");
+      localStorage.removeItem("valette_favoritos");
+      localStorage.removeItem("valette_direccion_seleccionada");
+      localStorage.removeItem("valette_coords");
+    } catch (e) {
+      console.error("Error al purgar localStorage en logout:", e);
+    }
+
+    // 3. Emitir evento para que CartContext, FavoritesContext y LocationContext limpien su estado inmediatamente
+    window.dispatchEvent(new Event("valette_logout"));
+  }, []);
+
+  /**
    * Refresca los datos del perfil desde el backend
    */
   const refreshUser = useCallback(async () => {
@@ -71,12 +97,16 @@ export function AuthContextProvider({ children }) {
           user: userData,
         }));
         return userData;
+      } else if (res.status === 401) {
+        console.warn("Sesión expirada o token inválido en refreshUser. Cerrando sesión...");
+        logout();
+        return null;
       }
     } catch (error) {
       console.error("Error al refrescar usuario:", error);
     }
     return null;
-  }, [authState.token]);
+  }, [authState.token, logout]);
 
   // Al montar, refrescar datos del perfil si hay token
   useEffect(() => {
@@ -249,32 +279,6 @@ export function AuthContextProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Cerrar sesión
-   */
-  const logout = () => {
-    // 1. Limpiar estado de autenticación
-    setAuthState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-    });
-
-    // 2. Purgar completamente las claves de sesión y memoria en localStorage
-    try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      localStorage.removeItem("valette_cart");
-      localStorage.removeItem("valette_favoritos");
-      localStorage.removeItem("valette_direccion_seleccionada");
-      localStorage.removeItem("valette_coords");
-    } catch (e) {
-      console.error("Error al purgar localStorage en logout:", e);
-    }
-
-    // 3. Emitir evento para que CartContext, FavoritesContext y LocationContext limpien su estado inmediatamente
-    window.dispatchEvent(new Event("valette_logout"));
   };
 
   return (

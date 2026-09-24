@@ -15,7 +15,7 @@ export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
 
-  const { user, token, isAuthenticated, refreshUser } = useAuth();
+  const { user, token, isAuthenticated, refreshUser, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState(tabParam || "pedidos"); // "pedidos" | "datos" | "puntos"
   const [pedidos, setPedidos] = useState([]);
@@ -57,6 +57,10 @@ export default function Profile() {
         if (res.ok) {
           const data = await res.json();
           setPedidos(Array.isArray(data) ? data : []);
+        } else if (res.status === 401) {
+          console.warn("Sesión expirada al cargar pedidos. Redirigiendo a login...");
+          logout();
+          navigate("/ingresar");
         }
       } catch (err) {
         console.error("Error al cargar historial de pedidos:", err);
@@ -66,7 +70,7 @@ export default function Profile() {
     };
 
     fetchHistorial();
-  }, [token]);
+  }, [token, logout, navigate]);
 
   const tabContainerRef = useRef(null);
 

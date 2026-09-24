@@ -14,7 +14,7 @@ import { useToast } from "../../../context/ToastContext";
 import { VITE_API_URL } from "../../../config/api";
 
 export default function PuntosTab() {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const toast = useToast();
 
   const [historialPuntos, setHistorialPuntos] = useState([]);
@@ -33,13 +33,15 @@ export default function PuntosTab() {
       if (res.ok) {
         const data = await res.json();
         setHistorialPuntos(Array.isArray(data) ? data : []);
+      } else if (res.status === 401) {
+        logout();
       }
     } catch (err) {
       console.error("Error al cargar historial de puntos:", err);
     } finally {
       setLoadingPuntos(false);
     }
-  }, [token]);
+  }, [token, logout]);
 
   useEffect(() => {
     fetchHistorialPuntos();

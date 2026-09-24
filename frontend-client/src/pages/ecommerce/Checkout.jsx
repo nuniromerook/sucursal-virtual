@@ -29,7 +29,7 @@ import { getCookie, deleteCookie, COOKIE_BANNER_REF_KEY } from "../../utils/cook
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const {
     cartItems,
     subtotal,
@@ -252,9 +252,14 @@ export default function Checkout() {
         }),
       };
 
+      const headers = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_URL}/pedidos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 

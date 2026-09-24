@@ -6,6 +6,7 @@ const {
   emitirActualizacionPedido,
   emitirNotificacion,
 } = require("../socket");
+const { verifyToken } = require("../utils/auth");
 
 /**
  * POST /pedidos
@@ -49,13 +50,38 @@ const createPedido = async (req, res) => {
     await dbClient.query("BEGIN");
 
     // 1. Buscar o registrar al cliente
-    const clienteExistente = await dbClient.query(
-      `SELECT * FROM clientes WHERE telefono = $1 OR (email IS NOT NULL AND email = $2) LIMIT 1`,
-      [
-        cliente.telefono.trim(),
-        cliente.email ? cliente.email.trim().toLowerCase() : "",
-      ],
-    );
+    let clienteId = null;
+    let clienteRow = null;
+
+    // A) Si viene token en Authorization header, verificarlo prioritariamente
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const decoded = verifyToken(token);
+      if (decoded && decoded.id) {
+        const authRes = await dbClient.query(
+          `SELECT * FROM clientes WHERE id = $1 LIMIT 1`,
+          [decoded.id]
+        );
+        if (authRes.rows.length > 0) {
+          clienteRow = authRes.rows[0];
+        }
+      }
+    }
+
+    // B) Si no se autenticó por token, buscar por teléfono o email
+    if (!clienteRow) {
+      const clienteExistente = await dbClient.query(
+        `SELECT * FROM clientes WHERE telefono = $1 OR (email IS NOT NULL AND email = $2) LIMIT 1`,
+        [
+          cliente.telefono.trim(),
+          cliente.email ? cliente.email.trim().toLowerCase() : "",
+        ],
+      );
+      if (clienteExistente.rows.length > 0) {
+        clienteRow = clienteExistente.rows[0];
+      }
+    }
 
     const nombreLimpio = cliente.nombre
       ? cliente.nombre.replace(/\s*\(@[^)]+\)/g, "").trim()
@@ -64,14 +90,14 @@ const createPedido = async (req, res) => {
       ? cliente.usuario.trim().replace(/^@/, "")
       : null;
 
-    if (clienteExistente.rows.length > 0) {
-      clienteId = clienteExistente.rows[0].id;
+    if (clienteRow) {
+      clienteId = clienteRow.id;
       // Actualizar datos de contacto si cambiaron
       await dbClient.query(
         `UPDATE clientes 
-         SET nombre = $1,
+         SET nombre = COALESCE(NULLIF($1, ''), nombre),
              usuario = COALESCE(usuario, $2),
-             email = COALESCE($3, email),
+             email = COALESCE(email, $3),
              direccion_default = COALESCE($4, direccion_default),
              actualizado_en = NOW()
          WHERE id = $5`,
