@@ -55,6 +55,25 @@ export default function Product() {
     if (slug) fetchProducto();
   }, [slug, catalogoVersion]);
 
+  // Actualizar título y meta tags en el navegador para SEO y usabilidad
+  useEffect(() => {
+    if (productData) {
+      document.title = `${productData.nombre_producto} | Abastecedora Valette`;
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.name = "description";
+        document.head.appendChild(metaDesc);
+      }
+      if (productData.descripcion) {
+        metaDesc.content = productData.descripcion.replace(/<[^>]*>/g, "").substring(0, 160);
+      }
+    }
+    return () => {
+      document.title = "Abastecedora Valette";
+    };
+  }, [productData]);
+
   const handleDecrement = () => {
     setCantidad((prev) => Math.max(1, Number(prev) - 1));
   };

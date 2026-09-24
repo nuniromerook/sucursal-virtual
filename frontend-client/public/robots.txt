@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://api.abastecedoravalette.digital/sitemap.xml
+Sitemap: https://abastecedoravalette.digital/sitemap.xml
+Sitemap: https://www.abastecedoravalette.digital/sitemap.xml
