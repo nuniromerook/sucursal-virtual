@@ -1,19 +1,13 @@
 // frontend-client/src/components/MaintenanceScreen.jsx
 import React, { useState } from "react";
 import {
-  Store,
   ExternalLink,
-  MessageCircle,
   MapPin,
   Clock,
   Lock,
-  Sparkles,
   ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
   X,
 } from "lucide-react";
-import icons from "../assets/icons/icons";
 
 export default function MaintenanceScreen({ onUnlock }) {
   const [showModal, setShowModal] = useState(false);
@@ -44,126 +38,98 @@ export default function MaintenanceScreen({ onUnlock }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white flex flex-col justify-between selection:bg-amber-400 selection:text-slate-900 font-sans">
-      {/* ─── Encabezado Sutil ─── */}
-      <header className="w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div
-          onClick={handleLogoClick}
-          className="flex items-center gap-3 cursor-pointer select-none group"
-          title="Abastecedora Valette"
-        >
-          <div className="size-11 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-2 flex items-center justify-center transition-transform group-hover:scale-105">
-            <img src="/favicon.svg" alt="Valette" className="size-full object-contain" />
-          </div>
-          <div>
-            <span className="font-black text-lg sm:text-xl tracking-tight text-white block leading-tight">
-              ABASTECEDORA VALETTE
-            </span>
-            <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest block">
-              Carnicería & Producción Propia
-            </span>
-          </div>
-        </div>
-
+    <div className="min-h-screen bg-white text-neutral-800 flex flex-col justify-between items-center px-4 py-8 sm:py-12 selection:bg-main-blue selection:text-white font-sans">
+      {/* ─── Botón de Acceso Discreto (Esquina Superior) ─── */}
+      <div className="w-full max-w-2xl flex justify-end">
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="text-white/60 hover:text-white text-xs font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+          className="text-neutral-300 hover:text-neutral-600 transition-colors p-2 rounded-lg"
+          title="Acceso"
+          aria-label="Acceso"
         >
-          <Lock className="size-3.5" />
-          <span className="hidden sm:inline">Acceso Equipo</span>
+          <Lock className="size-4" />
         </button>
-      </header>
+      </div>
 
-      {/* ─── Contenido Central ─── */}
-      <main className="w-full max-w-2xl mx-auto px-6 py-8 flex-1 flex flex-col items-center justify-center text-center">
-        {/* Badge de estado */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs sm:text-sm font-bold mb-6 backdrop-blur-md shadow-xs">
-          <Sparkles className="size-4 text-amber-400 animate-pulse" />
-          <span>Nueva Tienda Online en Preparación</span>
+      {/* ─── Contenedor Central Minimalista ─── */}
+      <main className="w-full max-w-xl mx-auto flex flex-col items-center text-center my-auto py-6">
+        {/* Logo con interacción de 3 clics */}
+        <div
+          onClick={handleLogoClick}
+          className="cursor-pointer select-none mb-6 transition-transform hover:scale-105 active:scale-95"
+          title="Abastecedora Valette"
+        >
+          <img
+            src="/favicon.svg"
+            alt="Abastecedora Valette"
+            className="size-20 sm:size-24 mx-auto object-contain drop-shadow-xs"
+          />
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight mb-4">
-          Estamos preparando nuestra nueva tienda virtual 🥩
+        {/* Marca y Estado */}
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 uppercase mb-1">
+          Abastecedora Valette
         </h1>
-
-        <p className="text-base sm:text-lg text-slate-300 font-normal leading-relaxed max-w-xl mb-8">
-          Nos encontramos realizando tareas de mantenimiento y puesta a punto de nuestro sistema de pedidos online. Muy pronto vas a poder comprar todos nuestros cortes seleccionados desde tu celular o computadora.
+        <p className="text-xs sm:text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-8">
+          Sitio web en mantenimiento
         </p>
 
-        {/* ─── Tarjeta de redirección al sitio oficial ─── */}
-        <div className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 sm:p-7 shadow-2xl mb-8 text-left transition-all hover:border-amber-400/50">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider block mb-1">
-                Sitio Web Oficial
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                abastecedoravalette.com
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                Conocé nuestra historia, productos y canales de atención habilitados.
-              </p>
-            </div>
+        {/* Botón Estético Principal */}
+        <a
+          href="https://abastecedoravalette.com"
+          className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-main-blue hover:bg-main-blue/90 text-white font-bold text-sm sm:text-base shadow-sm hover:shadow-md transition-all active:scale-98 group mb-10"
+        >
+          <span>Visitar sitio web oficial (abastecedoravalette.com)</span>
+          <ArrowRight className="size-4 text-white/80 group-hover:translate-x-1 transition-transform" />
+        </a>
 
-            <a
-              href="https://abastecedoravalette.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm sm:text-base shadow-lg transition-transform active:scale-95 shrink-0"
-            >
-              <span>Visitar Sitio Oficial</span>
-              <ExternalLink className="size-4" />
-            </a>
+        {/* Separador fino */}
+        <div className="w-16 h-px bg-neutral-200 mb-8" />
+
+        {/* ─── Sucursales y Horarios (Luis Guillón y Moreno) ─── */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+          {/* Sucursal Luis Guillón */}
+          <div className="border border-neutral-200/90 rounded-xl p-4 bg-neutral-50/50">
+            <h2 className="text-xs font-bold text-main-blue uppercase tracking-wider mb-2">
+              Sucursal Luis Guillón
+            </h2>
+            <p className="text-sm font-semibold text-neutral-800 flex items-start gap-2 mb-1.5">
+              <MapPin className="size-4 text-neutral-500 shrink-0 mt-0.5" />
+              <span>Av. Luciano Valette 1696</span>
+            </p>
+            <p className="text-xs text-neutral-500 flex items-center gap-2">
+              <Clock className="size-3.5 text-neutral-400 shrink-0" />
+              <span>Lun. a Sáb. de 07:00 a 15:00 hs</span>
+            </p>
           </div>
-        </div>
 
-        {/* ─── Canales de Atención Directa ─── */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <a
-            href="https://wa.me/5491155291717?text=Hola!%20Quería%20hacer%20una%20consulta%20sobre%20pedidos%20en%20Abastecedora%20Valette"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-colors border border-emerald-400/30"
-          >
-            <MessageCircle className="size-4" />
-            <span>Consultas por WhatsApp</span>
-          </a>
-
-          <a
-            href="https://www.instagram.com/abastecedora.valette/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-pink-600/80 hover:bg-pink-500 text-white font-bold text-sm shadow-md transition-colors border border-pink-400/30"
-          >
-            <img src={icons.instagram} alt="Instagram" className="size-4 filter brightness-0 invert" />
-            <span>Seguinos en Instagram</span>
-          </a>
+          {/* Sucursal Moreno */}
+          <div className="border border-neutral-200/90 rounded-xl p-4 bg-neutral-50/50">
+            <h2 className="text-xs font-bold text-main-blue uppercase tracking-wider mb-2">
+              Sucursal Moreno
+            </h2>
+            <p className="text-sm font-semibold text-neutral-800 flex items-start gap-2 mb-1.5">
+              <MapPin className="size-4 text-neutral-500 shrink-0 mt-0.5" />
+              <span>Av. del Libertador 4200</span>
+            </p>
+            <p className="text-xs text-neutral-500 flex items-center gap-2">
+              <Clock className="size-3.5 text-neutral-400 shrink-0" />
+              <span>Lun. a Sáb. de 07:00 a 15:00 hs</span>
+            </p>
+          </div>
         </div>
       </main>
 
-      {/* ─── Footer Informativo ─── */}
-      <footer className="w-full border-t border-white/10 bg-slate-950/40 backdrop-blur-md py-6 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 text-center sm:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="size-3.5 text-amber-400" />
-              <span>Av. Luciano Valette 1696, Luis Guillón</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="size-3.5 text-amber-400" />
-              <span>Lun a Sáb de 07:00 a 15:00 hs</span>
-            </span>
-          </div>
-
-          <p>© {new Date().getFullYear()} Abastecedora Valette. Todos los derechos reservados.</p>
-        </div>
+      {/* ─── Pie de Página Simple ─── */}
+      <footer className="w-full max-w-xl text-center py-4 text-xs text-neutral-400">
+        © {new Date().getFullYear()} Abastecedora Valette. Todos los derechos reservados.
       </footer>
 
-      {/* ─── Modal de Acceso de Equipo / PIN Secreto ─── */}
+      {/* ─── Modal de PIN / Clave ─── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-white/20 rounded-2xl max-w-sm w-full p-6 text-white shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white border border-neutral-200 rounded-2xl max-w-xs w-full p-6 text-neutral-900 shadow-xl relative">
             <button
               type="button"
               onClick={() => {
@@ -171,26 +137,23 @@ export default function MaintenanceScreen({ onUnlock }) {
                 setErrorMsg("");
                 setPasskey("");
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-700 p-1 rounded-lg hover:bg-neutral-100 transition-colors"
             >
-              <X className="size-5" />
+              <X className="size-4" />
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="size-10 rounded-xl bg-amber-400/20 text-amber-400 flex items-center justify-center border border-amber-400/30">
-                <Lock className="size-5" />
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="size-8 rounded-lg bg-main-blue/10 text-main-blue flex items-center justify-center">
+                <Lock className="size-4" />
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Acceso de Equipo</h3>
-                <p className="text-xs text-slate-400">Desarrollo y Vista Previa</p>
-              </div>
+              <h3 className="text-sm font-bold text-neutral-900">Acceso</h3>
             </div>
 
-            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Ingresá la clave de desarrollo para navegar la tienda virtual en este dispositivo:
+            <p className="text-xs text-neutral-500 mb-4 leading-normal">
+              Ingresá la clave para acceder a la vista previa:
             </p>
 
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit} className="space-y-3">
               <div>
                 <input
                   type="password"
@@ -200,30 +163,30 @@ export default function MaintenanceScreen({ onUnlock }) {
                     setPasskey(e.target.value);
                     if (errorMsg) setErrorMsg("");
                   }}
-                  placeholder="Ingresá la clave de acceso..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm"
+                  placeholder="Clave de acceso..."
+                  className="w-full px-3.5 py-2 rounded-lg bg-white border border-neutral-300 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-main-blue/30 focus:border-main-blue text-sm"
                 />
                 {errorMsg && (
-                  <p className="text-xs text-rose-400 font-medium mt-1.5">
+                  <p className="text-xs text-red-600 font-medium mt-1">
                     {errorMsg}
                   </p>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setErrorMsg("");
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-colors"
+                  className="flex-1 py-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-xs font-semibold text-neutral-600 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-xs font-bold text-slate-950 transition-colors shadow-md"
+                  className="flex-1 py-2 rounded-lg bg-main-blue hover:bg-main-blue/90 text-xs font-bold text-white transition-colors"
                 >
                   Ingresar
                 </button>

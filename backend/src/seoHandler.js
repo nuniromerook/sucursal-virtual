@@ -232,16 +232,29 @@ const renderSeoHtml = async (req, res) => {
 <html lang="es-AR">
 <head>
   <meta charset="UTF-8">
-  <title>Abastecedora Valette — Próximamente Nueva Tienda Online</title>
-  <meta name="description" content="Estamos preparando nuestra nueva tienda online de cortes de carne seleccionados. Visitá nuestro sitio oficial en abastecedoravalette.com">
+  <title>Abastecedora Valette</title>
+  <meta name="description" content="Abastecedora Valette. Sitio web en mantenimiento. Visitanos en nuestro sitio web oficial abastecedoravalette.com">
   <meta name="robots" content="noindex, nofollow">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 40px auto; padding: 24px; text-align: center; color: #1e293b;">
-  <h1>Abastecedora Valette</h1>
-  <p style="font-size: 18px; font-weight: bold; color: #003366;">Estamos preparando nuestra nueva tienda virtual 🥩</p>
-  <p>Actualmente nos encontramos en mantenimiento y puesta a punto de nuestro sistema de pedidos online.</p>
-  <p style="margin: 24px 0;"><a href="https://abastecedoravalette.com" style="display: inline-block; padding: 12px 24px; background: #f59e0b; color: #0f172a; font-weight: bold; text-decoration: none; border-radius: 8px;">Visitar Sitio Oficial (abastecedoravalette.com) →</a></p>
-  <p style="font-size: 14px; color: #64748b;">Sucursal Luis Guillón: Av. Luciano Valette 1696</p>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 60px auto; padding: 24px; text-align: center; color: #1e293b; background-color: #ffffff;">
+  <h1 style="font-size: 26px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; color: #0f172a;">Abastecedora Valette</h1>
+  <p style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 32px;">Sitio web en mantenimiento</p>
+  <p style="margin-bottom: 40px;">
+    <a href="https://abastecedoravalette.com" style="display: inline-block; padding: 14px 28px; background: #003366; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 12px; font-size: 15px;">Visitar sitio web oficial (abastecedoravalette.com) →</a>
+  </p>
+  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+  <div style="display: flex; gap: 16px; text-align: left; justify-content: center; flex-wrap: wrap;">
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 220px; background: #f8fafc;">
+      <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Sucursal Luis Guillón</h3>
+      <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. Luciano Valette 1696</p>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 07:00 a 15:00 hs</p>
+    </div>
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 220px; background: #f8fafc;">
+      <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Sucursal Moreno</h3>
+      <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. del Libertador 4200</p>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 07:00 a 15:00 hs</p>
+    </div>
+  </div>
 </body>
 </html>`;
     res.header("Content-Type", "text/html; charset=utf-8");
