@@ -234,7 +234,7 @@ const renderSeoHtml = async (req, res) => {
   <meta charset="UTF-8">
   <title>Abastecedora Valette</title>
   <meta name="description" content="Abastecedora Valette. Sitio web en mantenimiento. Visitanos en nuestro sitio web oficial abastecedoravalette.com">
-  <meta name="robots" content="noindex, nofollow">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 60px auto; padding: 24px; text-align: center; color: #1e293b; background-color: #ffffff;">
   <h1 style="font-size: 26px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; color: #0f172a;">Abastecedora Valette</h1>
@@ -257,6 +257,7 @@ const renderSeoHtml = async (req, res) => {
   </div>
 </body>
 </html>`;
+    res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
     res.header("Content-Type", "text/html; charset=utf-8");
     return res.send(html);
   }
