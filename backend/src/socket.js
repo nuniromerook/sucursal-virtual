@@ -22,7 +22,7 @@ const initSocket = (httpServer) => {
 
   const isOriginAllowed = (origin) => {
     if (!origin) return true;
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) return true;
     if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
     if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return true;
     return false;

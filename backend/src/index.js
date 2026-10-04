@@ -46,8 +46,8 @@ const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllow
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
-  // Permitir localhost / 127.0.0.1 en cualquier puerto
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  // Permitir localhost, 127.0.0.1 e IPs de red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x) en cualquier puerto
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) return true;
   // Permitir cualquier subdominio o dominio principal abastecedoravalette.digital (con o sin www)
   if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
   // Permitir lista configurada o wildcard
