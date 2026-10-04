@@ -3,7 +3,7 @@ import { Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const SearchInput = ({
-  placeholder = "¿Qué corte buscás hoy? (ej. Asado, Vacío, Milanesa...)",
+  placeholder = "Qué corte buscás hoy?",
   className = "",
   inCategoryPage = false,
   onSearchChange = null,
