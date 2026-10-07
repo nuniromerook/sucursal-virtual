@@ -55,7 +55,7 @@ export const CombosSection = ({ onSelectCategory }) => {
             Combos destacados
           </h2>
           <p className="text-xs text-slate-500">
-            Paquetes armados para cada gusto y necesidad.
+            Paquetes pensados para cada gusto y necesidad.
           </p>
         </div>
       </div>
