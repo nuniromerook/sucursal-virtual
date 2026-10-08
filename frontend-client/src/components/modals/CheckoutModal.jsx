@@ -11,7 +11,10 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
   const { totalEstimado, clearCart } = useCart();
   const { customerAddress } = useLocation();
   const { showToast } = useToast();
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
 
   const [cliente, setCliente] = useState({
     nombre: "Juan Pérez",
@@ -36,25 +39,31 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
       className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200">
-        {/* Barra táctil para celulares */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0" />
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Caja Segura Valette
-            </span>
-            <h3 className="text-lg font-black text-slate-900 leading-tight">
-              Confirmar Pedido
-            </h3>
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Barra táctil y cabecera deslizable */}
+        <div {...dragHandleProps} className="touch-none select-none">
+          {/* Barra táctil para celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Caja Segura Valette
+              </span>
+              <h3 className="text-lg font-black text-slate-900 leading-tight">
+                Confirmar Pedido
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
-          >
-            <X className="size-4" />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4 text-xs">

@@ -6,7 +6,10 @@ import { useModalBehavior } from "@/hooks/useModalBehavior";
 
 export const OrderTrackingModal = ({ isOpen, onClose }) => {
   const { showToast } = useToast();
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
 
   if (!isOpen) return null;
 
@@ -19,11 +22,17 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
       className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl pb-6 shadow-2xl h-[80vh] sm:max-h-[88vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col">
-        {/* Header */}
-        <div className="flex flex-col w-full bg-white sticky top-0 z-10">
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl pb-6 shadow-2xl h-[80vh] sm:max-h-[88vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col"
+      >
+        {/* Header con soporte de arrastre */}
+        <div
+          {...dragHandleProps}
+          className="flex flex-col w-full bg-white sticky top-0 z-10 touch-none select-none shrink-0"
+        >
           {/* Barra táctil para celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
           {/* Titular */}
           <div className="flex items-center justify-between pb-3 pt-6 border-b border-slate-100">

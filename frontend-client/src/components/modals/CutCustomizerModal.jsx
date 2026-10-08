@@ -17,7 +17,10 @@ export const CutCustomizerModal = ({
 
   const { addToCart } = useCart();
   const { showToast } = useToast();
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
 
   if (!isOpen || !product) return null;
 
@@ -35,14 +38,19 @@ export const CutCustomizerModal = ({
       className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200">
-        {/* Manija táctil mobile */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Barra táctil y cabecera deslizable */}
+        <div {...dragHandleProps} className="touch-none select-none">
+          {/* Manija táctil mobile */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-4">
-          <h3 className="text-lg font-black text-slate-900 leading-tight">
-            Personalizar: <span className="font-normal">{product.nombre}</span>
-          </h3>
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 gap-4">
+            <h3 className="text-lg font-black text-slate-900 leading-tight">
+              Personalizar: <span className="font-normal">{product.nombre}</span>
+            </h3>
           <button
             type="button"
             onClick={onClose}
@@ -51,8 +59,9 @@ export const CutCustomizerModal = ({
             <X className="size-4" />
           </button>
         </div>
+      </div>
 
-        <div className="space-y-5 py-4 text-xs">
+      <div className="space-y-5 py-4 text-xs">
           {/* Espesor de corte */}
           <div>
             <label className="block font-bold text-slate-800 mb-2">

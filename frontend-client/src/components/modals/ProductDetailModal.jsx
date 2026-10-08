@@ -27,8 +27,11 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
 
-  // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
 
   // Valores iniciales calculados en kg enteros según el corte
   const defaultKg = useMemo(() => {
@@ -92,45 +95,51 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
       onClick={handleBackdropClick}
     >
       {/* Contenedor Modal / Bottom Sheet */}
-      <div className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-        {/* Barra táctil para deslizar en celulares */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0" />
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Zona táctil de arrastre (barra + header superior) */}
+        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+          {/* Barra táctil para deslizar en celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-        {/* Header Superior del Modal */}
-        <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-              {product.categoria_label || "Frigorífico Valette"}
-            </span>
-          </div>
+          {/* Header Superior del Modal */}
+          <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                {product.categoria_label || "Frigorífico Valette"}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2">
-            {/* Botón Favorito */}
-            <button
-              type="button"
-              onClick={() => toggleFavorite(product.id, product.nombre)}
-              title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
-              className={`size-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer ${
-                isFav ? "text-red-500" : "text-slate-500 hover:text-red-500"
-              }`}
-            >
-              <Heart
-                className={`size-4 stroke-[2.2] ${
-                  isFav ? "fill-red-500 text-red-500" : ""
+            <div className="flex items-center gap-2">
+              {/* Botón Favorito */}
+              <button
+                type="button"
+                onClick={() => toggleFavorite(product.id, product.nombre)}
+                title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                className={`size-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer ${
+                  isFav ? "text-red-500" : "text-slate-500 hover:text-red-500"
                 }`}
-              />
-            </button>
+              >
+                <Heart
+                  className={`size-4 stroke-[2.2] ${
+                    isFav ? "fill-red-500 text-red-500" : ""
+                  }`}
+                />
+              </button>
 
-            {/* Botón Cerrar */}
-            <button
-              type="button"
-              onClick={onClose}
-              title="Cerrar"
-              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
-            >
-              <X className="size-5" />
-            </button>
+              {/* Botón Cerrar */}
+              <button
+                type="button"
+                onClick={onClose}
+                title="Cerrar"
+                className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -213,6 +222,20 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
 
           {/* 3. Ficha Técnica Rápida (Rendimiento & Cocción) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:items-center lg:justify-around gap-2.5 pb-2">
+            {product.metodos_coccion && product.metodos_coccion.length > 0 && (
+              <div className="flex items-center gap-2.5 col-span-2">
+                <Flame className="size-4 text-orange-500 shrink-0" />
+                <div className="-space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                    Ideal para
+                  </span>
+                  <span className="text-xs font-extrabold text-slate-800 truncate">
+                    {product.metodos_coccion.join(", ")}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {product.rinde_personas && (
               <div className="flex items-center gap-2.5">
                 <Users className="size-4 text-slate-500 shrink-0" />
@@ -222,20 +245,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   </span>
                   <span className="text-xs font-extrabold text-slate-800">
                     {product.rinde_personas}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {product.metodos_coccion && product.metodos_coccion.length > 0 && (
-              <div className="flex items-center gap-2.5">
-                <Flame className="size-4 text-orange-500 shrink-0" />
-                <div className="-space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Ideal para
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-800 truncate">
-                    {product.metodos_coccion.join(", ")}
                   </span>
                 </div>
               </div>

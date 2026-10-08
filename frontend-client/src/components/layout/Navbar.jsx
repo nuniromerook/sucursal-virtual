@@ -2,6 +2,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
+import { useTabNavigation } from "@/context/TabNavigationContext";
+import { useCatalogo } from "@/context/CatalogoContext";
+import { useNotifications } from "@/context/NotificationContext";
 import {
   Bell,
   Menu,
@@ -23,14 +26,22 @@ const CATEGORIES = [
   { id: "combos", label: "Combos Ahorro", special: true },
 ];
 
-export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
+export const Navbar = ({
+  onOpenBranchModal,
+  onOpenProfileModal,
+  onOpenSidebar,
+  onOpenNotificationsModal,
+}) => {
   const { totalItems, setIsCartOpen } = useCart();
   const { deliveryMode, selectedBranch, customerAddress } = useLocation();
+  const { isHome, goToHome, goToCatalogo } = useTabNavigation();
+  const { categoryCounts } = useCatalogo();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleCategoryClick = (cat) => {
     if (cat.id === "todos") {
-      navigate("/productos");
+      goToCatalogo();
     } else {
       navigate(`/productos?categoria=${cat.id}`);
     }
@@ -40,16 +51,16 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
     <div className="flex flex-col w-full h-fit bg-white sticky top-0 z-40 border-b border-slate-200/80">
       {/* Mobile section */}
       <div className="flex md:hidden items-center justify-between w-full px-4 py-3">
-        {/* Botón de Menu Mobile con Badge */}
+        {/* Botón de Menu Mobile (Abre Sidebar Estratégica) */}
         <button
           type="button"
-          onClick={() => navigate("/productos")}
+          onClick={onOpenSidebar}
           className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
-          title="Ver Catálogo"
+          title="Menú y Categorías"
         >
           <Menu className="size-5 stroke-[2.2]" />
           <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-            18
+            {categoryCounts.todos || 12}
           </span>
         </button>
 
@@ -59,6 +70,7 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
             type="button"
             onClick={() => setIsCartOpen(true)}
             className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+            title="Ver Carrito"
           >
             <ShoppingCart className="size-5 stroke-[2.2]" />
             {totalItems > 0 && (
@@ -71,13 +83,16 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
           {/* Botón de Notificaciones Mobile con Badge */}
           <button
             type="button"
-            onClick={onOpenProfileModal}
+            onClick={onOpenNotificationsModal}
             className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+            title="Notificaciones"
           >
             <Bell className="size-5 stroke-[2.2]" />
-            <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-              5
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                {unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -86,12 +101,21 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
       <div className="hidden md:flex w-full">
         <div className="flex w-full max-w-6xl mx-auto gap-4 px-4 sm:px-6 items-center">
           {/* Logo clickeable hacia "/" */}
-          <Link to="/" className="shrink-0 flex items-center gap-2 group">
-            <img src="/favicon.svg" alt="" className="size-28" />
+          <Link
+            to="/"
+            onClick={(e) => {
+              if (isHome) {
+                e.preventDefault();
+                goToHome();
+              }
+            }}
+            className="shrink-0 flex items-center gap-2 group"
+          >
+            <img src="/favicon.svg" alt="Abastecedora Valette" className="size-28" />
           </Link>
 
           <div className="flex flex-col w-full justify-center gap-2">
-            {/* Buscador, Puntos, Carrito y Perfil */}
+            {/* Buscador, Puntos, Notificaciones, Carrito y Perfil */}
             <div className="flex items-center gap-3 transition-all whitespace-nowrap">
               {/* Input Buscador */}
               <div className="relative flex w-full items-center">
@@ -112,7 +136,7 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
                 />
                 <button
                   type="button"
-                  onClick={() => navigate("/productos")}
+                  onClick={goToCatalogo}
                   className="absolute right-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <SlidersHorizontal className="size-3 text-slate-500 stroke-[2.5]" />
@@ -128,6 +152,21 @@ export const Navbar = ({ onOpenBranchModal, onOpenProfileModal }) => {
               >
                 <span className="text-amber-500">⭐</span>
                 <span>140 pts</span>
+              </button>
+
+              {/* Botón de Notificaciones Desktop con Badge */}
+              <button
+                type="button"
+                onClick={onOpenNotificationsModal}
+                className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-transform cursor-pointer"
+                title="Notificaciones"
+              >
+                <Bell className="size-5 stroke-[2.2]" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Botón de Carrito Desktop con Badge */}

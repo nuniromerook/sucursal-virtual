@@ -4,18 +4,23 @@ import { BannerCarousel } from "@/components/home/BannerCarousel";
 import { CombosSection } from "@/components/home/CombosSection";
 import { BranchesSection } from "@/components/home/BranchesSection";
 import { ProductCard } from "@/components/products/ProductCard";
-import { CORTES_MOCK } from "@/services/catalogo.service";
+import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
+import { useCatalogo } from "@/context/CatalogoContext";
+import { useLocation } from "@/context/LocationContext";
 import { ChevronDown, MapPin } from "lucide-react";
 
 export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
+  const { productos, isLoading } = useCatalogo();
+  const { customerAddress } = useLocation();
+
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, _setSortBy] = useState("destacados");
   const [onlyStock, _setOnlyStock] = useState(false);
 
-  // Filtrado de cortes para la vista principal
+  // Filtrado reactivo de cortes oficiales desde PostgreSQL
   const filteredProducts = useMemo(() => {
-    let list = [...CORTES_MOCK];
+    let list = [...productos];
 
     if (selectedCategory !== "todos") {
       if (selectedCategory === "asado") {
@@ -35,9 +40,10 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
         (p) =>
-          p.nombre.toLowerCase().includes(q) ||
-          p.descripcion.toLowerCase().includes(q) ||
-          p.categoria.toLowerCase().includes(q),
+          (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+          (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+          (p.categoria && p.categoria.toLowerCase().includes(q)) ||
+          (p.especie && p.especie.toLowerCase().includes(q)),
       );
     }
 
@@ -54,7 +60,7 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
     }
 
     return list;
-  }, [selectedCategory, searchQuery, onlyStock, sortBy]);
+  }, [productos, selectedCategory, searchQuery, onlyStock, sortBy]);
 
   const handleProductClick = (product) => {
     if (onOpenProduct) {
@@ -66,22 +72,22 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 gap-6 flex flex-col">
-      {/* Seleccionar sucursal/delivery */}
+      {/* Selector rápido de dirección/sucursal mobile */}
       <button
         type="button"
         className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer shrink-0 sm:hidden shadow-native"
       >
-        <MapPin className="size-6 text-slate-500 stroke-2" />
+        <MapPin className="size-6 text-valette-blue stroke-2" />
         <div className="flex flex-col items-start">
-          <p className="text-xs text-slate-500">Enviar a:</p>
-          <p className="text-sm font-semibold truncate max-w-50">
-            J. Tarulli 1474, Luis Guillon
+          <p className="text-xs text-valette-blue">Enviar a:</p>
+          <p className="text-sm text-valette-dark font-semibold truncate max-w-50">
+            {customerAddress || "J. Tarulli 1474, Luis Guillón"}
           </p>
         </div>
         <ChevronDown className="size-4 text-slate-400 shrink-0 stroke-[2.5] ml-auto" />
       </button>
 
-      {/* Carrusel de Banners Publicitarios */}
+      {/* Carrusel de Banners Publicitarios Oficiales */}
       <BannerCarousel onSelectCategory={(cat) => setSelectedCategory(cat)} />
 
       {/* Sección de Combos (Visible si está en todos o combos) */}
@@ -110,7 +116,14 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
           </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {/* Estado de carga con Skeleton Loaders estilo Uber / PedidosYa */}
+        {isLoading && productos.length === 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native">
             <p className="text-3xl mb-2">🔍</p>
             <h3 className="font-black text-base text-slate-800">
@@ -126,7 +139,7 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
                 setSearchQuery("");
                 setSelectedCategory("todos");
               }}
-              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer"
+              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer hover:bg-valette-dark transition-colors"
             >
               Restablecer Filtros
             </button>

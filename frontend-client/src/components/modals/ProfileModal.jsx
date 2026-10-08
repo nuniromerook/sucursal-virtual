@@ -17,7 +17,10 @@ import { useModalBehavior } from "@/hooks/useModalBehavior";
 
 export const ProfileModal = ({ isOpen, onClose, onOpenTrackingModal }) => {
   const { showToast } = useToast();
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
   const [whatsappNotifications, setWhatsappNotifications] = useState(true);
 
   if (!isOpen) return null;
@@ -33,25 +36,36 @@ export const ProfileModal = ({ isOpen, onClose, onOpenTrackingModal }) => {
       className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl shadow-2xl h-[80vh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 transition-all animate-in fade-in slide-in-from-bottom-4 duration-200">
-        {/* Barra táctil para celulares */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0" />
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 p-6 sticky top-0 bg-white z-10">
-          <button
-            type="button"
-            onClick={onClose}
-            className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <h3 className="text-base font-extrabold text-slate-900">Mi Cuenta</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
-          >
-            <X className="size-4" />
-          </button>
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl shadow-2xl h-[80vh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 transition-all animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Zona táctil de arrastre (barra + header sticky) */}
+        <div
+          {...dragHandleProps}
+          className="touch-none select-none sticky top-0 bg-white z-10 shrink-0"
+        >
+          {/* Barra táctil para celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 p-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <h3 className="text-base font-extrabold text-slate-900">
+              Mi Cuenta
+            </h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col px-6 w-full h-full overflow-y-auto scrollbar-none">

@@ -1,14 +1,21 @@
 // src/App.jsx
 import React, { useState, useMemo } from "react";
-import { BrowserRouter, Routes, Route, useSearchParams } from "react-router-dom";
+import { BrowserRouter, useSearchParams } from "react-router-dom";
 import { ToastProvider } from "@/context/ToastContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CartProvider, useCart } from "@/context/CartContext";
+import { CatalogoProvider, useCatalogo } from "@/context/CatalogoContext";
+import { NotificationProvider, useNotifications } from "@/context/NotificationContext";
+import {
+  TabNavigationProvider,
+  useTabNavigation,
+} from "@/context/TabNavigationContext";
 
 // Componentes de Layout
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileDock } from "@/components/layout/MobileDock";
+import { SidebarDrawer } from "@/components/layout/SidebarDrawer";
 
 // Páginas
 import { Home } from "@/pages/Home";
@@ -22,24 +29,21 @@ import { OrderTrackingModal } from "@/components/modals/OrderTrackingModal";
 import { ProfileModal } from "@/components/modals/ProfileModal";
 import { BranchSelectorModal } from "@/components/modals/BranchSelectorModal";
 import { SearchFilterModal } from "@/components/modals/SearchFilterModal";
-
-// Datos para sincronización de URL
-import { CORTES_MOCK } from "@/services/catalogo.service";
+import { NotificationsModal } from "@/components/modals/NotificationsModal";
 
 function AppContent() {
   const { isCartOpen, setIsCartOpen } = useCart();
+  const { getProductBySlugOrId } = useCatalogo();
+  const { isNotificationsOpen, setIsNotificationsOpen } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isHome, isCatalogo } = useTabNavigation();
 
-  // Sincronización de Producto con la URL (?producto= o ?corte=)
+  // Sincronización de Producto con la URL (?producto= o ?corte=) usando la base de datos oficial
   const productParam = searchParams.get("producto") || searchParams.get("corte");
   const activeProduct = useMemo(() => {
     if (!productParam) return null;
-    return (
-      CORTES_MOCK.find(
-        (p) => p.slug === productParam || String(p.id) === String(productParam)
-      ) || null
-    );
-  }, [productParam]);
+    return getProductBySlugOrId(productParam);
+  }, [productParam, getProductBySlugOrId]);
 
   const handleOpenProduct = (product) => {
     const newParams = new URLSearchParams(searchParams);
@@ -54,7 +58,8 @@ function AppContent() {
     setSearchParams(newParams);
   };
 
-  // Estados de modales auxiliares
+  // Estados de modales y drawers auxiliares
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
@@ -65,33 +70,38 @@ function AppContent() {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
-      {/* 1. Header con Buscador Inteligente, Carrito, Sucursal y Categorías */}
+      {/* 1. Header con Buscador Inteligente, Carrito, Sucursal, Notificaciones y Menú */}
       <Navbar
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+        onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
 
-      {/* 2. Rutas Principales */}
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              onOpenProduct={handleOpenProduct}
-              onOpenCustomizer={handleOpenProduct}
-            />
-          }
-        />
-        <Route
-          path="/productos"
-          element={
-            <Catalogo
-              onOpenProduct={handleOpenProduct}
-              onOpenCustomizer={handleOpenProduct}
-            />
-          }
-        />
-      </Routes>
+      {/* 2. Pantallas Principales estilo Fragments con Memoria de Scroll y Ubicación */}
+      <main className="w-full">
+        <div
+          id="fragment-home"
+          style={{ display: isHome ? "block" : "none" }}
+          aria-hidden={!isHome}
+        >
+          <Home
+            onOpenProduct={handleOpenProduct}
+            onOpenCustomizer={handleOpenProduct}
+          />
+        </div>
+
+        <div
+          id="fragment-catalogo"
+          style={{ display: isCatalogo ? "block" : "none" }}
+          aria-hidden={!isCatalogo}
+        >
+          <Catalogo
+            onOpenProduct={handleOpenProduct}
+            onOpenCustomizer={handleOpenProduct}
+          />
+        </div>
+      </main>
 
       {/* 3. Dock Inferior Mobile */}
       <MobileDock
@@ -99,7 +109,24 @@ function AppContent() {
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
-      {/* 4. Modal / Bottom Sheet de Detalle de Producto Sincronizado con URL */}
+      {/* 4. Sidebar Drawer Estratégica (Menú Lateral) */}
+      <SidebarDrawer
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenBranchModal={() => setIsBranchModalOpen(true)}
+        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+      />
+
+      {/* 5. Modal / Bottom Sheet de Notificaciones (como en 0.0) */}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+      />
+
+      {/* 6. Modal / Bottom Sheet de Detalle de Producto Sincronizado con URL */}
       <ProductDetailModal
         key={activeProduct?.id || "product-detail-modal"}
         isOpen={!!activeProduct}
@@ -107,7 +134,7 @@ function AppContent() {
         onClose={handleCloseProductDetail}
       />
 
-      {/* 5. Modales Globales y Drawers */}
+      {/* 7. Modales Globales y Drawers */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -156,7 +183,13 @@ export default function App() {
         <FavoritesProvider>
           <CartProvider>
             <BrowserRouter>
-              <AppContent />
+              <CatalogoProvider>
+                <NotificationProvider>
+                  <TabNavigationProvider>
+                    <AppContent />
+                  </TabNavigationProvider>
+                </NotificationProvider>
+              </CatalogoProvider>
             </BrowserRouter>
           </CartProvider>
         </FavoritesProvider>

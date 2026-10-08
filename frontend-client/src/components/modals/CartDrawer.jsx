@@ -30,8 +30,11 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
     removeFromCart,
   } = useCart();
 
-  // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop
-  const { handleBackdropClick } = useModalBehavior(isOpen, onClose);
+  // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    isOpen,
+    onClose,
+  );
 
   if (!isOpen) return null;
 
@@ -56,16 +59,21 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
       onClick={handleBackdropClick}
     >
       {/* Contenedor Modal / Bottom Sheet */}
-      <div className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[80vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-        {/* Barra táctil para deslizar en celulares */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0" />
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[80vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Zona táctil de arrastre (barra + header superior) */}
+        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+          {/* Barra táctil para deslizar en celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-        {/* Header Superior del Carrito */}
-        <div className="flex items-center px-5 sm:px-7 py-3.5 border-b border-slate-100 shrink-0">
-          <div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none">
-              Tu Carrito
-            </h3>
+          {/* Header Superior del Carrito */}
+          <div className="flex items-center px-5 sm:px-7 py-3.5 border-b border-slate-100">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none">
+                Tu Carrito
+              </h3>
             <span className="text-[11px] font-bold text-slate-400 block mt-0.5">
               {totalItems}{" "}
               {totalItems === 1 ? "corte seleccionado" : "cortes seleccionados"}
@@ -89,8 +97,9 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
             <X className="size-5" />
           </button>
         </div>
+      </div>
 
-        {/* Cuerpo del Carrito con scroll fluido */}
+      {/* Cuerpo del Carrito con scroll fluido */}
         <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-4">
           {/* Barra de Cadena de Frío y Envío Bonificado */}
           <div className="p-3.5 rounded-2xl bg-blue-50/90 border border-blue-200/80 text-xs">

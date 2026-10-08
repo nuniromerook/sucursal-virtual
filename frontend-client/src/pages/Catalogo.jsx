@@ -3,22 +3,37 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { ProductCard } from "@/components/products/ProductCard";
-import { CORTES_MOCK } from "@/services/catalogo.service";
-
-const CATEGORIES = [
-  { id: "todos", label: "Todos", count: 12 },
-  { id: "asado", label: "Especial Asado 🔥", special: true },
-  { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
-  { id: "vacuno", label: "Carne Vacuna", count: 4 },
-  { id: "cerdo", label: "Cerdo", count: 2 },
-  { id: "pollo", label: "Granja & Pollo", count: 2 },
-  { id: "preparados", label: "Preparados", count: 1 },
-  { id: "embutidos", label: "Embutidos", count: 2 },
-  { id: "achuras", label: "Achuras", count: 1 },
-];
+import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
+import { useCatalogo } from "@/context/CatalogoContext";
 
 export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
+  const { productos, isLoading, categoryCounts } = useCatalogo();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Categorías con conteos dinámicos oficiales de PostgreSQL
+  const categoriesList = useMemo(
+    () => [
+      { id: "todos", label: "Todos", count: categoryCounts.todos },
+      {
+        id: "asado",
+        label: "Especial Asado 🔥",
+        special: true,
+        count: categoryCounts.asado,
+      },
+      { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
+      { id: "vacuno", label: "Carne Vacuna", count: categoryCounts.vacuno },
+      { id: "cerdo", label: "Cerdo", count: categoryCounts.cerdo },
+      { id: "pollo", label: "Granja & Pollo", count: categoryCounts.pollo },
+      {
+        id: "preparados",
+        label: "Preparados",
+        count: categoryCounts.preparados,
+      },
+      { id: "embutidos", label: "Embutidos", count: categoryCounts.embutidos },
+      { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
+    ],
+    [categoryCounts],
+  );
 
   // Derivado directo de la URL (Single Source of Truth)
   const selectedCategory = searchParams.get("categoria") || "todos";
@@ -52,7 +67,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
   };
 
   const filteredProducts = useMemo(() => {
-    let list = [...CORTES_MOCK];
+    let list = [...productos];
 
     if (selectedCategory !== "todos") {
       if (selectedCategory === "asado") {
@@ -74,14 +89,15 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
         (p) =>
-          p.nombre.toLowerCase().includes(q) ||
-          p.descripcion.toLowerCase().includes(q) ||
-          p.categoria.toLowerCase().includes(q),
+          (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+          (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+          (p.categoria && p.categoria.toLowerCase().includes(q)) ||
+          (p.especie && p.especie.toLowerCase().includes(q)),
       );
     }
 
     return list;
-  }, [selectedCategory, searchQuery]);
+  }, [productos, selectedCategory, searchQuery]);
 
   const handleProductClick = (product) => {
     if (onOpenProduct) {
@@ -121,7 +137,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
 
       {/* Categorías Horizontales con scroll nativo */}
       <section className="bg-white lg:bg-transparent p-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        {CATEGORIES.map((cat) => {
+        {categoriesList.map((cat) => {
           const isSelected = selectedCategory === cat.id;
 
           if (cat.special) {
@@ -137,6 +153,17 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
                 }`}
               >
                 <span>{cat.label}</span>
+                {cat.count !== undefined && cat.count > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-num ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-red-200/70 text-[#c53030]"
+                    }`}
+                  >
+                    {cat.count}
+                  </span>
+                )}
               </button>
             );
           }
@@ -185,7 +212,14 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
           </span>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {/* Estado de carga con Skeleton Loaders */}
+        {isLoading && productos.length === 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native">
             <p className="text-3xl mb-2">🔍</p>
             <h3 className="font-black text-base text-slate-800">
@@ -197,13 +231,13 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
             <button
               type="button"
               onClick={handleResetFilters}
-              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer"
+              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer hover:bg-valette-dark transition-colors"
             >
               Restablecer Filtros
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredProducts.map((prod) => (
               <ProductCard
                 key={prod.id}

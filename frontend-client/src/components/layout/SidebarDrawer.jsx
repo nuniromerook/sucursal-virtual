@@ -1,0 +1,317 @@
+// src/components/layout/SidebarDrawer.jsx
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  X,
+  Home,
+  Flame,
+  Package,
+  Star,
+  MapPin,
+  Truck,
+  Phone,
+  MessageCircle,
+  Clock,
+  ChevronRight,
+  LogOut,
+  ShoppingBag,
+  ExternalLink,
+  ShieldCheck,
+  Beef,
+} from "lucide-react";
+import { useModalBehavior } from "@/hooks/useModalBehavior";
+import { useLocation } from "@/context/LocationContext";
+import { useCatalogo } from "@/context/CatalogoContext";
+import { useTabNavigation } from "@/context/TabNavigationContext";
+
+export const SidebarDrawer = ({
+  isOpen,
+  onClose,
+  onOpenProfileModal,
+  onOpenBranchModal,
+  onOpenTrackingModal,
+}) => {
+  const navigate = useNavigate();
+  const { selectedBranch } = useLocation();
+  const { categoryCounts } = useCatalogo();
+  const { goToHome, goToCatalogo } = useTabNavigation();
+
+  const { handleBackdropClick, modalRef } = useModalBehavior(isOpen, onClose);
+
+  if (!isOpen) return null;
+
+  const handleNav = (action) => {
+    onClose();
+    if (typeof action === "function") {
+      action();
+    }
+  };
+
+  const handleCategoryNav = (catId) => {
+    onClose();
+    navigate(`/productos?categoria=${catId}`);
+  };
+
+  const whatsappPhone = selectedBranch?.telefono || "1135534033";
+  const whatsappUrl = `https://wa.me/54${whatsappPhone}?text=${encodeURIComponent(
+    "¡Hola Abastecedora Valette! Quiero consultar por un pedido desde la Sucursal Virtual."
+  )}`;
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-900/60 z-50 flex justify-start transition-opacity duration-200"
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={modalRef}
+        className="bg-white w-full max-w-[320px] sm:max-w-sm h-full shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-left duration-250 border-r border-slate-200/80"
+      >
+        {/* 1. Header con Logo Oficial y Botón Cerrar */}
+        <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+          <div className="flex items-center gap-3">
+            <div className="size-11 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center p-1 shrink-0">
+              <img
+                src="/favicon.svg"
+                alt="Abastecedora Valette"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight">
+                Abastecedora Valette
+              </h3>
+              <p className="text-[11px] font-semibold text-[#003366]">
+                Sucursal Virtual Oficial
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold cursor-pointer transition-colors"
+            title="Cerrar menú"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* 2. Cuerpo Desplazable */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 scrollbar-none text-xs">
+          {/* Card de Cuenta & Puntos Club Valette (Estratégico) */}
+          <div
+            onClick={() => handleNav(onOpenProfileModal)}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#003366]/5 via-[#003366]/10 to-amber-500/10 border border-[#003366]/15 hover:border-[#003366]/30 transition-all cursor-pointer flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-[#003366] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+                JP
+              </div>
+              <div>
+                <span className="block font-black text-slate-900 text-xs group-hover:text-[#003366] transition-colors">
+                  Juan Pérez
+                </span>
+                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                  <Star className="size-3 fill-amber-500 text-amber-500" />
+                  <span>140 pts Club Valette</span>
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="size-4 text-slate-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all" />
+          </div>
+
+          {/* Banner de Pedido Activo si existe */}
+          <div
+            onClick={() => handleNav(onOpenTrackingModal)}
+            className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between cursor-pointer hover:bg-emerald-100/70 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="size-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+                <Package className="size-3.5" />
+              </span>
+              <div>
+                <span className="block font-bold text-emerald-950 text-xs">
+                  Pedido activo #VAL-0259
+                </span>
+                <span className="text-[10px] text-emerald-700 font-semibold">
+                  En preparación en mostrador
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-black text-emerald-800 bg-white/80 px-2 py-0.5 rounded-md border border-emerald-200">
+              Seguir
+            </span>
+          </div>
+
+          {/* Sección 1: Navegación Principal */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 px-1">
+              Tienda y Catálogo
+            </span>
+            <div className="space-y-1 font-semibold text-slate-700">
+              <button
+                type="button"
+                onClick={() => handleNav(goToHome)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Home className="size-4 text-[#003366]" />
+                  <span>Inicio</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleNav(goToCatalogo)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Beef className="size-4 text-[#003366]" />
+                  <span>Catálogo de Carnicería</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-[10px]">
+                  {categoryCounts.todos || 12} cortes
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCategoryNav("asado")}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-50 text-slate-800 hover:text-[#c53030] transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Flame className="size-4 text-[#c53030]" />
+                  <span className="font-bold">Especial Asado & Parrilla</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-red-100 text-[#c53030] text-[10px] font-black">
+                  🔥 Top
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCategoryNav("combos")}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Package className="size-4 text-emerald-700" />
+                  <span>Combos Ahorro Familiar</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Freezer
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleNav(onOpenProfileModal)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Star className="size-4 text-amber-500" />
+                  <span>Club Valette (Puntos y Canjes)</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sección 2: Operatividad & Sucursales */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 px-1">
+              Sucursales y Envíos
+            </span>
+            <div className="space-y-1 font-semibold text-slate-700">
+              <div
+                onClick={() => handleNav(onOpenBranchModal)}
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="size-4 text-[#003366] shrink-0" />
+                  <div>
+                    <span className="text-[10px] text-slate-500 block leading-none">
+                      Sucursal de preparación:
+                    </span>
+                    <span className="font-bold text-slate-900 text-xs">
+                      {selectedBranch?.nombre || "Luis Guillón"}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-[#003366]">
+                  Cambiar
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center gap-2.5 text-slate-600">
+                <Truck className="size-4 text-[#003366] shrink-0" />
+                <div className="leading-tight">
+                  <span className="font-bold text-slate-800 text-xs block">
+                    Envíos Refrigerados
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    Cadena de frío controlada con furgón térmico
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex items-center gap-2.5 text-slate-600">
+                <Clock className="size-4 text-[#003366] shrink-0" />
+                <div className="leading-tight">
+                  <span className="font-bold text-slate-800 text-xs block">
+                    Horario de Atención
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {selectedBranch?.horario || "Lun a Sáb 07:00 a 15:00 hs"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección 3: Contacto Directo Mostrador */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 px-1">
+              Atención Personalizada
+            </span>
+            <div className="space-y-2">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-2xs"
+              >
+                <span className="flex items-center gap-2">
+                  <MessageCircle className="size-4" />
+                  <span>WhatsApp de Carnicería</span>
+                </span>
+                <ExternalLink className="size-3.5 opacity-80" />
+              </a>
+
+              <a
+                href={`tel:${whatsappPhone}`}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Phone className="size-4 text-slate-600" />
+                  <span>Llamar a mostrador ({whatsappPhone})</span>
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Footer con Marca y Seguridad */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50/60 shrink-0">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+            <span className="font-bold text-slate-700">Sucursal Virtual v1.0</span>
+            <span className="flex items-center gap-1 text-emerald-700 font-bold">
+              <ShieldCheck className="size-3.5" /> 100% Calidad Frigorífico
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400 text-center">
+            Abastecedora Valette SRL • CUIT 30-71649231-9
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
