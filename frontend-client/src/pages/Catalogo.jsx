@@ -133,11 +133,11 @@ const CategoryHorizontalShelf = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3.5 px-4 sm:px-6">
         <div>
           <div className="flex items-center gap-2 mt-2">
-            <h2 className="text-lg sm:text-xl font-black text-slate-900">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-5.5">
               {title}
             </h2>
             {count !== undefined && (
-              <span className="text-[11px] font-bold ml-auto lg:ml-0 text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num">
+              <span className="text-[11px] font-bold ml-auto lg:ml-0 text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap">
                 {count} {count === 1 ? "producto" : "productos"}
               </span>
             )}
@@ -173,9 +173,14 @@ const CategoryHorizontalShelf = ({
       {/* Div con scroll horizontal con todos los productos de cada categoría */}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto no-scrollbar scroll-smooth pb-7 pt-1 snap-x snap-mandatory"
+        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-6 pt-1 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
       >
         {children}
+        {/* Spacer de cierre para garantizar que el último elemento conserve el padding derecho del contenedor */}
+        <div
+          className="shrink-0 w-0.5 sm:w-2 select-none pointer-events-none"
+          aria-hidden="true"
+        />
       </div>
     </section>
   );
@@ -599,7 +604,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
                 <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
                 <div className="flex gap-4 overflow-x-hidden">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-[280px] sm:w-[300px] shrink-0">
+                    <div key={i} className="w-[80vw] sm:w-75 shrink-0">
                       <ProductCardSkeleton />
                     </div>
                   ))}
@@ -640,7 +645,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
                 {sec.products.map((prod) => (
                   <div
                     key={prod.id}
-                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start px-4"
+                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start last:snap-end"
                   >
                     <ProductCard
                       product={prod}

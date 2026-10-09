@@ -50,7 +50,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
 
   return (
     <div
-      className={`h-full w-fit bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-native flex flex-col justify-between hover:border-slate-300 transition-all ${
+      className={`h-full w-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-native flex flex-col justify-between hover:border-slate-300 transition-all ${
         isOutOfStock ? "opacity-85" : ""
       }`}
     >
