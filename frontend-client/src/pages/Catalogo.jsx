@@ -28,9 +28,9 @@ import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 export const CATEGORY_SECTIONS = [
   {
     id: "asado",
-    titulo: "Especial Asado 🔥",
+    titulo: "Sección Asado 🔥",
     descripcion:
-      "Cortes parrilleros clásicos de novillito, cerdo y achuras seleccionados para el fuego.",
+      "Sección rápida de cortes parrilleros clásicos, cerdo y achuras seleccionados para el fuego.",
     badge: "Parrilla del Domingo",
     filter: (p) =>
       ["vacuno", "cerdo", "embutidos", "achuras"].includes(p.categoria) &&
@@ -45,31 +45,31 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "vacuno",
-    titulo: "Carne Vacuna",
+    titulo: "🥩 Vacuno",
     descripcion:
-      "Cortes de novillito con la grasa justa de cobertura, terneza suprema y rendimiento en balanza.",
+      "Cortes vacunos directos de nuestra hacienda seleccionada, frescos y rendidores.",
     badge: "Novillito Premium",
     filter: (p) => p.categoria === "vacuno",
   },
   {
     id: "cerdo",
-    titulo: "Cerdo Seleccionado",
+    titulo: "🥓 Cerdo",
     descripcion:
-      "Cortes frescos, magros y tiernos de primera calidad para parrilla, horno o plancha.",
+      "Todo en Cerdo de genética! Cortes frescos, directo de nuestra producción a tu mesa.",
     badge: "100% Fresco",
     filter: (p) => p.categoria === "cerdo",
   },
   {
     id: "pollo",
-    titulo: "Granja & Pollo",
+    titulo: "🍗 Pollo & Granja 🥚",
     descripcion:
-      "Cortes frescos de campo seleccionados por terneza, versatilidad diaria y máximo rinde.",
+      "Cortes y productos frescos de campo seleccionados por terneza, versatilidad diaria y máximo rinde.",
     badge: "Granja Fresca",
     filter: (p) => p.categoria === "pollo",
   },
   {
     id: "embutidos",
-    titulo: "Embutidos Artesanales",
+    titulo: "🌭 Embutidos producción propia",
     descripcion:
       "Elaboración diaria con tripa natural y carne fresca pura sin conservantes.",
     badge: "Elaboración Diaria",
@@ -77,9 +77,9 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "preparados",
-    titulo: "Preparados Caseros & Milanesas",
+    titulo: "🫓 Preparados",
     descripcion:
-      "Milanesas empanadas a mano y medallones del día listos para cocinar en pocos minutos.",
+      "Milanesas, hamburguesas y medallones del día listos para cocinar en pocos minutos.",
     badge: "Listos para Cocinar",
     filter: (p) => p.categoria === "preparados",
   },
@@ -409,7 +409,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
         label: "Almacén Parrillero",
         count: categoryCounts.almacen,
       },
-    ],
+    ].filter((cat) => cat.special || cat.id === "todos" || (cat.count !== undefined && cat.count > 0)),
     [categoryCounts],
   );
 

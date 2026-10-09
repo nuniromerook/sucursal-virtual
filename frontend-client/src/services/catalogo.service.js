@@ -195,11 +195,7 @@ export const CORTES_MOCK = [
     badge: "🔥 Especial Parrilla",
     metodos_coccion: ["Parrilla", "Horno con limón"],
     rinde_personas: "3 a 4 personas x kg",
-    opciones_corte: [
-      "Manta Entera",
-      "Trozado al medio",
-      "Tiras tipo ribs",
-    ],
+    opciones_corte: ["Manta Entera", "Trozado al medio", "Tiras tipo ribs"],
     promos: [
       {
         id: 14,
@@ -575,7 +571,8 @@ export const DEFAULT_BANNERS = [
   {
     id: 2,
     titulo: "Cortes Magros para la Semana",
-    subtitulo: "Milanesas, bifes y supremas con descuentos especiales por volumen.",
+    subtitulo:
+      "Milanesas, bifes y supremas con descuentos especiales por volumen.",
     imagen_desktop_url:
       "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=3480&auto=format&fit=crop",
     imagen_mobile_url:
@@ -614,28 +611,39 @@ const CACHE_KEY_CATALOGO = "valette_catalogo_cache";
 export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   if (!dbProduct) return null;
 
-  const slug = dbProduct.slug || "";
+  const slug = (dbProduct.slug || "").toLowerCase().trim();
   const id = Number(dbProduct.id);
+  const nombre =
+    dbProduct.nombre_producto || dbProduct.nombre || "Corte Valette";
 
-  // Buscar coincidencia en referencia por slug, ID o coincidencia de nombre
+  // Buscar coincidencia en referencia ÚNICAMENTE por slug o coincidencia de nombre (NUNCA por ID arbitrario de mock)
   const mockMatch = mockReferenceList.find(
     (m) =>
-      m.slug === slug ||
-      m.id === id ||
+      (m.slug && m.slug.toLowerCase().trim() === slug) ||
       (m.nombre &&
         dbProduct.nombre_producto &&
-        m.nombre.toLowerCase().includes(dbProduct.nombre_producto.toLowerCase()))
+        (m.nombre.toLowerCase().includes(dbProduct.nombre_producto.toLowerCase()) ||
+          dbProduct.nombre_producto.toLowerCase().includes(m.nombre.toLowerCase()))),
   );
 
-  const nombre = dbProduct.nombre_producto || dbProduct.nombre || "Corte Valette";
-  const categoria = (dbProduct.categoria || dbProduct.especie || "vacuno").toLowerCase();
-  const especie = (dbProduct.especie || dbProduct.categoria || "vacuno").toLowerCase();
+  const categoria = (
+    dbProduct.categoria ||
+    dbProduct.especie ||
+    "vacuno"
+  ).toLowerCase().trim();
+
+  const especie = (
+    dbProduct.especie ||
+    dbProduct.categoria ||
+    "vacuno"
+  ).toLowerCase().trim();
+
   const precio = Number(dbProduct.precio) || 0;
   const precioAnterior = Number(dbProduct.precio_anterior || 0);
 
   // Unidad de medida oficial ('kg' o 'u')
   const unidadMedida = formatUnidadMedida(
-    dbProduct.unidad_medida || mockMatch?.unidad_medida || "kg"
+    dbProduct.unidad_medida || mockMatch?.unidad_medida || "kg",
   );
 
   // Normalizar promociones escalonadas por volumen
@@ -655,41 +663,51 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     categoria === "vacuno"
       ? "Carne Vacuna"
       : categoria === "cerdo"
-      ? "Cerdo"
-      : categoria === "pollo"
-      ? "Granja & Pollo"
-      : categoria === "embutidos"
-      ? "Embutidos Artesanales"
-      : categoria === "preparados"
-      ? "Preparados Caseros"
-      : categoria === "almacen"
-      ? "Almacén Parrillero"
-      : "Cortes Seleccionados";
+        ? "Cerdo"
+        : categoria === "pollo"
+          ? "Granja & Pollo"
+          : categoria === "embutidos"
+            ? "Embutidos Artesanales"
+            : categoria === "preparados"
+              ? "Preparados Caseros"
+              : categoria === "achuras"
+                ? "Achuras Frescas"
+                : categoria === "almacen"
+                  ? "Almacén Parrillero"
+                  : "Cortes Seleccionados";
 
   // Opciones de corte personalizadas para el cortador de mostrador (vacías si es almacén)
   const opcionesCorte =
     mockMatch?.opciones_corte !== undefined
       ? mockMatch.opciones_corte
       : categoria === "almacen"
-      ? []
-      : especie === "pollo"
-      ? ["Fileteado para Milanesas", "Pechugas Enteras", "Trozado para Guiso"]
-      : especie === "cerdo"
-      ? ["Corte Tradicional", "Churrascos Gruesos", "Trozado para Horno"]
-      : [
-          "Corte Tradicional",
-          "Bifes Gruesos (2 cm)",
-          "Bifes Medianos (1.5 cm)",
-          "Trozado para Horno / Guiso",
-        ];
+        ? []
+        : categoria === "embutidos" || unidadMedida === "u"
+          ? ["Entero Tradicional", "Atado Parrillero"]
+          : especie === "pollo"
+            ? [
+                "Fileteado para Milanesas",
+                "Pechugas Enteras",
+                "Trozado para Guiso",
+              ]
+            : especie === "cerdo"
+              ? ["Corte Tradicional", "Churrascos Gruesos", "Trozado para Horno"]
+              : [
+                  "Corte Tradicional",
+                  "Bifes Gruesos (2 cm)",
+                  "Bifes Medianos (1.5 cm)",
+                  "Trozado para Horno / Guiso",
+                ];
 
   const metodosCoccion =
     mockMatch?.metodos_coccion ||
-    (especie === "pollo"
-      ? ["Horno", "Plancha", "Milanesas"]
-      : categoria === "almacen"
-      ? ["Acompañamiento"]
-      : ["Parrilla", "Plancha", "Horno"]);
+    (categoria === "embutidos"
+      ? ["Parrilla", "Horno", "Plancha"]
+      : especie === "pollo"
+        ? ["Horno", "Plancha", "Milanesas"]
+        : categoria === "almacen"
+          ? ["Acompañamiento"]
+          : ["Parrilla", "Plancha", "Horno"]);
 
   const rindePersonas =
     mockMatch?.rinde_personas ||
@@ -699,7 +717,25 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     mockMatch?.badge ||
     (promos.length > 0
       ? `Ahorro x ${promos[0].cantidad_kg} ${unidadMedida}`
-      : null);
+      : dbProduct.destacar
+        ? "Corte Estrella"
+        : null);
+
+  // Valores nutricionales directos desde PostgreSQL
+  const calorias = dbProduct.calorias
+    ? Number(dbProduct.calorias)
+    : mockMatch?.calorias ||
+      (especie === "pollo" ? 165 : categoria === "embutidos" ? 320 : 245);
+
+  const proteinas = dbProduct.proteinas
+    ? Number(dbProduct.proteinas)
+    : mockMatch?.proteinas ||
+      (especie === "pollo" ? 22 : categoria === "embutidos" ? 16.5 : 20);
+
+  const grasas = dbProduct.grasas
+    ? Number(dbProduct.grasas)
+    : mockMatch?.grasas ||
+      (especie === "pollo" ? 8 : categoria === "embutidos" ? 28 : 16);
 
   return {
     id,
@@ -724,6 +760,9 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     metodos_coccion: metodosCoccion,
     rinde_personas: rindePersonas,
     opciones_corte: opcionesCorte,
+    calorias,
+    proteinas,
+    grasas,
     promos,
   };
 };
@@ -786,7 +825,10 @@ export const fetchBanners = async () => {
       }
     }
   } catch (err) {
-    console.warn("⚠️ [Catalogo Service] Usando banners por defecto:", err.message);
+    console.warn(
+      "⚠️ [Catalogo Service] Usando banners por defecto:",
+      err.message,
+    );
   }
 
   return DEFAULT_BANNERS;
@@ -821,7 +863,10 @@ export const fetchSucursales = async () => {
       }
     }
   } catch (err) {
-    console.warn("⚠️ [Sucursales Service] Usando sucursales por defecto:", err.message);
+    console.warn(
+      "⚠️ [Sucursales Service] Usando sucursales por defecto:",
+      err.message,
+    );
   }
 
   return null;

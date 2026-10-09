@@ -12,6 +12,7 @@ import {
   Sparkles,
   Beef,
   Coins,
+  Activity,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -216,16 +217,16 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </p>
           </div>
 
-          {/* 3. Ficha Técnica Rápida (Rendimiento & Cocción) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:items-center lg:justify-around gap-2.5 pb-2">
+          {/* 3. Ficha Técnica Rápida (Rendimiento, Cocción & Información Nutricional de PostgreSQL) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pb-2">
             {product.metodos_coccion && product.metodos_coccion.length > 0 && (
-              <div className="flex items-center gap-2.5 col-span-2">
+              <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
                 <Flame className="size-4 text-orange-500 shrink-0" />
-                <div className="-space-y-2">
+                <div className="-space-y-0.5 min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Ideal para
+                    Cocción
                   </span>
-                  <span className="text-xs font-extrabold text-slate-800 truncate">
+                  <span className="text-xs font-extrabold text-slate-800 truncate block">
                     {product.metodos_coccion.join(", ")}
                   </span>
                 </div>
@@ -233,38 +234,43 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             )}
 
             {product.rinde_personas && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
                 <Users className="size-4 text-slate-500 shrink-0" />
-                <div className="-space-y-2">
+                <div className="-space-y-0.5 min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
                     Rendimiento
                   </span>
-                  <span className="text-xs font-extrabold text-slate-800">
+                  <span className="text-xs font-extrabold text-slate-800 truncate block">
                     {product.rinde_personas}
                   </span>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-2.5">
+            {/* Calorías de PostgreSQL */}
+            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
+              <Activity className="size-4 text-amber-500 shrink-0" />
+              <div className="-space-y-0.5 min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                  Calorías ~
+                </span>
+                <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
+                  {product.calorias ? `${product.calorias} kcal` : "245 kcal"}{" "}
+                  <span className="text-[10px] font-normal text-slate-400">/ 100g</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Proteínas & Grasas de PostgreSQL */}
+            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
               <Info className="size-4 text-[#003366] shrink-0" />
-              <div className="flex items-center justify-between flex-1 gap-4">
-                <div className="-space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Proteínas ~
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-800">
-                    13.5g / 100g
-                  </span>
-                </div>
-                <div className="-space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Grasas ~
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-800">
-                    7g / 100g
-                  </span>
-                </div>
+              <div className="-space-y-0.5 min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">
+                  Proteínas / Grasas
+                </span>
+                <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
+                  {product.proteinas || 20}g <span className="text-slate-300">|</span> {product.grasas || 15}g
+                </span>
               </div>
             </div>
           </div>

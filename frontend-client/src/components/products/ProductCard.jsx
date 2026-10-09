@@ -138,7 +138,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           </h3>
 
           {/* Descripción llamativa expuesta en la card */}
-          <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
             {product.descripcion}
           </p>
 
