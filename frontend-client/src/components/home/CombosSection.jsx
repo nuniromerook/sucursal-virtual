@@ -1,11 +1,12 @@
 // src/components/home/CombosSection.jsx
-import React from "react";
+import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
-import { Scale, ShoppingCart, Sparkles, Flame, Check } from "lucide-react";
+import { Scale, ShoppingCart, Sparkles, Eye, ChevronRight } from "lucide-react";
+import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 
-const COMBOS = [
+export const COMBOS = [
   {
     id: 101,
     nombre: "Combo Asado Familiar (5 kg)",
@@ -18,24 +19,32 @@ const COMBOS = [
     puntos: 45,
     precio: 38900,
     precioAnterior: 44100,
+    descripcion:
+      "La selección parrillera definitiva con novillito seleccionado y chorizo artesanal puro cerdo. Ideal para compartir el domingo en familia.",
     items: [
       {
         nombre: "Asado Criollo de Centro",
         peso: "2 kg",
+        descripcion:
+          "Costillar de hueso plano con carne abundante entrevarada y grasa blanca parrillera.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400",
+          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
       },
       {
         nombre: "Vacío Especial de Novillito",
         peso: "2 kg",
+        descripcion:
+          "Tierno y jugoso con su cuerito crocante, seleccionado con la cobertura justa.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600",
       },
       {
         nombre: "Chorizo Artesanal Puro Cerdo",
         peso: "1 kg",
+        descripcion:
+          "Elaboración diaria con tripa natural y carne 100% cerdo fresca sin conservantes.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=400",
+          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=600",
       },
     ],
   },
@@ -51,36 +60,48 @@ const COMBOS = [
     puntos: 60,
     precio: 42500,
     precioAnterior: 49300,
+    descripcion:
+      "Paquete completo de cortes magros y versátiles para resolver almuerzos y cenas cotidianas: milanesas, bifes, pollo y carne picada especial.",
     items: [
       {
         nombre: "Milanesas de Nalga Fileteadas",
         peso: "2 kg",
+        descripcion:
+          "Corte vacuno tierno y parejo, fileteado a máquina listo para empanar al horno o fritas.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=400",
+          "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=600",
       },
       {
         nombre: "Carne Picada Especial Magra",
         peso: "1 kg",
+        descripcion:
+          "Molida en el momento con corte de novillito de bajo contenido graso para empanadas o salsas.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?q=80&w=400",
+          "https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?q=80&w=600",
       },
       {
         nombre: "Supremas de Pollo Desgrasadas",
         peso: "1 kg",
+        descripcion:
+          "Pechugas frescas limpias sin piel ni grasa sobrante, 100% rendimiento y carne blanca.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=400",
+          "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=600",
       },
       {
         nombre: "Bife Ancho Seleccionado",
         peso: "1 kg",
+        descripcion:
+          "Ojo de bife veteado de novillito para vuelta y vuelta en plancha o sartén de hierro.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=400",
+          "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=600",
       },
       {
         nombre: "Hamburguesas Caseras de Pollo",
         peso: "1 kg",
+        descripcion:
+          "Medallones artesanales moldeados con pechuga y condimentos suaves listos para cocinar.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=400",
+          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600",
       },
     ],
   },
@@ -96,38 +117,49 @@ const COMBOS = [
     puntos: 40,
     precio: 35900,
     precioAnterior: 40400,
+    descripcion:
+      "La combinación preferida de los asadores: pechito crocante de cerdo, bondiola jugosa, asado criollo de novillito y chorizos artesanales.",
     items: [
       {
         nombre: "Pechito de Cerdo con Manta",
         peso: "2 kg",
+        descripcion:
+          "Costillitas de cerdo tiernas con manta carnosa y cuero que dora crocante al fuego.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600",
       },
       {
         nombre: "Bondiola Fresca de Cerdo",
         peso: "1 kg",
+        descripcion:
+          "Corte veteado súper tierno para hacer bifes a la plancha o brasear con miel y mostaza.",
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422423/nwcd2bvbh1gcfkbehsv5.webp",
       },
       {
         nombre: "Asado Criollo de Centro",
         peso: "1 kg",
+        descripcion:
+          "Tiras clásicas de costilla con hueso plano y terneza garantizada.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400",
+          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
       },
       {
         nombre: "Chorizo Artesanal Puro Cerdo",
         peso: "1 kg",
+        descripcion:
+          "Embutido artesanal de receta tradicional parrillera con tripa natural.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=400",
+          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=600",
       },
     ],
   },
 ];
 
-export const CombosSection = ({ onSelectCategory }) => {
+export const CombosSection = () => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const [selectedCombo, setSelectedCombo] = useState(null);
 
   const handleAddCombo = (combo) => {
     addToCart(
@@ -139,7 +171,7 @@ export const CombosSection = ({ onSelectCategory }) => {
         puntos: combo.puntos,
         imagen_url:
           combo.items[0]?.imagenUrl ||
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400",
+          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
       },
       1,
       {
@@ -164,7 +196,7 @@ export const CombosSection = ({ onSelectCategory }) => {
             </h2>
           </div>
           <p className="text-xs text-slate-500">
-            Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos.
+            Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos. Tocá cualquier combo para ver cada corte con su foto.
           </p>
         </div>
       </div>
@@ -178,7 +210,8 @@ export const CombosSection = ({ onSelectCategory }) => {
           return (
             <div
               key={combo.id}
-              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 transition-all group"
+              onClick={() => setSelectedCombo(combo)}
+              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer"
             >
               <div>
                 {/* 1. Tira de 3 Miniaturas de los Cortes del Combo */}
@@ -188,6 +221,14 @@ export const CombosSection = ({ onSelectCategory }) => {
                     <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1">
                       <Scale className="size-3" />
                       <span>{combo.kilos} kg en total</span>
+                    </span>
+                  </div>
+
+                  {/* Badge flotante "Ver fotos" en esquina derecha */}
+                  <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">
+                      <Eye className="size-2.5" />
+                      <span>Ver fotos</span>
                     </span>
                   </div>
 
@@ -223,7 +264,7 @@ export const CombosSection = ({ onSelectCategory }) => {
 
                       {totalCortes > 3 && (
                         <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
-                          <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm">
+                          <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
                             +{extraCortes}
                           </span>
                           <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
@@ -237,7 +278,9 @@ export const CombosSection = ({ onSelectCategory }) => {
 
                 {/* 2. Badges de Ahorro y Puntos */}
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}
+                  >
                     {combo.badge}
                   </span>
                   <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1">
@@ -247,8 +290,9 @@ export const CombosSection = ({ onSelectCategory }) => {
                 </div>
 
                 {/* 3. Título y Rinde */}
-                <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors">
-                  {combo.nombre}
+                <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
+                  <span>{combo.nombre}</span>
+                  <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
                   Rinde estimado: {combo.rinde}
@@ -267,7 +311,7 @@ export const CombosSection = ({ onSelectCategory }) => {
                     {combo.items.map((item, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 hover:bg-slate-100/70 transition-colors"
+                        className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 group-hover:bg-slate-100/70 transition-colors"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
@@ -282,16 +326,24 @@ export const CombosSection = ({ onSelectCategory }) => {
                     ))}
                   </div>
                 </div>
+
+                {/* Enlace sutil para abrir el modal */}
+                <div className="mb-1 text-center">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#003366] group-hover:underline">
+                    <Eye className="size-3" />
+                    <span>Ver fotos y detalle de cada corte</span>
+                  </span>
+                </div>
               </div>
 
               {/* 5. Precios y Botón de Acción en la Base */}
               <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
                 <div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-black text-slate-900">
+                    <span className="text-xl font-black text-slate-900 font-num">
                       {formatPrecio(combo.precio)}
                     </span>
-                    <span className="text-[11px] text-slate-400 line-through">
+                    <span className="text-[11px] text-slate-400 line-through font-num">
                       {formatPrecio(combo.precioAnterior)}
                     </span>
                   </div>
@@ -302,7 +354,10 @@ export const CombosSection = ({ onSelectCategory }) => {
 
                 <button
                   type="button"
-                  onClick={() => handleAddCombo(combo)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddCombo(combo);
+                  }}
                   className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
                 >
                   <ShoppingCart className="size-3.5" />
@@ -313,6 +368,16 @@ export const CombosSection = ({ onSelectCategory }) => {
           );
         })}
       </div>
+
+      {/* Modal / Bottom Sheet para Visualizar el Combo con foto de cada corte */}
+      <ComboDetailModal
+        key={selectedCombo?.id || "combo-detail-modal"}
+        isOpen={Boolean(selectedCombo)}
+        onClose={() => setSelectedCombo(null)}
+        combo={selectedCombo}
+      />
     </div>
   );
 };
+
+export default CombosSection;
