@@ -1,10 +1,391 @@
 // src/pages/Catalogo.jsx
-import { useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, X } from "lucide-react";
+import {
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Scale,
+  ShoppingCart,
+  Sparkles,
+  Eye,
+} from "lucide-react";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
 import { useCatalogo } from "@/context/CatalogoContext";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
+import { formatPrecio } from "@/utils/formatters";
+import { COMBOS } from "@/components/home/CombosSection";
+import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
+
+/**
+ * Configuración oficial de las secciones de categorías con sus títulos y descripciones informativas.
+ * Arquitectura modular preparada para sumar fácilmente secciones futuras tipo
+ * "Según tus favoritos", "Según tus últimas compras", etc.
+ */
+export const CATEGORY_SECTIONS = [
+  {
+    id: "asado",
+    titulo: "Especial Asado 🔥",
+    descripcion:
+      "Cortes parrilleros clásicos de novillito, cerdo y achuras seleccionados para el fuego.",
+    badge: "Parrilla del Domingo",
+    filter: (p) =>
+      ["vacuno", "cerdo", "embutidos", "achuras"].includes(p.categoria) &&
+      (p.metodos_coccion?.includes("Parrilla") ||
+        p.metodos_coccion?.includes("Asador") ||
+        p.categoria === "embutidos" ||
+        p.categoria === "achuras" ||
+        p.badge?.toLowerCase().includes("asado") ||
+        p.badge?.toLowerCase().includes("parrill") ||
+        p.slug?.includes("asado") ||
+        p.slug?.includes("vacio")),
+  },
+  {
+    id: "vacuno",
+    titulo: "Carne Vacuna",
+    descripcion:
+      "Cortes de novillito con la grasa justa de cobertura, terneza suprema y rendimiento en balanza.",
+    badge: "Novillito Premium",
+    filter: (p) => p.categoria === "vacuno",
+  },
+  {
+    id: "cerdo",
+    titulo: "Cerdo Seleccionado",
+    descripcion:
+      "Cortes frescos, magros y tiernos de primera calidad para parrilla, horno o plancha.",
+    badge: "100% Fresco",
+    filter: (p) => p.categoria === "cerdo",
+  },
+  {
+    id: "pollo",
+    titulo: "Granja & Pollo",
+    descripcion:
+      "Cortes frescos de campo seleccionados por terneza, versatilidad diaria y máximo rinde.",
+    badge: "Granja Fresca",
+    filter: (p) => p.categoria === "pollo",
+  },
+  {
+    id: "embutidos",
+    titulo: "Embutidos Artesanales",
+    descripcion:
+      "Elaboración diaria con tripa natural y carne fresca pura sin conservantes.",
+    badge: "Elaboración Diaria",
+    filter: (p) => p.categoria === "embutidos",
+  },
+  {
+    id: "preparados",
+    titulo: "Preparados Caseros & Milanesas",
+    descripcion:
+      "Milanesas empanadas a mano y medallones del día listos para cocinar en pocos minutos.",
+    badge: "Listos para Cocinar",
+    filter: (p) => p.categoria === "preparados",
+  },
+  {
+    id: "achuras",
+    titulo: "Achuras Frescas",
+    descripcion:
+      "Selección fresca y limpia para abrir el fuego con el auténtico sabor parrillero tradicional.",
+    badge: "Sabor Tradición",
+    filter: (p) => p.categoria === "achuras",
+  },
+  {
+    id: "almacen",
+    titulo: "Almacén Parrillero",
+    descripcion:
+      "Salsas caseras, condimentos exclusivos y complementos indispensables para tu asado.",
+    badge: "Complementos",
+    filter: (p) => p.categoria === "almacen",
+  },
+];
+
+/**
+ * Componente contenedor de estantería horizontal para cada categoría.
+ * Renderiza:
+ * - Título de la sección
+ * - Descripción
+ * - Div con scroll horizontal nativo y botones de control
+ */
+const CategoryHorizontalShelf = ({
+  title,
+  description,
+  count,
+  badge,
+  children,
+}) => {
+  const scrollRef = useRef(null);
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 340;
+      scrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <section className="mb-9 last:mb-4">
+      {/* Header de la Sección */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3.5 px-4 sm:px-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-snug">
+              {title}
+            </h2>
+            {badge && (
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-[#003366]/10 text-[#003366]">
+                {badge}
+              </span>
+            )}
+            {count !== undefined && (
+              <span className="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num">
+                {count} {count === 1 ? "opción" : "opciones"}
+              </span>
+            )}
+          </div>
+          {description && (
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+              {description}
+            </p>
+          )}
+        </div>
+
+        {/* Flechas de navegación en Desktop */}
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleScroll("left")}
+            className="size-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+            title="Ver anteriores"
+            aria-label="Ver anteriores"
+          >
+            <ChevronLeft className="size-4 stroke-[2.5]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleScroll("right")}
+            className="size-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+            title="Ver siguientes"
+            aria-label="Ver siguientes"
+          >
+            <ChevronRight className="size-4 stroke-[2.5]" />
+          </button>
+        </div>
+      </div>
+
+      {/* Div con scroll horizontal con todos los productos de cada categoría */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-3 pt-1 px-4 sm:px-6 snap-x snap-mandatory"
+      >
+        {children}
+      </div>
+    </section>
+  );
+};
+
+/**
+ * Estantería horizontal especializada para Combos de Frigorífico
+ */
+const CombosShelf = ({ searchQuery }) => {
+  const [selectedCombo, setSelectedCombo] = useState(null);
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
+
+  const filteredCombos = useMemo(() => {
+    if (!searchQuery.trim()) return COMBOS;
+    const q = searchQuery.toLowerCase().trim();
+    return COMBOS.filter(
+      (c) =>
+        c.nombre.toLowerCase().includes(q) ||
+        c.descripcion.toLowerCase().includes(q) ||
+        c.items.some((it) => it.nombre.toLowerCase().includes(q))
+    );
+  }, [searchQuery]);
+
+  if (filteredCombos.length === 0) return null;
+
+  const handleAddCombo = (combo) => {
+    addToCart(
+      {
+        id: combo.id,
+        nombre: combo.nombre,
+        slug: combo.slug,
+        precio: combo.precio,
+        puntos: combo.puntos,
+        imagen_url: combo.items[0]?.imagenUrl,
+      },
+      1,
+      {
+        corte: "Combo cerrado de frigorífico",
+        items_combo: combo.items.map((i) => `${i.peso} ${i.nombre}`).join(" + "),
+        unidad_medida: "u",
+      }
+    );
+    showToast(`Sumaste el ${combo.nombre} al pedido 🥩`);
+  };
+
+  return (
+    <>
+      <CategoryHorizontalShelf
+        title="Combos Ahorro Familiar 📦"
+        description="Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos Club Valette."
+        badge="Promo Familiar"
+        count={filteredCombos.length}
+      >
+        {filteredCombos.map((combo) => {
+          const totalCortes = combo.items.length;
+          const extraCortes = Math.max(0, totalCortes - 2);
+
+          return (
+            <div
+              key={combo.id}
+              className="w-[310px] sm:w-[350px] shrink-0 flex flex-col snap-start"
+            >
+              <div
+                onClick={() => setSelectedCombo(combo)}
+                className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
+              >
+                <div>
+                  {/* Tira de 3 miniaturas */}
+                  <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
+                    <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1">
+                        <Scale className="size-3" />
+                        <span>{combo.kilos} kg en total</span>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 w-full aspect-16/7 divide-x divide-white/80">
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[0]?.imagenUrl}
+                          alt={combo.items[0]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[1]?.imagenUrl}
+                          alt={combo.items[1]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[2]?.imagenUrl}
+                          alt={combo.items[2]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        {totalCortes > 3 && (
+                          <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
+                            <span className="text-base font-black leading-none drop-shadow-sm font-num">
+                              +{extraCortes}
+                            </span>
+                            <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
+                              cortes
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badges de Ahorro y Puntos */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}
+                    >
+                      {combo.badge}
+                    </span>
+                    <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
+                      <Sparkles className="size-2.5 text-amber-600" />+
+                      {combo.puntos} pts Club
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
+                    <span>{combo.nombre}</span>
+                    <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                    Rinde estimado: {combo.rinde}
+                  </p>
+
+                  {/* Desglose de cortes del combo */}
+                  <div className="my-3 space-y-1 w-full">
+                    {combo.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between py-1 px-2 rounded-lg bg-slate-50 border border-slate-200/60 text-[11px]"
+                      >
+                        <span className="font-semibold text-slate-800 truncate">
+                          {item.nombre}
+                        </span>
+                        <span className="font-black text-[#003366] text-[10px] bg-white px-1.5 py-0.2 rounded border border-slate-200 shrink-0 ml-2 font-num">
+                          {item.peso}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mb-1 text-center">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#003366] group-hover:underline">
+                      <Eye className="size-3" />
+                      <span>Ver fotos y detalle de cada corte</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-black text-slate-900 font-num">
+                        {formatPrecio(combo.precio)}
+                      </span>
+                      <span className="text-[11px] text-slate-400 line-through font-num">
+                        {formatPrecio(combo.precioAnterior)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-black text-[#c53030] block">
+                      Ahorrás {formatPrecio(combo.ahorro)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddCombo(combo);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <ShoppingCart className="size-3.5" />
+                    <span>Sumar</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </CategoryHorizontalShelf>
+
+      <ComboDetailModal
+        key={selectedCombo?.id || "catalogo-combo-modal"}
+        isOpen={Boolean(selectedCombo)}
+        onClose={() => setSelectedCombo(null)}
+        combo={selectedCombo}
+      />
+    </>
+  );
+};
 
 export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
   const { productos, isLoading, categoryCounts } = useCatalogo();
@@ -37,7 +418,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
         count: categoryCounts.almacen,
       },
     ],
-    [categoryCounts],
+    [categoryCounts]
   );
 
   // Derivado directo de la URL (Single Source of Truth)
@@ -71,39 +452,6 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
     setSearchParams(newParams);
   };
 
-  const filteredProducts = useMemo(() => {
-    let list = [...productos];
-
-    if (selectedCategory !== "todos") {
-      if (selectedCategory === "asado") {
-        list = list.filter(
-          (p) =>
-            p.categoria === "vacuno" ||
-            p.categoria === "cerdo" ||
-            p.categoria === "embutidos" ||
-            p.categoria === "achuras",
-        );
-      } else if (selectedCategory === "milanesas") {
-        list = list.filter((p) => p.categoria === "preparados");
-      } else {
-        list = list.filter((p) => p.categoria === selectedCategory);
-      }
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-          (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
-          (p.categoria && p.categoria.toLowerCase().includes(q)) ||
-          (p.especie && p.especie.toLowerCase().includes(q)),
-      );
-    }
-
-    return list;
-  }, [productos, selectedCategory, searchQuery]);
-
   const handleProductClick = (product) => {
     if (onOpenProduct) {
       onOpenProduct(product);
@@ -112,8 +460,56 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
     }
   };
 
+  // Filtrado de las secciones visibles según el chip de categoría seleccionado
+  const activeSections = useMemo(() => {
+    if (selectedCategory === "combos") {
+      return [];
+    }
+    if (selectedCategory !== "todos") {
+      return CATEGORY_SECTIONS.filter((sec) => sec.id === selectedCategory);
+    }
+    return CATEGORY_SECTIONS;
+  }, [selectedCategory]);
+
+  // Determinar si corresponde mostrar la sección de combos
+  const showCombos =
+    selectedCategory === "todos" || selectedCategory === "combos";
+
+  // Calcular productos filtrados para cada sección aplicando búsqueda si existe
+  const sectionsWithProducts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    return activeSections
+      .map((sec) => {
+        const filtered = productos.filter((p) => {
+          if (!sec.filter(p)) return false;
+          if (q) {
+            return (
+              (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+              (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+              (p.categoria && p.categoria.toLowerCase().includes(q)) ||
+              (p.especie && p.especie.toLowerCase().includes(q))
+            );
+          }
+          return true;
+        });
+
+        return {
+          ...sec,
+          products: filtered,
+        };
+      })
+      .filter((sec) => sec.products.length > 0);
+  }, [activeSections, productos, searchQuery]);
+
+  // Contar el total de productos desplegados en pantalla
+  const totalRenderedProducts = sectionsWithProducts.reduce(
+    (acc, sec) => acc + sec.products.length,
+    0
+  );
+
   return (
-    <div className="max-w-6xl mx-auto pb-12 flex flex-col">
+    <div className="max-w-6xl mx-auto pb-16 flex flex-col">
       {/* Header y Buscador Mobile */}
       <div className="bg-white lg:bg-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-6 pt-6">
         {/* Buscador Mobile */}
@@ -140,7 +536,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
         </div>
       </div>
 
-      {/* Categorías Horizontales con scroll nativo */}
+      {/* Categorías Horizontales con scroll nativo (los chips filtran qué sección div se despliega) */}
       <section className="bg-white lg:bg-transparent p-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar">
         {categoriesList.map((cat) => {
           const isSelected = selectedCategory === cat.id;
@@ -206,32 +602,33 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
         })}
       </section>
 
-      {/* Grilla de Productos */}
-      <div className="mt-4 px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-bold text-slate-500">
-            {filteredProducts.length}{" "}
-            {filteredProducts.length === 1
-              ? "corte encontrado"
-              : "cortes encontrados"}
-          </span>
-        </div>
-
-        {/* Estado de carga con Skeleton Loaders */}
+      {/* Contenedor Principal de Secciones de Productos en Scroll Horizontal */}
+      <div className="mt-2">
+        {/* Estado de carga con Skeleton Loaders en carruseles horizontales */}
         {isLoading && productos.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <ProductCardSkeleton key={i} />
+          <div className="space-y-8 px-4 sm:px-6">
+            {[1, 2].map((row) => (
+              <div key={row} className="space-y-3">
+                <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
+                <div className="flex gap-4 overflow-x-hidden">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-[280px] sm:w-[300px] shrink-0">
+                      <ProductCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native">
+        ) : sectionsWithProducts.length === 0 && !showCombos ? (
+          /* Estado sin resultados para la búsqueda o filtro */
+          <div className="mx-4 sm:mx-6 bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native mt-4">
             <p className="text-3xl mb-2">🔍</p>
             <h3 className="font-black text-base text-slate-800">
-              No encontramos cortes para esa categoría o término
+              No encontramos cortes para esa búsqueda o categoría
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Intentá seleccionando "Todos" o buscando otro nombre
+              Probá seleccionando "Todos" o buscando cortes como "asado", "vacio" o "pollo"
             </p>
             <button
               type="button"
@@ -242,14 +639,32 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                onOpenCustomizer={() => handleProductClick(prod)}
-              />
+          /* Renderizado de Secciones con Título, Descripción y Scroll Horizontal */
+          <div>
+            {sectionsWithProducts.map((sec) => (
+              <CategoryHorizontalShelf
+                key={sec.id}
+                title={sec.titulo}
+                description={sec.descripcion}
+                badge={sec.badge}
+                count={sec.products.length}
+              >
+                {sec.products.map((prod) => (
+                  <div
+                    key={prod.id}
+                    className="w-[280px] sm:w-[300px] shrink-0 flex flex-col snap-start"
+                  >
+                    <ProductCard
+                      product={prod}
+                      onOpenCustomizer={() => handleProductClick(prod)}
+                    />
+                  </div>
+                ))}
+              </CategoryHorizontalShelf>
             ))}
+
+            {/* Sección de Combos con scroll horizontal (visible en "todos" o "combos") */}
+            {showCombos && <CombosShelf searchQuery={searchQuery} />}
           </div>
         )}
       </div>
