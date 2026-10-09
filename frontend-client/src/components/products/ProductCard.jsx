@@ -143,17 +143,31 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           </p>
 
           {/* Escalas promocionales si existen */}
-          {product.promos && product.promos.length > 0 && !isOutOfStock && (
-            <div className="mt-2 text-[11px] bg-red-50/80 border border-red-100 rounded-lg p-1.5 px-2 text-red-900 font-medium">
-              🔥 Llevando {product.promos[0].cantidad_kg} {unidadMedida} o más:{" "}
-              <strong>
-                {formatPrecioPorUnidad(
-                  product.promos[0].precio_promocional,
-                  unidadMedida,
-                )}
-              </strong>
-            </div>
-          )}
+          {product.promos && product.promos.length > 0 && !isOutOfStock && (() => {
+            const promo = product.promos[0];
+            const cant = promo.cantidad_kg;
+            const unitPrice =
+              promo.precio_unitario_promo ||
+              (promo.precio_promocional >= product.precio
+                ? Math.round(promo.precio_promocional / cant)
+                : promo.precio_promocional);
+            const packPrice =
+              promo.precio_promocional >= product.precio
+                ? promo.precio_promocional
+                : Math.round(promo.precio_promocional * cant);
+
+            return (
+              <div className="mt-2 text-[11px] bg-red-50/80 border border-red-100 rounded-lg p-1.5 px-2 text-red-900 font-medium">
+                🔥 Promo llevando {cant} {unidadMedida} o más:{" "}
+                <strong>
+                  {formatPrecio(unitPrice)}/{unidadMedida}
+                </strong>{" "}
+                <span className="text-red-700/80 font-normal">
+                  ({formatPrecio(packPrice)} los {cant} {unidadMedida})
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -164,7 +178,18 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             {formatPrecio(priceInfo.total)}
           </span>
           <span className="text-xs text-slate-400 flex items-center gap-1 font-num">
-            <span>{formatPrecioPorUnidad(product.precio, unidadMedida)}</span>
+            {priceInfo.tienePromo ? (
+              <>
+                <span className="text-emerald-700 font-bold">
+                  {formatPrecioPorUnidad(priceInfo.precioUnitario, unidadMedida)}
+                </span>
+                <span className="line-through text-slate-400 text-[10px]">
+                  {formatPrecio(product.precio)}
+                </span>
+              </>
+            ) : (
+              <span>{formatPrecioPorUnidad(product.precio, unidadMedida)}</span>
+            )}
           </span>
         </div>
 

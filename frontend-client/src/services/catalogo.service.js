@@ -649,14 +649,45 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   // Normalizar promociones escalonadas por volumen
   const promos = Array.isArray(dbProduct.promos)
     ? dbProduct.promos
-        .map((p) => ({
-          id: p.id,
-          cantidad_kg: Number(p.cantidad_kg) || 2,
-          precio_promocional: Number(p.precio_promocional) || precio,
-          activa: p.activa !== false,
-        }))
+        .map((p) => {
+          const cantKg = Number(p.cantidad_kg) || 1;
+          const rawPrecioPromo = Number(p.precio_promocional) || precio;
+          const precioTotalPack =
+            rawPrecioPromo >= precio
+              ? rawPrecioPromo
+              : Math.round(rawPrecioPromo * cantKg);
+          const precioUnitarioPromo =
+            rawPrecioPromo >= precio
+              ? Math.round((rawPrecioPromo / cantKg) * 100) / 100
+              : rawPrecioPromo;
+
+          return {
+            id: p.id,
+            cantidad_kg: cantKg,
+            precio_promocional: precioTotalPack,
+            precio_unitario_promo: precioUnitarioPromo,
+            activa: p.activa !== false,
+          };
+        })
         .filter((p) => p.activa)
-    : mockMatch?.promos || [];
+    : (mockMatch?.promos || []).map((p) => {
+        const cantKg = Number(p.cantidad_kg) || 1;
+        const rawPrecioPromo = Number(p.precio_promocional) || precio;
+        const precioTotalPack =
+          rawPrecioPromo >= precio
+            ? rawPrecioPromo
+            : Math.round(rawPrecioPromo * cantKg);
+        const precioUnitarioPromo =
+          rawPrecioPromo >= precio
+            ? Math.round((rawPrecioPromo / cantKg) * 100) / 100
+            : rawPrecioPromo;
+        return {
+          ...p,
+          cantidad_kg: cantKg,
+          precio_promocional: precioTotalPack,
+          precio_unitario_promo: precioUnitarioPromo,
+        };
+      });
 
   // Mapear etiquetas de categoría amigables
   const categoriaLabel =
