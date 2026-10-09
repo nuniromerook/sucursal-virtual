@@ -7,11 +7,11 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
-import { ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown, MapPin, Store } from "lucide-react";
 
-export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
+export const Home = ({ onOpenProduct, onOpenCustomizer, onOpenBranchModal }) => {
   const { productos, isLoading } = useCatalogo();
-  const { customerAddress } = useLocation();
+  const { customerAddress, deliveryMode, selectedBranch } = useLocation();
 
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,20 +72,46 @@ export const Home = ({ onOpenProduct, onOpenCustomizer }) => {
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 gap-6 flex flex-col">
-      {/* Selector rápido de dirección/sucursal mobile */}
-      <button
-        type="button"
-        className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer shrink-0 sm:hidden shadow-native"
-      >
-        <MapPin className="size-6 text-valette-blue stroke-2" />
-        <div className="flex flex-col items-start">
-          <p className="text-xs text-valette-blue">Enviar a:</p>
-          <p className="text-sm text-valette-dark font-semibold truncate max-w-50">
-            {customerAddress || "J. Tarulli 1474, Luis Guillón"}
-          </p>
-        </div>
-        <ChevronDown className="size-4 text-slate-400 shrink-0 stroke-[2.5] ml-auto" />
-      </button>
+      {/* Selector de Entrega / Retiro & Dirección Mobile */}
+      <div className="sm:hidden -mt-1">
+        <button
+          type="button"
+          onClick={onOpenBranchModal}
+          className="w-full p-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-native flex items-center justify-between gap-3 text-left transition-all active:scale-[0.99] cursor-pointer hover:border-slate-300 group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="size-9 rounded-xl bg-[#003366]/5 border border-[#003366]/15 text-[#003366] flex items-center justify-center shrink-0">
+              {deliveryMode === "pickup" ? (
+                <Store className="size-4.5 stroke-[2.2]" />
+              ) : (
+                <MapPin className="size-4.5 stroke-[2.2]" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#003366]">
+                  {deliveryMode === "pickup"
+                    ? "Retiro en Mostrador"
+                    : "Envío a Domicilio"}
+                </span>
+              </div>
+              <p className="text-xs font-black text-slate-900 truncate mt-0.5 group-hover:text-[#003366] transition-colors">
+                {deliveryMode === "pickup"
+                  ? `Sucursal ${selectedBranch?.nombre || "Luis Guillón"}`
+                  : (customerAddress || "J. Tarulli 1474, Luis Guillón")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0 pl-1">
+            <span className="text-[10px] font-extrabold text-[#003366] bg-[#003366]/5 px-2 py-0.5 rounded-lg border border-[#003366]/10">
+              Cambiar
+            </span>
+            <ChevronDown className="size-3.5 text-slate-400 group-hover:text-[#003366] transition-colors stroke-[2.5]" />
+          </div>
+        </button>
+      </div>
 
       {/* Carrusel de Banners Publicitarios Oficiales */}
       <BannerCarousel onSelectCategory={(cat) => setSelectedCategory(cat)} />

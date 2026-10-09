@@ -88,6 +88,7 @@ function AppContent() {
           <Home
             onOpenProduct={handleOpenProduct}
             onOpenCustomizer={handleOpenProduct}
+            onOpenBranchModal={() => setIsBranchModalOpen(true)}
           />
         </div>
 
