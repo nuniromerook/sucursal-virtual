@@ -4,10 +4,16 @@ import { Heart, Plus, Bell, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
-import { formatPrecio } from "@/utils/formatters";
+import {
+  formatPrecio,
+  formatUnidadMedida,
+  formatPrecioPorUnidad,
+  formatCantidad,
+} from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 
 export const ProductCard = ({ product, onOpenCustomizer }) => {
+  const unidadMedida = formatUnidadMedida(product.unidad_medida);
   const [selectedKg, setSelectedKg] = useState(1);
   const { addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -16,7 +22,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
 
-  // Cálculo reactivo de precio según kilos enteros seleccionados (sin tope máximo)
+  // Cálculo reactivo de precio según cantidad seleccionada (sin tope máximo)
   const priceInfo = calculateItemPrice({
     ...product,
     cantidad_kg: selectedKg,
@@ -26,9 +32,14 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
     e?.stopPropagation();
     if (isOutOfStock) return;
     addToCart(product, selectedKg, {
-      corte: product.opciones_corte?.[0] || "Corte tradicional",
+      corte:
+        product.opciones_corte?.[0] ||
+        (unidadMedida === "u" ? "Estándar" : "Corte tradicional"),
+      unidad_medida: unidadMedida,
     });
-    showToast(`Sumaste ${selectedKg} kg de ${product.nombre} al pedido`);
+    showToast(
+      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`
+    );
   };
 
   const handleOpenDetail = () => {
@@ -134,23 +145,26 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           {/* Escalas promocionales si existen */}
           {product.promos && product.promos.length > 0 && !isOutOfStock && (
             <div className="mt-2 text-[11px] bg-red-50/80 border border-red-100 rounded-lg p-1.5 px-2 text-red-900 font-medium">
-              🔥 Llevando {product.promos[0].cantidad_kg} kg o más:{" "}
+              🔥 Llevando {product.promos[0].cantidad_kg} {unidadMedida} o más:{" "}
               <strong>
-                {formatPrecio(product.promos[0].precio_promocional)}/kg
+                {formatPrecioPorUnidad(
+                  product.promos[0].precio_promocional,
+                  unidadMedida
+                )}
               </strong>
             </div>
           )}
         </div>
       </div>
 
-      {/* Bottom: Precio y Acciones Duales con Stepper de kg enteros */}
+      {/* Bottom: Precio y Acciones Duales con Stepper de unidades/kg enteros */}
       <div className="py-3 px-4 border-t border-slate-100 mt-3 flex items-center justify-between gap-3">
         <div>
           <span className="text-xl font-black text-slate-900 font-num">
             {formatPrecio(priceInfo.total)}
           </span>
           <span className="text-xs text-slate-400 flex items-center gap-1 font-num">
-            <span>{formatPrecio(product.precio)}/kg</span>
+            <span>{formatPrecioPorUnidad(product.precio, unidadMedida)}</span>
           </span>
         </div>
 
@@ -170,7 +184,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           </button>
         ) : (
           <div className="flex items-center gap-1.5">
-            {/* Stepper en kg enteros (1kg, 2kg, 3kg...) sin tope máximo */}
+            {/* Stepper en unidades o kg enteros (1, 2, 3...) sin tope máximo */}
             <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80 whitespace-nowrap">
               <button
                 type="button"
@@ -180,12 +194,12 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 }}
                 disabled={selectedKg <= 1}
                 className="size-7 rounded-lg bg-white hover:bg-slate-200 disabled:opacity-30 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                title="Restar 1 kg"
+                title={`Restar 1 ${unidadMedida}`}
               >
                 <Minus className="size-3.5 stroke-[2.5]" />
               </button>
               <span className="text-sm font-black text-slate-800 px-2 min-w-15 text-center font-num">
-                {selectedKg} kg
+                {selectedKg} {unidadMedida}
               </span>
               <button
                 type="button"
@@ -194,7 +208,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                   setSelectedKg((prev) => prev + 1);
                 }}
                 className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                title="Sumar 1 kg"
+                title={`Sumar 1 ${unidadMedida}`}
               >
                 <Plus className="size-3.5 stroke-[2.5]" />
               </button>

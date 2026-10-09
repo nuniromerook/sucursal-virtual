@@ -1,5 +1,6 @@
 // src/services/catalogo.service.js
 import { API_URL } from "@/config/api";
+import { formatUnidadMedida } from "@/utils/formatters";
 
 export const CORTES_MOCK = [
   {
@@ -11,6 +12,7 @@ export const CORTES_MOCK = [
     especie: "vacuno",
     precio: 17200,
     precio_anterior: 18500,
+    unidad_medida: "kg",
     descripcion:
       "¡Pura terneza parrillera! Selección de novillito con la grasa justa de cobertura para lograr un cuerito crocante y jugosidad inigualable a fuego lento.",
     imagen_url:
@@ -45,6 +47,7 @@ export const CORTES_MOCK = [
     especie: "vacuno",
     precio: 13900,
     precio_anterior: 14500,
+    unidad_medida: "kg",
     descripcion:
       "¡El rey del domingo! Costillar seleccionado de novillito con hueso plano, abundante carne entrevarada y sabor parrillero tradicional inconfundible.",
     imagen_url:
@@ -79,6 +82,7 @@ export const CORTES_MOCK = [
     especie: "vacuno",
     precio: 13700,
     precio_anterior: 15200,
+    unidad_medida: "kg",
     descripcion:
       "¡Marmoleo y jugosidad suprema! Ojo de bife tierno con su ceja veteada, ideal para sellar vuelta y vuelta a la plancha de hierro o brasas fuertes.",
     imagen_url:
@@ -112,6 +116,7 @@ export const CORTES_MOCK = [
     especie: "vacuno",
     precio: 14400,
     precio_anterior: 15500,
+    unidad_medida: "kg",
     descripcion:
       "¡Sabor profundo que se deshace! Corte delantero magro y versátil de novillito, insuperable para guisados lentos, picar a cuchillo o mechar al horno.",
     imagen_url:
@@ -145,6 +150,7 @@ export const CORTES_MOCK = [
     especie: "cerdo",
     precio: 8800,
     precio_anterior: 9800,
+    unidad_medida: "kg",
     descripcion:
       "¡Dorada y súper tierna! Carne de cerdo con veteado perfecto de grasa interna, sensacional para bifecitos de sartén o brasear con mostaza y miel.",
     imagen_url:
@@ -178,6 +184,7 @@ export const CORTES_MOCK = [
     especie: "cerdo",
     precio: 7900,
     precio_anterior: 8900,
+    unidad_medida: "kg",
     descripcion:
       "¡Crocante por fuera y jugoso adentro! Costillitas tiernas de cerdo con manta carnosa y cuero que dora perfecto a las brasas o al horno con limón.",
     imagen_url:
@@ -211,6 +218,7 @@ export const CORTES_MOCK = [
     especie: "cerdo",
     precio: 4900,
     precio_anterior: 5500,
+    unidad_medida: "kg",
     descripcion:
       "¡Magra, rendidora y económica! Excelente carne de cerdo para milanesas bien suaves, churrasquitos rápidos de sartén o estofados de fin de semana.",
     imagen_url:
@@ -237,6 +245,7 @@ export const CORTES_MOCK = [
     especie: "cerdo",
     precio: 1500,
     precio_anterior: 1800,
+    unidad_medida: "kg",
     descripcion:
       "¡El toque crocante para tus recetas! Grasa blanca firme y limpia de cerdo, perfecta para chicharrones dorados caseros o dar sabor a salsas y estofados.",
     imagen_url:
@@ -252,23 +261,24 @@ export const CORTES_MOCK = [
   },
   {
     id: 3,
-    nombre: "Pollo de Campo Fresco",
+    nombre: "Pollo de Campo Entero",
     slug: "pollo-entero",
     categoria: "pollo",
     categoria_label: "Granja & Pollo",
     especie: "pollo",
     precio: 4500,
     precio_anterior: 4900,
+    unidad_medida: "u",
     descripcion:
-      "¡Fresco de granja y con sabor auténtico! Pollo de campo con alimentación controlada, carne firme y rendimiento óptimo al horno con papas o a la parrilla.",
+      "¡Fresco de granja y con sabor auténtico! Pollo eviscerado listo para el spiedo, la parrilla mariposa o al horno con papas (unidad de 2 a 2.5 kg aprox).",
     imagen_url:
       "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
-    badge: "Granja Fresca",
+    badge: "Venta x Unidad",
     metodos_coccion: ["Horno con papas", "Parrilla mariposa", "Spiedo"],
-    rinde_personas: "3 a 4 personas x kg",
+    rinde_personas: "4 a 5 personas",
     opciones_corte: [
       "Entero Eviscerado",
       "Abierto Tipo Mariposa (para parrilla)",
@@ -293,6 +303,7 @@ export const CORTES_MOCK = [
     especie: "pollo",
     precio: 8900,
     precio_anterior: 9600,
+    unidad_medida: "kg",
     descripcion:
       "¡100% magras y listas para cocinar! Pechugas frescas limpias a cuchillo sin piel ni grasa sobrante, ideales para milanesas crocantes o salteados express.",
     imagen_url:
@@ -326,16 +337,17 @@ export const CORTES_MOCK = [
     especie: "cerdo",
     precio: 1700,
     precio_anterior: 2100,
+    unidad_medida: "u",
     descripcion:
-      "¡Elaboración propia sin conservantes! Embutido parrillero fresco con tripa natural y carne 100% cerdo para una explosión de sabor en cada mordisco.",
+      "¡Elaboración diaria sin conservantes! Embutido parrillero fresco con tripa natural y carne 100% cerdo para una explosión de sabor en cada mordisco.",
     imagen_url:
       "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
-    badge: "100% Cerdo Artesanal",
-    metodos_coccion: ["Parrilla", "Horno", "Pomorola"],
-    rinde_personas: "6 unidades x kg",
+    badge: "Venta x Unidad",
+    metodos_coccion: ["Parrilla", "Horno", "Pomarola"],
+    rinde_personas: "1 a 2 unidades x persona",
     opciones_corte: [
       "En ristra tradicional",
       "Separados individuales",
@@ -359,6 +371,7 @@ export const CORTES_MOCK = [
     especie: "pollo",
     precio: 6500,
     precio_anterior: 7200,
+    unidad_medida: "kg",
     descripcion:
       "¡Sanas, sabrosas y listas para la plancha! Medallones artesanales moldeados con pura pechuga de pollo y finas hierbas para resolver comidas en minutos.",
     imagen_url:
@@ -370,6 +383,75 @@ export const CORTES_MOCK = [
     metodos_coccion: ["Plancha", "Horno", "Sartén"],
     rinde_personas: "8 unidades x kg aprox.",
     opciones_corte: ["En bandeja con separadores", "Congeladas IQF"],
+    promos: [],
+  },
+  {
+    id: 13,
+    nombre: "Chimichurri Casero Tradicional (350g)",
+    slug: "chimichurri-casero",
+    categoria: "almacen",
+    categoria_label: "Almacén Parrillero",
+    especie: "almacen",
+    precio: 3200,
+    precio_anterior: 3600,
+    unidad_medida: "u",
+    descripcion:
+      "¡El clásico indiscutido del asado! Elaborado con ajo fresco, perejil, ají molido y aceite de primera calidad, estacionado al punto justo.",
+    imagen_url:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
+    puntos: 10,
+    activo: true,
+    sin_stock: false,
+    badge: "Almacén Parrillero",
+    metodos_coccion: ["Para acompañar carnes", "Adobo"],
+    rinde_personas: "Frasco familiar de 350g",
+    opciones_corte: [],
+    promos: [],
+  },
+  {
+    id: 14,
+    nombre: "Salsa Criolla Especial Valette (350g)",
+    slug: "salsa-criolla-especial",
+    categoria: "almacen",
+    categoria_label: "Almacén Parrillero",
+    especie: "almacen",
+    precio: 3200,
+    precio_anterior: 3600,
+    unidad_medida: "u",
+    descripcion:
+      "¡Frescura y crocancia para tus carnes! Morrones, cebolla y tomates seleccionados en cubos pequeños con vinagre suave y especias artesanales.",
+    imagen_url:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
+    puntos: 10,
+    activo: true,
+    sin_stock: false,
+    badge: "Fresca del Día",
+    metodos_coccion: ["Para acompañar carnes"],
+    rinde_personas: "Frasco familiar de 350g",
+    opciones_corte: [],
+    promos: [],
+  },
+  {
+    id: 15,
+    nombre: "Avivador Ecológico de Fuego Valette",
+    slug: "avivador-de-fuego",
+    categoria: "almacen",
+    categoria_label: "Accesorios & Parrilla",
+    especie: "almacen",
+    precio: 2500,
+    precio_anterior: 2900,
+    unidad_medida: "u",
+    descripcion:
+      "¡Prendé el fuego en 5 minutos sin humo ni olor a nafta! Pastillas biodegradables de aserrín prensado vegetal de máxima duración.",
+    imagen_url:
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
+    puntos: 5,
+    activo: true,
+    sin_stock: false,
+    badge: "100% Ecológico",
+    metodos_coccion: ["Encendido de brasas"],
+    rinde_personas: "Pack para 10 asados",
+    opciones_corte: [],
     promos: [],
   },
 ];
@@ -428,7 +510,7 @@ export const DEFAULT_BANNERS = [
 const CACHE_KEY_CATALOGO = "valette_catalogo_cache";
 
 /**
- * Enriquece un producto proveniente de PostgreSQL con atributos de carnicería por kg.
+ * Enriquece un producto proveniente de PostgreSQL con atributos de carnicería y almacén.
  */
 export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   if (!dbProduct) return null;
@@ -452,7 +534,12 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   const precio = Number(dbProduct.precio) || 0;
   const precioAnterior = Number(dbProduct.precio_anterior || 0);
 
-  // Normalizar promociones escalonadas por volumen en kilogramos
+  // Unidad de medida oficial ('kg' o 'u')
+  const unidadMedida = formatUnidadMedida(
+    dbProduct.unidad_medida || mockMatch?.unidad_medida || "kg"
+  );
+
+  // Normalizar promociones escalonadas por volumen
   const promos = Array.isArray(dbProduct.promos)
     ? dbProduct.promos
         .map((p) => ({
@@ -476,12 +563,17 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
       ? "Embutidos Artesanales"
       : categoria === "preparados"
       ? "Preparados Caseros"
+      : categoria === "almacen"
+      ? "Almacén Parrillero"
       : "Cortes Seleccionados";
 
-  // Opciones de corte personalizadas para el cortador de mostrador
+  // Opciones de corte personalizadas para el cortador de mostrador (vacías si es almacén)
   const opcionesCorte =
-    mockMatch?.opciones_corte ||
-    (especie === "pollo"
+    mockMatch?.opciones_corte !== undefined
+      ? mockMatch.opciones_corte
+      : categoria === "almacen"
+      ? []
+      : especie === "pollo"
       ? ["Fileteado para Milanesas", "Pechugas Enteras", "Trozado para Guiso"]
       : especie === "cerdo"
       ? ["Corte Tradicional", "Churrascos Gruesos", "Trozado para Horno"]
@@ -490,21 +582,24 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
           "Bifes Gruesos (2 cm)",
           "Bifes Medianos (1.5 cm)",
           "Trozado para Horno / Guiso",
-        ]);
+        ];
 
   const metodosCoccion =
     mockMatch?.metodos_coccion ||
     (especie === "pollo"
       ? ["Horno", "Plancha", "Milanesas"]
+      : categoria === "almacen"
+      ? ["Acompañamiento"]
       : ["Parrilla", "Plancha", "Horno"]);
 
   const rindePersonas =
-    mockMatch?.rinde_personas || "3 a 4 personas x kg";
+    mockMatch?.rinde_personas ||
+    (unidadMedida === "u" ? "Por unidad" : "3 a 4 personas x kg");
 
   const badge =
     mockMatch?.badge ||
     (promos.length > 0
-      ? `Ahorro x ${promos[0].cantidad_kg} kg`
+      ? `Ahorro x ${promos[0].cantidad_kg} ${unidadMedida}`
       : null);
 
   return {
@@ -517,6 +612,7 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     especie,
     precio,
     precio_anterior: precioAnterior,
+    unidad_medida: unidadMedida,
     descripcion: dbProduct.descripcion || mockMatch?.descripcion || "",
     imagen_url:
       dbProduct.imagen_url ||

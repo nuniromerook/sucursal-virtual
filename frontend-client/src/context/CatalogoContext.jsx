@@ -112,6 +112,7 @@ export const CatalogoProvider = ({ children }) => {
       embutidos: 0,
       achuras: 0,
       asado: 0,
+      almacen: 0,
     };
 
     productos.forEach((p) => {

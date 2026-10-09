@@ -9,7 +9,12 @@ import {
   Truck,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { formatPrecio, formatCantidad } from "@/utils/formatters";
+import {
+  formatPrecio,
+  formatCantidad,
+  formatPrecioPorUnidad,
+  formatResumenCantidades,
+} from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 
@@ -20,13 +25,18 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
   const {
     cartItems,
     totalItems,
+    totalKg,
+    totalUnidades,
     subtotal,
     totalAhorro,
     totalEstimado,
     totalPuntos,
     updateItemKg,
+    updateItemCantidad,
     removeFromCart,
   } = useCart();
+
+  const updateQty = updateItemCantidad || updateItemKg;
 
   // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
@@ -75,8 +85,9 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
               <span className="text-[11px] font-bold text-slate-400 block mt-0.5 font-num">
                 {totalItems}{" "}
                 {totalItems === 1
-                  ? "corte seleccionado"
-                  : "cortes seleccionados"}
+                  ? "producto seleccionado"
+                  : "productos seleccionados"}{" "}
+                ({formatResumenCantidades(totalKg, totalUnidades)})
               </span>
             </div>
 
@@ -193,7 +204,10 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
                             </span>
                             <span>•</span>
                             <span className="font-num">
-                              {formatPrecio(item.precio)}/kg
+                              {formatPrecioPorUnidad(
+                                item.precio,
+                                item.unidad_medida
+                              )}
                             </span>
                           </div>
 
@@ -212,30 +226,39 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
                       </div>
                     </div>
 
-                    {/* Controles de Cantidad (Stepper de kg enteros) & Precio Total */}
+                    {/* Controles de Cantidad (Stepper de unidades / kg enteros) & Precio Total */}
                     <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                      {/* Stepper de kg enteros */}
+                      {/* Stepper dinámico por unidad / kg */}
                       <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80">
                         <button
                           type="button"
                           onClick={() =>
-                            updateItemKg(item.id, item.cantidad_kg - 1)
+                            updateQty(
+                              item.id,
+                              (item.cantidad_kg || item.cantidad || 1) - 1
+                            )
                           }
                           className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                          title="Restar 1 kg"
+                          title={`Restar 1 ${item.unidad_medida || "kg"}`}
                         >
                           <Minus className="size-3.5 stroke-[2.5]" />
                         </button>
                         <span className="text-xs font-black text-slate-900 min-w-12 text-center px-2 font-num">
-                          {formatCantidad(item.cantidad_kg)}
+                          {formatCantidad(
+                            item.cantidad_kg || item.cantidad || 1,
+                            item.unidad_medida
+                          )}
                         </span>
                         <button
                           type="button"
                           onClick={() =>
-                            updateItemKg(item.id, item.cantidad_kg + 1)
+                            updateQty(
+                              item.id,
+                              (item.cantidad_kg || item.cantidad || 1) + 1
+                            )
                           }
                           className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                          title="Sumar 1 kg"
+                          title={`Sumar 1 ${item.unidad_medida || "kg"}`}
                         >
                           <Plus className="size-3.5 stroke-[2.5]" />
                         </button>
@@ -269,7 +292,10 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
               </div>
 
               <div className="flex justify-between text-slate-500 mt-2 font-num">
-                <span>Subtotal estimado en balanza:</span>
+                <span>
+                  Subtotal estimado (
+                  {formatResumenCantidades(totalKg, totalUnidades)}):
+                </span>
                 <span className="font-bold text-slate-800">
                   {formatPrecio(subtotal)}
                 </span>

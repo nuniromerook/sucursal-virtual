@@ -1,4 +1,3 @@
-// src/context/CartContext.jsx
 import React, {
   createContext,
   useContext,
@@ -7,6 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { calculateItemPrice } from "@/utils/priceCalculator";
+import { formatUnidadMedida } from "@/utils/formatters";
 
 const CartContext = createContext(null);
 
@@ -14,7 +14,7 @@ const DEFAULT_CUT_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
 
 export const CartProvider = ({ children }) => {
-  // Inicializar carrito con items de demostración o desde localStorage (asegurando imagen_url)
+  // Inicializar carrito con items de demostración o desde localStorage (asegurando imagen_url y unidad_medida)
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem("valette_cart");
@@ -23,6 +23,7 @@ export const CartProvider = ({ children }) => {
         if (Array.isArray(parsed)) {
           return parsed.map((item) => ({
             ...item,
+            unidad_medida: formatUnidadMedida(item.unidad_medida || "kg"),
             imagen_url:
               item.imagen_url ||
               item.imagenUrl ||
@@ -40,6 +41,8 @@ export const CartProvider = ({ children }) => {
         slug: "vacio-especial-novillito",
         precio: 11900,
         cantidad_kg: 1,
+        cantidad: 1,
+        unidad_medida: "kg",
         puntos: 15,
         corte: "Corte clásico (2 cm)",
         envasado: "Envasado al vacío",
@@ -54,6 +57,8 @@ export const CartProvider = ({ children }) => {
         slug: "asado-criollo-centro",
         precio: 10900,
         cantidad_kg: 1,
+        cantidad: 1,
+        unidad_medida: "kg",
         puntos: 20,
         corte: "Tiras tradicionales",
         envasado: "Bandeja filmada",
@@ -73,12 +78,13 @@ export const CartProvider = ({ children }) => {
     } catch {}
   }, [cartItems]);
 
-  // Cálculos financieros y métricas
+  // Cálculos financieros y métricas (separando kilos de unidades)
   const {
     subtotal,
     totalAhorro,
     totalEstimado,
     totalKg,
+    totalUnidades,
     totalItems,
     totalPuntos,
   } = useMemo(() => {
@@ -86,16 +92,21 @@ export const CartProvider = ({ children }) => {
     let ahorro = 0;
     let total = 0;
     let kgSum = 0;
+    let uSum = 0;
     let ptsSum = 0;
 
     cartItems.forEach((item) => {
       const calc = calculateItemPrice(item);
-      const itemKg = parseFloat(item.cantidad_kg || 1);
-      sub += Math.round(itemKg * parseFloat(item.precio || 0));
+      const itemCant = parseFloat(item.cantidad_kg || item.cantidad || 1);
+      sub += Math.round(itemCant * parseFloat(item.precio || 0));
       ahorro += calc.ahorro;
       total += calc.total;
-      kgSum += itemKg;
-      ptsSum += (item.puntos || 10) * Math.ceil(itemKg);
+      if (item.unidad_medida === "u") {
+        uSum += itemCant;
+      } else {
+        kgSum += itemCant;
+      }
+      ptsSum += (item.puntos || 10) * Math.ceil(itemCant);
     });
 
     return {
@@ -103,13 +114,17 @@ export const CartProvider = ({ children }) => {
       totalAhorro: ahorro,
       totalEstimado: total,
       totalKg: parseFloat(kgSum.toFixed(2)),
+      totalUnidades: Math.round(uSum),
       totalItems: cartItems.length,
       totalPuntos: ptsSum,
     };
   }, [cartItems]);
 
-  const addToCart = (product, kg = 1, options = {}) => {
-    const intKg = Math.max(1, Math.round(Number(kg) || 1));
+  const addToCart = (product, cantidad = 1, options = {}) => {
+    const intCant = Math.max(1, Math.round(Number(cantidad) || 1));
+    const unidadMedida = formatUnidadMedida(
+      product.unidad_medida || options.unidad_medida || "kg"
+    );
     const imageUrl =
       product.imagen_url ||
       product.imagenUrl ||
@@ -122,9 +137,16 @@ export const CartProvider = ({ children }) => {
       const existingIndex = prev.findIndex((i) => i.id === product.id);
       if (existingIndex > -1) {
         const updated = [...prev];
+        const prevCant =
+          updated[existingIndex].cantidad_kg ||
+          updated[existingIndex].cantidad ||
+          1;
         updated[existingIndex] = {
           ...updated[existingIndex],
-          cantidad_kg: Math.round(updated[existingIndex].cantidad_kg + intKg),
+          cantidad_kg: Math.round(prevCant + intCant),
+          cantidad: Math.round(prevCant + intCant),
+          unidad_medida:
+            updated[existingIndex].unidad_medida || unidadMedida,
           imagen_url: updated[existingIndex].imagen_url || imageUrl,
           ...options,
         };
@@ -137,10 +159,14 @@ export const CartProvider = ({ children }) => {
           nombre: product.nombre || product.nombre_producto,
           slug: product.slug,
           precio: product.precio,
-          cantidad_kg: intKg,
+          cantidad_kg: intCant,
+          cantidad: intCant,
+          unidad_medida: unidadMedida,
           puntos: product.puntos || 15,
           promos: product.promos || [],
-          corte: options.corte || "Corte tradicional",
+          corte:
+            options.corte ||
+            (unidadMedida === "u" ? "Estándar" : "Corte tradicional"),
           envasado: options.envasado || "Bandeja Filmada",
           notas: options.notas || "",
           imagen_url: imageUrl,
@@ -150,18 +176,22 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  const updateItemKg = (id, newKg) => {
-    const intKg = Math.round(Number(newKg));
-    if (intKg <= 0) {
+  const updateItemCantidad = (id, newCant) => {
+    const intCant = Math.round(Number(newCant));
+    if (intCant <= 0) {
       removeFromCart(id);
       return;
     }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, cantidad_kg: intKg } : item
+        item.id === id
+          ? { ...item, cantidad_kg: intCant, cantidad: intCant }
+          : item
       )
     );
   };
+
+  const updateItemKg = updateItemCantidad;
 
   const removeFromCart = (id) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
@@ -177,12 +207,14 @@ export const CartProvider = ({ children }) => {
         cartItems,
         totalItems,
         totalKg,
+        totalUnidades,
         subtotal,
         totalAhorro,
         totalEstimado,
         totalPuntos,
         addToCart,
         updateItemKg,
+        updateItemCantidad,
         removeFromCart,
         clearCart,
         isCartOpen,

@@ -31,6 +31,11 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
       },
       { id: "embutidos", label: "Embutidos", count: categoryCounts.embutidos },
       { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
+      {
+        id: "almacen",
+        label: "Almacén Parrillero",
+        count: categoryCounts.almacen,
+      },
     ],
     [categoryCounts],
   );

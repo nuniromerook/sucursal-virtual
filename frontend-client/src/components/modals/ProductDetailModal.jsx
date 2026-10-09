@@ -16,7 +16,12 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
-import { formatPrecio } from "@/utils/formatters";
+import {
+  formatPrecio,
+  formatUnidadMedida,
+  formatPrecioPorUnidad,
+  formatCantidad,
+} from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 
@@ -31,10 +36,14 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     onClose
   );
 
-  // Venta oficial unicamente por kg: inicio simple en 1 kg
+  const unidadMedida = formatUnidadMedida(product?.unidad_medida);
+  const esUnidad = unidadMedida === "u";
+
   const defaultCut =
     product?.opciones_corte && product.opciones_corte.length > 0
       ? product.opciones_corte[0]
+      : esUnidad
+      ? "Estándar"
       : "Corte tradicional";
 
   const [selectedKg, setSelectedKg] = useState(1);
@@ -46,7 +55,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
 
-  // Cálculo financiero reactivo con promociones por volumen (venta por kg enteros sin tope máximo)
+  // Cálculo financiero reactivo con promociones por volumen (sin tope máximo)
   const priceInfo = calculateItemPrice({
     ...product,
     cantidad_kg: selectedKg,
@@ -70,9 +79,12 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     addToCart(product, selectedKg, {
       corte: selectedCut,
       notas,
+      unidad_medida: unidadMedida,
     });
 
-    showToast(`Sumaste ${selectedKg} kg de ${product.nombre} al pedido`);
+    showToast(
+      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`
+    );
     onClose();
   };
 
@@ -187,11 +199,13 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                 <span className="text-2xl sm:text-3xl font-black text-[#003366] font-num">
                   {formatPrecio(product.precio)}
                 </span>
-                <span className="text-xs font-bold text-slate-400">/ kg</span>
+                <span className="text-xs font-bold text-slate-400">
+                  / {unidadMedida}
+                </span>
 
                 {product.precio_anterior > product.precio && (
                   <span className="text-xs text-slate-400 line-through ml-1 font-num">
-                    {formatPrecio(product.precio_anterior)}/kg
+                    {formatPrecioPorUnidad(product.precio_anterior, unidadMedida)}
                   </span>
                 )}
               </div>
@@ -255,7 +269,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </div>
           </div>
 
-          {/* 4. Selector de Cantidad Simple en Kilogramos Enteros (sin topes ni piezas) */}
+          {/* 4. Selector de Cantidad Simple en Unidades o Kilogramos Enteros (sin topes ni piezas) */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="-space-y-0.5">
@@ -263,52 +277,52 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   Cantidad
                 </label>
                 <span className="text-[11px] text-slate-500">
-                  Venta por kilogramo entero
+                  {esUnidad ? "Venta por unidad" : "Venta por kilogramo entero"}
                 </span>
               </div>
 
-              {/* Stepper +/- de 1 kg en 1 kg (sin tope máximo) */}
+              {/* Stepper +/- de 1 en 1 (sin tope máximo) */}
               <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
                 <button
                   type="button"
                   onClick={handleDecrement}
                   disabled={isOutOfStock || selectedKg <= 1}
                   className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-40 cursor-pointer transition-colors"
-                  title="Restar 1 kg"
+                  title={`Restar 1 ${unidadMedida}`}
                 >
                   <Minus className="size-4 stroke-[2.5]" />
                 </button>
                 <span className="text-sm font-black text-slate-900 min-w-[50px] text-center font-num">
-                  {selectedKg} kg
+                  {selectedKg} {unidadMedida}
                 </span>
                 <button
                   type="button"
                   onClick={handleIncrement}
                   disabled={isOutOfStock}
                   className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-50 cursor-pointer transition-colors"
-                  title="Sumar 1 kg"
+                  title={`Sumar 1 ${unidadMedida}`}
                 >
                   <Plus className="size-4 stroke-[2.5]" />
                 </button>
               </div>
             </div>
 
-            {/* Chips rápidos de selección de kg enteros (1kg a 5kg) */}
+            {/* Chips rápidos de selección enteros (1 a 5) */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
-              {[1, 2, 3, 4, 5].map((kg) => {
-                const isSelected = selectedKg === kg;
+              {[1, 2, 3, 4, 5].map((qty) => {
+                const isSelected = selectedKg === qty;
                 return (
                   <button
-                    key={kg}
+                    key={qty}
                     type="button"
-                    onClick={() => handleSelectPredefinedKg(kg)}
+                    onClick={() => handleSelectPredefinedKg(qty)}
                     className={`px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer font-num ${
                       isSelected
                         ? "bg-[#003366] text-white shadow-2xs"
                         : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                     }`}
                   >
-                    {kg} kg
+                    {qty} {unidadMedida}
                   </button>
                 );
               })}
@@ -335,9 +349,12 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                           }`}
                         />
                         <span>
-                          Llevando {promo.cantidad_kg} kg o más:{" "}
+                          Llevando {promo.cantidad_kg} {unidadMedida} o más:{" "}
                           <strong className="text-slate-900 font-num">
-                            {formatPrecio(promo.precio_promocional)}/kg
+                            {formatPrecioPorUnidad(
+                              promo.precio_promocional,
+                              unidadMedida
+                            )}
                           </strong>
                         </span>
                       </div>
@@ -347,7 +364,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                         </span>
                       ) : (
                         <span className="text-[10px] text-slate-400 font-num">
-                          Faltan {promo.cantidad_kg - selectedKg} kg
+                          Faltan {promo.cantidad_kg - selectedKg} {unidadMedida}
                         </span>
                       )}
                     </div>
@@ -395,16 +412,24 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </div>
           )}
 
-          {/* 6. Indicaciones / Notas al Cortador */}
+          {/* 6. Indicaciones / Notas al Cortador o de Entrega */}
           <div>
             <label className="text-xs font-bold text-slate-800 mb-1.5 block">
-              Indicaciones especiales para el cortador:
+              {esUnidad &&
+              (!product.opciones_corte || product.opciones_corte.length === 0)
+                ? "Indicaciones o aclaraciones:"
+                : "Indicaciones especiales para el cortador:"}
             </label>
             <input
               type="text"
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Ej: sacar el cuerito, dividir en dos bolsitas, desgrasar..."
+              placeholder={
+                esUnidad &&
+                (!product.opciones_corte || product.opciones_corte.length === 0)
+                  ? "Ej: dejar en recepción, envolver para regalo..."
+                  : "Ej: sacar el cuerito, dividir en dos bolsitas, desgrasar..."
+              }
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
             />
           </div>
@@ -428,7 +453,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                 {formatPrecio(priceInfo.total)}
               </span>
               <span className="text-xs font-medium text-slate-400 font-num">
-                ({selectedKg} kg)
+                ({selectedKg} {unidadMedida})
               </span>
             </div>
           </div>
