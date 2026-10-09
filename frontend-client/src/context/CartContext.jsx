@@ -10,12 +10,27 @@ import { calculateItemPrice } from "@/utils/priceCalculator";
 
 const CartContext = createContext(null);
 
+const DEFAULT_CUT_IMAGE =
+  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
+
 export const CartProvider = ({ children }) => {
-  // Inicializar carrito con items de demostración o desde localStorage
+  // Inicializar carrito con items de demostración o desde localStorage (asegurando imagen_url)
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem("valette_cart");
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => ({
+            ...item,
+            imagen_url:
+              item.imagen_url ||
+              item.imagenUrl ||
+              item.image ||
+              DEFAULT_CUT_IMAGE,
+          }));
+        }
+      }
     } catch {}
     // Items iniciales de prueba como en la maqueta
     return [
@@ -29,7 +44,7 @@ export const CartProvider = ({ children }) => {
         corte: "Corte clásico (2 cm)",
         envasado: "Envasado al vacío",
         imagen_url:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
+          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
         notas: "",
         promos: [{ cantidad_kg: 3, precio_promocional: 10500, activa: true }],
       },
@@ -95,6 +110,14 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product, kg = 1, options = {}) => {
     const intKg = Math.max(1, Math.round(Number(kg) || 1));
+    const imageUrl =
+      product.imagen_url ||
+      product.imagenUrl ||
+      product.image ||
+      options.imagen_url ||
+      options.imagenUrl ||
+      DEFAULT_CUT_IMAGE;
+
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((i) => i.id === product.id);
       if (existingIndex > -1) {
@@ -102,6 +125,7 @@ export const CartProvider = ({ children }) => {
         updated[existingIndex] = {
           ...updated[existingIndex],
           cantidad_kg: Math.round(updated[existingIndex].cantidad_kg + intKg),
+          imagen_url: updated[existingIndex].imagen_url || imageUrl,
           ...options,
         };
         return updated;
@@ -119,6 +143,11 @@ export const CartProvider = ({ children }) => {
           corte: options.corte || "Corte tradicional",
           envasado: options.envasado || "Bandeja Filmada",
           notas: options.notas || "",
+          imagen_url: imageUrl,
+          es_pieza_entera: Boolean(
+            product.es_pieza_entera || options.es_pieza_entera
+          ),
+          items_combo: options.items_combo || undefined,
         },
       ];
     });
@@ -132,8 +161,8 @@ export const CartProvider = ({ children }) => {
     }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, cantidad_kg: intKg } : item,
-      ),
+        item.id === id ? { ...item, cantidad_kg: intKg } : item
+      )
     );
   };
 
