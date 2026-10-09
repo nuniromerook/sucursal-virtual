@@ -128,29 +128,22 @@ const CategoryHorizontalShelf = ({
   };
 
   return (
-    <section className="mb-9 last:mb-4">
+    <section className="mb-4">
       {/* Header de la Sección */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3.5 px-4 sm:px-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-snug">
+          <div className="flex items-center gap-2 mt-2">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900">
               {title}
             </h2>
-            {badge && (
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-[#003366]/10 text-[#003366]">
-                {badge}
-              </span>
-            )}
             {count !== undefined && (
-              <span className="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num">
-                {count} {count === 1 ? "opción" : "opciones"}
+              <span className="text-[11px] font-bold ml-auto lg:ml-0 text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num">
+                {count} {count === 1 ? "producto" : "productos"}
               </span>
             )}
           </div>
           {description && (
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              {description}
-            </p>
+            <p className="text-xs text-slate-500 mt-0.5">{description}</p>
           )}
         </div>
 
@@ -180,7 +173,7 @@ const CategoryHorizontalShelf = ({
       {/* Div con scroll horizontal con todos los productos de cada categoría */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-3 pt-1 px-4 sm:px-6 snap-x snap-mandatory"
+        className="flex overflow-x-auto no-scrollbar scroll-smooth pb-7 pt-1 snap-x snap-mandatory"
       >
         {children}
       </div>
@@ -203,7 +196,7 @@ const CombosShelf = ({ searchQuery }) => {
       (c) =>
         c.nombre.toLowerCase().includes(q) ||
         c.descripcion.toLowerCase().includes(q) ||
-        c.items.some((it) => it.nombre.toLowerCase().includes(q))
+        c.items.some((it) => it.nombre.toLowerCase().includes(q)),
     );
   }, [searchQuery]);
 
@@ -222,30 +215,24 @@ const CombosShelf = ({ searchQuery }) => {
       1,
       {
         corte: "Combo cerrado de frigorífico",
-        items_combo: combo.items.map((i) => `${i.peso} ${i.nombre}`).join(" + "),
+        items_combo: combo.items
+          .map((i) => `${i.peso} ${i.nombre}`)
+          .join(" + "),
         unidad_medida: "u",
-      }
+      },
     );
     showToast(`Sumaste el ${combo.nombre} al pedido 🥩`);
   };
 
   return (
     <>
-      <CategoryHorizontalShelf
-        title="Combos Ahorro Familiar 📦"
-        description="Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos Club Valette."
-        badge="Promo Familiar"
-        count={filteredCombos.length}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         {filteredCombos.map((combo) => {
           const totalCortes = combo.items.length;
           const extraCortes = Math.max(0, totalCortes - 2);
 
           return (
-            <div
-              key={combo.id}
-              className="w-[310px] sm:w-[350px] shrink-0 flex flex-col snap-start"
-            >
+            <div key={combo.id} className="w-full shrink-0 flex flex-col">
               <div
                 onClick={() => setSelectedCombo(combo)}
                 className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
@@ -375,7 +362,7 @@ const CombosShelf = ({ searchQuery }) => {
             </div>
           );
         })}
-      </CategoryHorizontalShelf>
+      </div>
 
       <ComboDetailModal
         key={selectedCombo?.id || "catalogo-combo-modal"}
@@ -418,7 +405,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
         count: categoryCounts.almacen,
       },
     ],
-    [categoryCounts]
+    [categoryCounts],
   );
 
   // Derivado directo de la URL (Single Source of Truth)
@@ -505,7 +492,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
   // Contar el total de productos desplegados en pantalla
   const totalRenderedProducts = sectionsWithProducts.reduce(
     (acc, sec) => acc + sec.products.length,
-    0
+    0,
   );
 
   return (
@@ -628,7 +615,8 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
               No encontramos cortes para esa búsqueda o categoría
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Probá seleccionando "Todos" o buscando cortes como "asado", "vacio" o "pollo"
+              Probá seleccionando "Todos" o buscando cortes como "asado",
+              "vacio" o "pollo"
             </p>
             <button
               type="button"
@@ -652,7 +640,7 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
                 {sec.products.map((prod) => (
                   <div
                     key={prod.id}
-                    className="w-[280px] sm:w-[300px] shrink-0 flex flex-col snap-start"
+                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start px-4"
                   >
                     <ProductCard
                       product={prod}

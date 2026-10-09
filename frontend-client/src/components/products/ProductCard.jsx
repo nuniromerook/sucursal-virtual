@@ -38,7 +38,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
       unidad_medida: unidadMedida,
     });
     showToast(
-      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`
+      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`,
     );
   };
 
@@ -50,7 +50,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
 
   return (
     <div
-      className={`h-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-native flex flex-col justify-between hover:border-slate-300 transition-all ${
+      className={`h-full w-fit bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-native flex flex-col justify-between hover:border-slate-300 transition-all ${
         isOutOfStock ? "opacity-85" : ""
       }`}
     >
@@ -149,7 +149,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
               <strong>
                 {formatPrecioPorUnidad(
                   product.promos[0].precio_promocional,
-                  unidadMedida
+                  unidadMedida,
                 )}
               </strong>
             </div>
@@ -174,7 +174,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             onClick={() =>
               showToast(
                 "Te notificaremos por WhatsApp cuando reingrese stock.",
-                "info"
+                "info",
               )
             }
             className="px-3.5 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
