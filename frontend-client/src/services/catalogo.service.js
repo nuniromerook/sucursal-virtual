@@ -12,21 +12,15 @@ export const CORTES_MOCK = [
     precio: 17200,
     precio_anterior: 18500,
     descripcion:
-      "Tierno con la grasa de cobertura justa. El corte estrella indiscutido para la parrilla o al horno lento.",
-    descripcion_larga:
-      "Vacío seleccionado de novillito de primera calidad. Corte de gran terneza y sabor intenso con fina capa de grasa que le aporta jugosidad sin merma excesiva. Ideal para cocción a fuego lento en parrilla o asador.",
+      "¡Pura terneza parrillera! Selección de novillito con la grasa justa de cobertura para lograr un cuerito crocante y jugosidad inigualable a fuego lento.",
     imagen_url:
       "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
     puntos: 25,
     activo: true,
     sin_stock: false,
-    badge: "Venta x Pieza Entera",
-    es_pieza_entera: true,
-    peso_promedio_pieza: 3,
-    peso_min_pieza: 2,
-    peso_max_pieza: 4,
+    badge: "🔥 Estrella Parrillera",
     metodos_coccion: ["Parrilla", "Horno", "Asador"],
-    rinde_personas: "5 a 6 personas",
+    rinde_personas: "3 a 4 personas x kg",
     opciones_corte: [
       "Trozo Entero",
       "Marcado Parrillero",
@@ -52,19 +46,13 @@ export const CORTES_MOCK = [
     precio: 13900,
     precio_anterior: 14500,
     descripcion:
-      "Tiras de costilla con hueso plano y grasa blanca tradicional de frigorífico.",
-    descripcion_larga:
-      "Costillar central de novillito trozado a cuchillo. Hueso plano bien formado con abundante carne entrevarada. Sabor clásico argentino inconfundible.",
+      "¡El rey del domingo! Costillar seleccionado de novillito con hueso plano, abundante carne entrevarada y sabor parrillero tradicional inconfundible.",
     imagen_url:
       "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
     puntos: 20,
     activo: true,
     sin_stock: false,
     badge: "Especial Asado",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 2,
-    peso_min_pieza: 1,
-    peso_max_pieza: 5,
     metodos_coccion: ["Parrilla", "Asador"],
     rinde_personas: "2 a 3 personas x kg",
     opciones_corte: [
@@ -92,23 +80,19 @@ export const CORTES_MOCK = [
     precio: 13700,
     precio_anterior: 15200,
     descripcion:
-      "Ojo de bife con su ceja jugosa. Gran terneza y marmoleo perfecto para la plancha o brasas.",
-    descripcion_larga:
-      "Bife ancho seleccionado con excelente infiltración grasa. Súper tierno y jugoso para sellar a fuego fuerte en hierro o cocinar a la parrilla con sal gruesa.",
+      "¡Marmoleo y jugosidad suprema! Ojo de bife tierno con su ceja veteada, ideal para sellar vuelta y vuelta a la plancha de hierro o brasas fuertes.",
     imagen_url:
       "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=800",
     puntos: 25,
     activo: true,
     sin_stock: false,
     badge: "Corte Gourmet",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Plancha", "Parrilla", "Disco"],
     rinde_personas: "3 a 4 personas x kg",
     opciones_corte: [
       "Bifes Gruesos (3 cm)",
       "Bifes Medianos (2 cm)",
-      "Pieza Entera para Horno",
+      "Trozo para Horno",
     ],
     promos: [
       {
@@ -129,22 +113,18 @@ export const CORTES_MOCK = [
     precio: 14400,
     precio_anterior: 15500,
     descripcion:
-      "Corte sabroso con el punto justo de grasa. Ideal para estofados, carne picada especial o mechado al horno.",
-    descripcion_larga:
-      "Corte delantero de novillito muy versátil y de profundo sabor a carne. Excelente para cocciones lentas donde se desarma con el tenedor o para picar a cuchillo.",
+      "¡Sabor profundo que se deshace! Corte delantero magro y versátil de novillito, insuperable para guisados lentos, picar a cuchillo o mechar al horno.",
     imagen_url:
       "https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
     badge: "Ideal Cocción Lenta",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Cacerola", "Horno", "Guiso"],
     rinde_personas: "4 personas x kg",
     opciones_corte: [
       "Trozado para Guiso",
-      "Pieza Entera para Horno",
+      "Pieza para Horno",
       "Bifes para Plancha",
     ],
     promos: [
@@ -158,7 +138,7 @@ export const CORTES_MOCK = [
   },
   {
     id: 8,
-    nombre: "Bondiola de Cerdo Entera",
+    nombre: "Bondiola Fresca de Cerdo",
     slug: "bondiola-cerdo",
     categoria: "cerdo",
     categoria_label: "Cerdo",
@@ -166,23 +146,17 @@ export const CORTES_MOCK = [
     precio: 8800,
     precio_anterior: 9800,
     descripcion:
-      "Pieza entera seleccionada de 2.5 a 3 kg. Marmoleo jugoso para cocción lenta a la mostaza o a las brasas.",
-    descripcion_larga:
-      "Bondiola fresca entera de cerdo con veteado perfecto de grasa interna. Ideal para brasear en cerveza negra o mostaza y miel durante horas hasta desmechar.",
+      "¡Dorada y súper tierna! Carne de cerdo con veteado perfecto de grasa interna, sensacional para bifecitos de sartén o brasear con mostaza y miel.",
     imagen_url:
       "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422423/nwcd2bvbh1gcfkbehsv5.webp",
     puntos: 20,
     activo: true,
     sin_stock: false,
-    badge: "Venta x Pieza Entera (2.5 a 3 kg)",
-    es_pieza_entera: true,
-    peso_promedio_pieza: 3,
-    peso_min_pieza: 2,
-    peso_max_pieza: 4,
+    badge: "🔥 Súper Tierna",
     metodos_coccion: ["Horno lento", "Parrilla", "Disco"],
-    rinde_personas: "6 a 8 personas",
+    rinde_personas: "4 personas x kg",
     opciones_corte: [
-      "Pieza Entera",
+      "Trozo para Horno",
       "Churrascos Gruesos (2 cm)",
       "Marcada al medio",
     ],
@@ -205,21 +179,15 @@ export const CORTES_MOCK = [
     precio: 7900,
     precio_anterior: 8900,
     descripcion:
-      "Costillitas de cerdo con manta carnosa. Crujiente por fuera y súper tierno por dentro.",
-    descripcion_larga:
-      "Costillar de cerdo completo con capa de manta carnosa y cuero fino crocante. El compañero imprescindible de cualquier asado dominical.",
+      "¡Crocante por fuera y jugoso adentro! Costillitas tiernas de cerdo con manta carnosa y cuero que dora perfecto a las brasas o al horno con limón.",
     imagen_url:
       "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
     puntos: 15,
     activo: true,
     sin_stock: false,
-    badge: "Venta x Pieza Entera",
-    es_pieza_entera: true,
-    peso_promedio_pieza: 3,
-    peso_min_pieza: 2,
-    peso_max_pieza: 4,
+    badge: "🔥 Especial Parrilla",
     metodos_coccion: ["Parrilla", "Horno con limón"],
-    rinde_personas: "4 a 5 personas",
+    rinde_personas: "3 a 4 personas x kg",
     opciones_corte: [
       "Manta Entera",
       "Trozado al medio",
@@ -244,17 +212,13 @@ export const CORTES_MOCK = [
     precio: 4900,
     precio_anterior: 5500,
     descripcion:
-      "Carne magra y rendidora de cerdo. Excelente relación precio-calidad para milanesas o al horno.",
-    descripcion_larga:
-      "Paleta fresca deshuesada o trozada. Ideal para milanesas bien tiernas, churrasquitos rápidos de sartén o estofados rendidores de fin de semana.",
+      "¡Magra, rendidora y económica! Excelente carne de cerdo para milanesas bien suaves, churrasquitos rápidos de sartén o estofados de fin de semana.",
     imagen_url:
       "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
-    badge: "Súper Económico",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
+    badge: "Súper Rendidor",
     metodos_coccion: ["Horno", "Plancha", "Milanesas"],
     rinde_personas: "4 personas x kg",
     opciones_corte: [
@@ -274,17 +238,13 @@ export const CORTES_MOCK = [
     precio: 1500,
     precio_anterior: 1800,
     descripcion:
-      "Grasa blanca firme de cerdo para preparaciones, chicharrones o enriquecer picadas y embutidos.",
-    descripcion_larga:
-      "Tocino fresco limpio sin impurezas. Ideal para aromatizar guisados, preparar chicharrones crujientes caseros o mezclar en embutidos artesanales.",
+      "¡El toque crocante para tus recetas! Grasa blanca firme y limpia de cerdo, perfecta para chicharrones dorados caseros o dar sabor a salsas y estofados.",
     imagen_url:
       "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=800",
     puntos: 5,
     activo: true,
     sin_stock: false,
     badge: "Charcutería",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Sartén", "Horno", "Olla"],
     rinde_personas: "Para preparaciones",
     opciones_corte: ["En trozo entero", "En cubos chicos", "Laminado"],
@@ -292,7 +252,7 @@ export const CORTES_MOCK = [
   },
   {
     id: 3,
-    nombre: "Pollo de Campo Entero",
+    nombre: "Pollo de Campo Fresco",
     slug: "pollo-entero",
     categoria: "pollo",
     categoria_label: "Granja & Pollo",
@@ -300,21 +260,15 @@ export const CORTES_MOCK = [
     precio: 4500,
     precio_anterior: 4900,
     descripcion:
-      "Pollo fresco eviscerado de 2 a 2.5 kg. Piel limpia, carne firme y rendimiento óptimo.",
-    descripcion_larga:
-      "Pollo de granja fresco seleccionado. Criado con alimentación controlada sin hormonas agregadas. Ideal para hacer al spiedo, a la parrilla abierto tipo mariposa o al horno con papas.",
+      "¡Fresco de granja y con sabor auténtico! Pollo de campo con alimentación controlada, carne firme y rendimiento óptimo al horno con papas o a la parrilla.",
     imagen_url:
       "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
-    badge: "Venta x Unidad Entera",
-    es_pieza_entera: true,
-    peso_promedio_pieza: 2,
-    peso_min_pieza: 2,
-    peso_max_pieza: 3,
+    badge: "Granja Fresca",
     metodos_coccion: ["Horno con papas", "Parrilla mariposa", "Spiedo"],
-    rinde_personas: "4 a 5 personas",
+    rinde_personas: "3 a 4 personas x kg",
     opciones_corte: [
       "Entero Eviscerado",
       "Abierto Tipo Mariposa (para parrilla)",
@@ -340,17 +294,13 @@ export const CORTES_MOCK = [
     precio: 8900,
     precio_anterior: 9600,
     descripcion:
-      "Pechugas deshuesadas limpias sin piel ni grasa. 100% magras para milanesas o plancha.",
-    descripcion_larga:
-      "Pechugas enteras de pollo seleccionadas y desgrasadas a cuchillo. La mejor opción saludable y rendidora para tus comidas de la semana.",
+      "¡100% magras y listas para cocinar! Pechugas frescas limpias a cuchillo sin piel ni grasa sobrante, ideales para milanesas crocantes o salteados express.",
     imagen_url:
       "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=800",
     puntos: 15,
     activo: true,
     sin_stock: false,
     badge: "100% Magro",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Plancha", "Horno", "Milanesas"],
     rinde_personas: "4 personas x kg",
     opciones_corte: [
@@ -377,17 +327,13 @@ export const CORTES_MOCK = [
     precio: 1700,
     precio_anterior: 2100,
     descripcion:
-      "Elaboración diaria con tripa natural y carne 100% cerdo. Sin exceso de grasa ni conservantes.",
-    descripcion_larga:
-      "Chorizo parrillero tradicional bombón preparado a diario en la carnicería. Mezcla balanceada con especias tradicionales para un sabor auténtico parrillero.",
+      "¡Elaboración propia sin conservantes! Embutido parrillero fresco con tripa natural y carne 100% cerdo para una explosión de sabor en cada mordisco.",
     imagen_url:
       "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
     badge: "100% Cerdo Artesanal",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Parrilla", "Horno", "Pomorola"],
     rinde_personas: "6 unidades x kg",
     opciones_corte: [
@@ -414,17 +360,13 @@ export const CORTES_MOCK = [
     precio: 6500,
     precio_anterior: 7200,
     descripcion:
-      "Medallones de pura suprema de pollo con finas hierbas. Sanas, tiernas y listas para cocinar.",
-    descripcion_larga:
-      "Hamburguesas artesanales moldeadas con carne magra de pechuga fresca y condimentos suaves. Rápida cocción a la plancha sin necesidad de agregar aceite.",
+      "¡Sanas, sabrosas y listas para la plancha! Medallones artesanales moldeados con pura pechuga de pollo y finas hierbas para resolver comidas en minutos.",
     imagen_url:
       "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800",
     puntos: 10,
     activo: true,
     sin_stock: false,
     badge: "Elaboración Diaria",
-    es_pieza_entera: false,
-    peso_promedio_pieza: 1,
     metodos_coccion: ["Plancha", "Horno", "Sartén"],
     rinde_personas: "8 unidades x kg aprox.",
     opciones_corte: ["En bandeja con separadores", "Congeladas IQF"],
@@ -451,32 +393,32 @@ export const DEFAULT_BANNERS = [
   },
   {
     id: 2,
-    titulo: "Cortes Seleccionados - 100% Calidad Premium",
-    subtitulo: "Carne vacuna de pastura seleccionada con trazabilidad garantizada.",
+    titulo: "Cortes Magros para la Semana",
+    subtitulo: "Milanesas, bifes y supremas con descuentos especiales por volumen.",
     imagen_desktop_url:
-      "https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=3480&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=3480&auto=format&fit=crop",
     imagen_mobile_url:
-      "https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=1280&auto=format&fit=crop",
-    enlace_url: "/vacuno",
-    badge_texto: "🥩 CORTES BOVINOS",
-    badge_color: "azul",
-    boton_texto: "Explorar Cortes",
+      "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=1280&auto=format&fit=crop",
+    enlace_url: "/productos?q=milanesas",
+    badge_texto: "🥩 SEMANA DE AHORRO",
+    badge_color: "dorado",
+    boton_texto: "Aprovechar",
     categoria: "vacuno",
-    bgClass: "from-slate-950 via-slate-900 to-[#002244]",
-    btnClass: "bg-amber-400 text-slate-950 hover:bg-amber-300",
+    bgClass: "from-slate-900 via-[#003366] to-emerald-950",
+    btnClass: "bg-white text-slate-900 hover:bg-slate-100",
   },
   {
     id: 3,
-    titulo: "Club Valette: Acumulá puntos y canjeá descuentos",
-    subtitulo: "Sumá puntos con cada pedido y ganá cortes gratis y bonificaciones.",
+    titulo: "Sumá Puntos Club Valette",
+    subtitulo: "Cada compra acumula puntos canjeables por kilos gratis.",
     imagen_desktop_url:
-      "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=3480&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=3480&auto=format&fit=crop",
     imagen_mobile_url:
-      "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?q=80&w=1280&auto=format&fit=crop",
-    enlace_url: "/productos",
-    badge_texto: "✨ CLUB VALETTE",
-    badge_color: "negro",
-    boton_texto: "Sumarme ahora",
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1280&auto=format&fit=crop",
+    enlace_url: "/club-valette",
+    badge_texto: "⭐ BENEFICIO EXCLUSIVO",
+    badge_color: "dorado",
+    boton_texto: "Conocer más",
     categoria: "puntos",
     bgClass: "from-amber-950 via-amber-900 to-slate-950",
     btnClass: "bg-white text-amber-950 hover:bg-slate-100",
@@ -486,7 +428,7 @@ export const DEFAULT_BANNERS = [
 const CACHE_KEY_CATALOGO = "valette_catalogo_cache";
 
 /**
- * Enriquece un producto proveniente de PostgreSQL con atributos de carnicería premium de 1.0.
+ * Enriquece un producto proveniente de PostgreSQL con atributos de carnicería por kg.
  */
 export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   if (!dbProduct) return null;
@@ -510,7 +452,7 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   const precio = Number(dbProduct.precio) || 0;
   const precioAnterior = Number(dbProduct.precio_anterior || 0);
 
-  // Normalizar promociones escalonadas por volumen
+  // Normalizar promociones escalonadas por volumen en kilogramos
   const promos = Array.isArray(dbProduct.promos)
     ? dbProduct.promos
         .map((p) => ({
@@ -536,32 +478,11 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
       ? "Preparados Caseros"
       : "Cortes Seleccionados";
 
-  // Determinar si es pieza entera (Bondiola, Pollo Entero, Vacío, Pechito de Cerdo)
-  const isPiezaEntera =
-    mockMatch?.es_pieza_entera ??
-    (slug.includes("bondiola") ||
-      slug.includes("pollo-entero") ||
-      slug.includes("pechito") ||
-      slug.includes("vacio") ||
-      nombre.toLowerCase().includes("pieza entera"));
-
-  const pesoPromedioPieza =
-    mockMatch?.peso_promedio_pieza ??
-    (slug.includes("bondiola")
-      ? 3
-      : slug.includes("pollo-entero")
-      ? 2
-      : slug.includes("pechito")
-      ? 3
-      : 1);
-
-  // Opciones de corte personalizadas para el carnicero
+  // Opciones de corte personalizadas para el cortador de mostrador
   const opcionesCorte =
     mockMatch?.opciones_corte ||
-    (isPiezaEntera
-      ? ["Pieza Entera", "Marcada al medio", "Desgrasado especial"]
-      : especie === "pollo"
-      ? ["Fileteado para Milanesas", "Piezas Enteras", "Trozado para Guiso"]
+    (especie === "pollo"
+      ? ["Fileteado para Milanesas", "Pechugas Enteras", "Trozado para Guiso"]
       : especie === "cerdo"
       ? ["Corte Tradicional", "Churrascos Gruesos", "Trozado para Horno"]
       : [
@@ -575,19 +496,14 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     mockMatch?.metodos_coccion ||
     (especie === "pollo"
       ? ["Horno", "Plancha", "Milanesas"]
-      : isPiezaEntera
-      ? ["Parrilla", "Horno lento", "Asador"]
       : ["Parrilla", "Plancha", "Horno"]);
 
   const rindePersonas =
-    mockMatch?.rinde_personas ||
-    (isPiezaEntera ? "5 a 6 personas" : "3 a 4 personas x kg");
+    mockMatch?.rinde_personas || "3 a 4 personas x kg";
 
   const badge =
     mockMatch?.badge ||
-    (isPiezaEntera
-      ? "Venta x Pieza Entera"
-      : promos.length > 0
+    (promos.length > 0
       ? `Ahorro x ${promos[0].cantidad_kg} kg`
       : null);
 
@@ -602,8 +518,6 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     precio,
     precio_anterior: precioAnterior,
     descripcion: dbProduct.descripcion || mockMatch?.descripcion || "",
-    descripcion_larga:
-      mockMatch?.descripcion_larga || dbProduct.descripcion || "",
     imagen_url:
       dbProduct.imagen_url ||
       mockMatch?.imagen_url ||
@@ -612,10 +526,6 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
     activo: dbProduct.activo !== false,
     sin_stock: Boolean(dbProduct.sin_stock || dbProduct.en_stock === false),
     badge,
-    es_pieza_entera: isPiezaEntera,
-    peso_promedio_pieza: pesoPromedioPieza,
-    peso_min_pieza: mockMatch?.peso_min_pieza || (isPiezaEntera ? 2 : 1),
-    peso_max_pieza: mockMatch?.peso_max_pieza || (isPiezaEntera ? 4 : 5),
     metodos_coccion: metodosCoccion,
     rinde_personas: rindePersonas,
     opciones_corte: opcionesCorte,
@@ -650,21 +560,22 @@ export const fetchCatalogo = async () => {
     console.warn("⚠️ [Catalogo Service] Usando respaldo offline:", err.message);
   }
 
-  // Intentar leer de caché local previo
+  // Respaldo de contingencia: caché local o CORTES_MOCK
   try {
     const cached = localStorage.getItem(CACHE_KEY_CATALOGO);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item) => enrichProduct(item, CORTES_MOCK));
+      }
     }
   } catch {}
 
-  // Fallback garantizado a CORTES_MOCK
-  return CORTES_MOCK;
+  return CORTES_MOCK.map((item) => enrichProduct(item, CORTES_MOCK));
 };
 
 /**
- * Obtiene los banners publicitarios activos de la API en PostgreSQL.
+ * Obtiene los banners publicitarios activos.
  */
 export const fetchBanners = async () => {
   try {
@@ -676,32 +587,11 @@ export const fetchBanners = async () => {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        return data.map((b, idx) => ({
-          id: b.id,
-          titulo: b.titulo || "Abastecedora Valette",
-          subtitulo: b.subtitulo || "Calidad y terneza garantizada",
-          imagen_desktop_url: b.imagen_desktop_url || b.imagen_mobile_url,
-          imagen_mobile_url: b.imagen_mobile_url || b.imagen_desktop_url,
-          imagenUrl: b.imagen_desktop_url || b.imagen_mobile_url,
-          enlace_url: b.enlace_url || "/productos",
-          badge_texto: b.badge_texto || "OFERTA VALETTE",
-          badge_color: b.badge_color || "rojo",
-          boton_texto: b.boton_texto || "Ver promo",
-          bgClass:
-            idx % 3 === 0
-              ? "from-[#002244] via-[#003366] to-slate-900"
-              : idx % 3 === 1
-              ? "from-slate-950 via-slate-900 to-[#002244]"
-              : "from-amber-950 via-amber-900 to-slate-950",
-          btnClass:
-            idx % 2 === 0
-              ? "bg-white text-[#003366] hover:bg-slate-100"
-              : "bg-amber-400 text-slate-950 hover:bg-amber-300",
-        }));
+        return data;
       }
     }
   } catch (err) {
-    console.warn("⚠️ [Banners Service] Usando banners por defecto:", err.message);
+    console.warn("⚠️ [Catalogo Service] Usando banners por defecto:", err.message);
   }
 
   return DEFAULT_BANNERS;

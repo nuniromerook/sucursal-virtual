@@ -1,6 +1,6 @@
 // src/components/products/ProductCard.jsx
 import { useState } from "react";
-import { Heart, Plus, Bell, Beef, Minus, Scale } from "lucide-react";
+import { Heart, Plus, Bell, Minus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
@@ -8,11 +8,7 @@ import { formatPrecio } from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 
 export const ProductCard = ({ product, onOpenCustomizer }) => {
-  const defaultKg =
-    product.es_pieza_entera && product.peso_promedio_pieza
-      ? Math.max(1, Math.round(product.peso_promedio_pieza))
-      : 1;
-  const [selectedKg, setSelectedKg] = useState(defaultKg);
+  const [selectedKg, setSelectedKg] = useState(1);
   const { addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
@@ -20,7 +16,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
 
-  // Cálculo reactivo de precio según kilos enteros seleccionados
+  // Cálculo reactivo de precio según kilos enteros seleccionados (sin tope máximo)
   const priceInfo = calculateItemPrice({
     ...product,
     cantidad_kg: selectedKg,
@@ -31,7 +27,6 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
     if (isOutOfStock) return;
     addToCart(product, selectedKg, {
       corte: product.opciones_corte?.[0] || "Corte tradicional",
-      es_pieza_entera: !!product.es_pieza_entera,
     });
     showToast(`Sumaste ${selectedKg} kg de ${product.nombre} al pedido`);
   };
@@ -71,11 +66,6 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             {isOutOfStock ? (
               <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black uppercase shadow-xs">
                 Agotado por Hoy
-              </span>
-            ) : product.es_pieza_entera ? (
-              <span className="px-2.5 py-1 rounded-lg bg-[#003366] text-white text-[10px] font-black uppercase shadow-xs flex items-center gap-1">
-                <Scale className="size-3" />
-                <span>Pieza Entera</span>
               </span>
             ) : product.badge ? (
               <span className="px-2.5 py-1 rounded-lg bg-[#c53030] text-white text-[10px] font-black uppercase shadow-xs">
@@ -136,6 +126,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             {product.nombre}
           </h3>
 
+          {/* Descripción llamativa expuesta en la card */}
           <p className="text-xs text-slate-500 mt-1 line-clamp-1">
             {product.descripcion}
           </p>
@@ -155,17 +146,11 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
       {/* Bottom: Precio y Acciones Duales con Stepper de kg enteros */}
       <div className="py-3 px-4 border-t border-slate-100 mt-3 flex items-center justify-between gap-3">
         <div>
-          <span className="text-xl font-black text-slate-900">
+          <span className="text-xl font-black text-slate-900 font-num">
             {formatPrecio(priceInfo.total)}
           </span>
-          <span className="text-xs text-slate-400 flex items-center gap-1">
-            {product.es_pieza_entera ? (
-              <span>
-                ~{selectedKg} kg ({formatPrecio(product.precio)}/kg)
-              </span>
-            ) : (
-              <span>{formatPrecio(product.precio)}/kg</span>
-            )}
+          <span className="text-xs text-slate-400 flex items-center gap-1 font-num">
+            <span>{formatPrecio(product.precio)}/kg</span>
           </span>
         </div>
 
@@ -175,7 +160,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             onClick={() =>
               showToast(
                 "Te notificaremos por WhatsApp cuando reingrese stock.",
-                "info",
+                "info"
               )
             }
             className="px-3.5 py-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -185,7 +170,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           </button>
         ) : (
           <div className="flex items-center gap-1.5">
-            {/* Stepper en kg enteros (1kg, 2kg, 3kg...) */}
+            {/* Stepper en kg enteros (1kg, 2kg, 3kg...) sin tope máximo */}
             <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80 whitespace-nowrap">
               <button
                 type="button"
@@ -199,7 +184,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
               >
                 <Minus className="size-3.5 stroke-[2.5]" />
               </button>
-              <span className="text-sm font-black text-slate-800 px-2 min-w-15 text-center">
+              <span className="text-sm font-black text-slate-800 px-2 min-w-15 text-center font-num">
                 {selectedKg} kg
               </span>
               <button
@@ -208,7 +193,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                   e.stopPropagation();
                   setSelectedKg((prev) => prev + 1);
                 }}
-                className="size-7 rounded-lg bg-white hover:bg-slate-200 disabled:opacity-30 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
+                className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
                 title="Sumar 1 kg"
               >
                 <Plus className="size-3.5 stroke-[2.5]" />

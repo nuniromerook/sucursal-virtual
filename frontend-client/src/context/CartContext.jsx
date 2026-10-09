@@ -144,9 +144,6 @@ export const CartProvider = ({ children }) => {
           envasado: options.envasado || "Bandeja Filmada",
           notas: options.notas || "",
           imagen_url: imageUrl,
-          es_pieza_entera: Boolean(
-            product.es_pieza_entera || options.es_pieza_entera
-          ),
           items_combo: options.items_combo || undefined,
         },
       ];

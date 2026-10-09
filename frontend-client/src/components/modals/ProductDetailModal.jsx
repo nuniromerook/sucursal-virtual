@@ -1,12 +1,10 @@
-// src/components/modals/ProductDetailModal.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   X,
   Heart,
   ShoppingCart,
   Plus,
   Minus,
-  Scale,
   Flame,
   Users,
   Check,
@@ -30,26 +28,16 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
   // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose,
+    onClose
   );
 
-  // Valores iniciales calculados en kg enteros según el corte
-  const defaultKg = useMemo(() => {
-    if (!product) return 1;
-    if (product.es_pieza_entera && product.peso_promedio_pieza) {
-      return Math.max(1, Math.round(product.peso_promedio_pieza));
-    }
-    return 1;
-  }, [product]);
-
-  const defaultCut = useMemo(() => {
-    if (!product) return "Corte tradicional";
-    return product.opciones_corte && product.opciones_corte.length > 0
+  // Venta oficial unicamente por kg: inicio simple en 1 kg
+  const defaultCut =
+    product?.opciones_corte && product.opciones_corte.length > 0
       ? product.opciones_corte[0]
       : "Corte tradicional";
-  }, [product]);
 
-  const [selectedKg, setSelectedKg] = useState(defaultKg);
+  const [selectedKg, setSelectedKg] = useState(1);
   const [selectedCut, setSelectedCut] = useState(defaultCut);
   const [notas, setNotas] = useState("");
 
@@ -58,7 +46,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
 
-  // Cálculo financiero reactivo con promociones por volumen (estrictamente en kg enteros)
+  // Cálculo financiero reactivo con promociones por volumen (venta por kg enteros sin tope máximo)
   const priceInfo = calculateItemPrice({
     ...product,
     cantidad_kg: selectedKg,
@@ -82,7 +70,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     addToCart(product, selectedKg, {
       corte: selectedCut,
       notas,
-      es_pieza_entera: !!product.es_pieza_entera,
     });
 
     showToast(`Sumaste ${selectedKg} kg de ${product.nombre} al pedido`);
@@ -164,11 +151,6 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                 <span className="px-3 py-1 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase shadow-xs">
                   Agotado por hoy
                 </span>
-              ) : product.es_pieza_entera ? (
-                <span className="px-3 py-1 rounded-xl bg-[#003366] text-white text-[11px] font-black uppercase shadow-xs flex items-center gap-1">
-                  <Scale className="size-3 stroke-[2.5]" />
-                  <span>Venta x Pieza Entera</span>
-                </span>
               ) : product.badge ? (
                 <span className="px-3 py-1 rounded-xl bg-[#c53030] text-white text-[11px] font-black uppercase shadow-xs">
                   {product.badge}
@@ -194,7 +176,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </span>
           </div>
 
-          {/* 2. Nombre, Precio Base y Descripción */}
+          {/* 2. Nombre, Precio Base y Descripción única llamativa */}
           <div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
@@ -202,13 +184,13 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
               </h2>
 
               <div className="flex items-baseline gap-2 shrink-0">
-                <span className="text-2xl sm:text-3xl font-black text-[#003366]">
+                <span className="text-2xl sm:text-3xl font-black text-[#003366] font-num">
                   {formatPrecio(product.precio)}
                 </span>
                 <span className="text-xs font-bold text-slate-400">/ kg</span>
 
                 {product.precio_anterior > product.precio && (
-                  <span className="text-xs text-slate-400 line-through ml-1">
+                  <span className="text-xs text-slate-400 line-through ml-1 font-num">
                     {formatPrecio(product.precio_anterior)}/kg
                   </span>
                 )}
@@ -216,7 +198,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-600 mt-4 leading-relaxed">
-              {product.descripcion_larga || product.descripcion}
+              {product.descripcion}
             </p>
           </div>
 
@@ -273,121 +255,63 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </div>
           </div>
 
-          {/* 3. Aclaración de Pieza Entera (Comportamiento Luis Guillón) */}
-          {product.es_pieza_entera && (
-            <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-blue-950">
-              <div className="p-2 rounded-xl bg-blue-100 text-[#003366] shrink-0 mt-0.5">
-                <Scale className="size-4 stroke-[2.5]" />
-              </div>
-              <div>
-                <h4 className="font-extrabold text-[13px] text-[#003366]">
-                  Corte por Pieza Entera en Frigorífico
-                </h4>
-                <p className="text-blue-900/85 mt-1 leading-normal">
-                  El precio publicado es por kilo llevando la pieza completa
-                  (peso estimado aprox.{" "}
-                  <strong>
-                    {Math.round(product.peso_min_pieza || 2)} kg a{" "}
-                    {Math.round(product.peso_max_pieza || 3)} kg
-                  </strong>
-                  ). El importe final exacto se confirma con el pesaje en la
-                  balanza al preparar tu pedido.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 4. Selector de Cantidad en Kilogramos Enteros (1kg, 2kg, 3kg...) */}
+          {/* 4. Selector de Cantidad Simple en Kilogramos Enteros (sin topes ni piezas) */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className="-space-y-1.5">
+              <div className="-space-y-0.5">
                 <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-                  {product.es_pieza_entera ? "cantidad" : "Cantidad en Kg"}
+                  Cantidad
                 </label>
                 <span className="text-[11px] text-slate-500">
-                  {product.es_pieza_entera
-                    ? "Máximo 3kg"
-                    : "Venta exclusiva por kilo entero"}
+                  Venta por kilogramo entero
                 </span>
               </div>
 
-              {/* Stepper +/- estricto de 1 kg en 1 kg */}
+              {/* Stepper +/- de 1 kg en 1 kg (sin tope máximo) */}
               <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
                 <button
                   type="button"
                   onClick={handleDecrement}
                   disabled={isOutOfStock || selectedKg <= 1}
-                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-40 cursor-pointer"
+                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-40 cursor-pointer transition-colors"
                   title="Restar 1 kg"
                 >
-                  <Minus className="size-4" />
+                  <Minus className="size-4 stroke-[2.5]" />
                 </button>
-                <span className="text-sm font-black text-slate-900 min-w-[50px] text-center">
+                <span className="text-sm font-black text-slate-900 min-w-[50px] text-center font-num">
                   {selectedKg} kg
                 </span>
                 <button
                   type="button"
                   onClick={handleIncrement}
                   disabled={isOutOfStock}
-                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-50 cursor-pointer transition-colors"
                   title="Sumar 1 kg"
                 >
-                  <Plus className="size-4" />
+                  <Plus className="size-4 stroke-[2.5]" />
                 </button>
               </div>
             </div>
 
-            {/* Chips rápidos de peso entero */}
+            {/* Chips rápidos de selección de kg enteros (1kg a 5kg) */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
-              {product.es_pieza_entera ? (
-                <>
-                  {[
-                    { label: "1 Pieza Chica", kg: 2 },
-                    { label: "1 Pieza Estándar", kg: 3 },
-                    { label: "1 Pieza Grande", kg: 4 },
-                    { label: "2 Piezas", kg: 5 },
-                  ].map((preset) => {
-                    const isSelected = selectedKg === preset.kg;
-                    return (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => handleSelectPredefinedKg(preset.kg)}
-                        className={`px-3.5 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-[#003366] text-white shadow-2xs"
-                            : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        <span>{preset.label}</span>
-                        <span className="text-[10px] opacity-80 block font-normal">
-                          {preset.kg} kg
-                        </span>
-                      </button>
-                    );
-                  })}
-                </>
-              ) : (
-                <>
-                  {[1, 2, 3, 4, 5].map((kg) => {
-                    const isSelected = selectedKg === kg;
-                    return (
-                      <button
-                        key={kg}
-                        type="button"
-                        onClick={() => handleSelectPredefinedKg(kg)}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-[#003366] text-white shadow-2xs"
-                            : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {kg} kg
-                      </button>
-                    );
-                  })}
-                </>
-              )}
+              {[1, 2, 3, 4, 5].map((kg) => {
+                const isSelected = selectedKg === kg;
+                return (
+                  <button
+                    key={kg}
+                    type="button"
+                    onClick={() => handleSelectPredefinedKg(kg)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer font-num ${
+                      isSelected
+                        ? "bg-[#003366] text-white shadow-2xs"
+                        : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {kg} kg
+                  </button>
+                );
+              })}
             </div>
 
             {/* Promociones por volumen si existen */}
@@ -398,28 +322,32 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   return (
                     <div
                       key={promo.id || promo.cantidad_kg}
-                      className={`text-xs p-2.5 rounded-xl border flex items-center justify-between ${
+                      className={`flex items-center justify-between text-xs p-2.5 rounded-xl border transition-colors ${
                         activa
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-950 font-bold"
-                          : "bg-white border-slate-200/70 text-slate-600"
+                          ? "bg-amber-50 border-amber-200 text-amber-950 font-bold"
+                          : "bg-white border-slate-200 text-slate-600"
                       }`}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-amber-500">🔥</span>
+                      <div className="flex items-center gap-2">
+                        <Sparkles
+                          className={`size-3.5 ${
+                            activa ? "text-amber-600" : "text-slate-400"
+                          }`}
+                        />
                         <span>
                           Llevando {promo.cantidad_kg} kg o más:{" "}
-                          <strong>
+                          <strong className="text-slate-900 font-num">
                             {formatPrecio(promo.precio_promocional)}/kg
                           </strong>
                         </span>
                       </div>
                       {activa ? (
-                        <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-md uppercase font-black">
-                          Aplicado
+                        <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
+                          ¡Promo aplicada!
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400">
-                          Falta {promo.cantidad_kg - selectedKg} kg
+                        <span className="text-[10px] text-slate-400 font-num">
+                          Faltan {promo.cantidad_kg - selectedKg} kg
                         </span>
                       )}
                     </div>
@@ -435,7 +363,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
               <div className="flex items-center justify-between mb-2.5">
                 <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Beef className="size-3.5 text-[#003366]" />
-                  <span>Cómo lo preparamos?</span>
+                  <span>¿Cómo lo preparamos?</span>
                 </label>
                 <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
                   Sin cargo
@@ -496,10 +424,10 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
               )}
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight font-num">
                 {formatPrecio(priceInfo.total)}
               </span>
-              <span className="text-xs font-medium text-slate-400">
+              <span className="text-xs font-medium text-slate-400 font-num">
                 ({selectedKg} kg)
               </span>
             </div>

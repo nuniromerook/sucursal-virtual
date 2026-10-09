@@ -195,11 +195,6 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
                             <span className="font-num">
                               {formatPrecio(item.precio)}/kg
                             </span>
-                            {item.es_pieza_entera && (
-                              <span className="text-[10px] bg-blue-50 text-[#003366] border border-blue-200 px-1.5 py-0.2 rounded font-bold">
-                                Pieza entera
-                              </span>
-                            )}
                           </div>
 
                           {item.items_combo && (
