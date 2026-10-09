@@ -1,5 +1,11 @@
 // src/context/CartContext.jsx
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 
 const CartContext = createContext(null);
@@ -22,6 +28,8 @@ export const CartProvider = ({ children }) => {
         puntos: 15,
         corte: "Corte clásico (2 cm)",
         envasado: "Envasado al vacío",
+        imagen_url:
+          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
         notas: "",
         promos: [{ cantidad_kg: 3, precio_promocional: 10500, activa: true }],
       },
@@ -34,6 +42,8 @@ export const CartProvider = ({ children }) => {
         puntos: 20,
         corte: "Tiras tradicionales",
         envasado: "Bandeja filmada",
+        imagen_url:
+          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
         notas: "",
         promos: [{ cantidad_kg: 3, precio_promocional: 9990, activa: true }],
       },
@@ -49,33 +59,39 @@ export const CartProvider = ({ children }) => {
   }, [cartItems]);
 
   // Cálculos financieros y métricas
-  const { subtotal, totalAhorro, totalEstimado, totalKg, totalItems, totalPuntos } =
-    useMemo(() => {
-      let sub = 0;
-      let ahorro = 0;
-      let total = 0;
-      let kgSum = 0;
-      let ptsSum = 0;
+  const {
+    subtotal,
+    totalAhorro,
+    totalEstimado,
+    totalKg,
+    totalItems,
+    totalPuntos,
+  } = useMemo(() => {
+    let sub = 0;
+    let ahorro = 0;
+    let total = 0;
+    let kgSum = 0;
+    let ptsSum = 0;
 
-      cartItems.forEach((item) => {
-        const calc = calculateItemPrice(item);
-        const itemKg = parseFloat(item.cantidad_kg || 1);
-        sub += Math.round(itemKg * parseFloat(item.precio || 0));
-        ahorro += calc.ahorro;
-        total += calc.total;
-        kgSum += itemKg;
-        ptsSum += (item.puntos || 10) * Math.ceil(itemKg);
-      });
+    cartItems.forEach((item) => {
+      const calc = calculateItemPrice(item);
+      const itemKg = parseFloat(item.cantidad_kg || 1);
+      sub += Math.round(itemKg * parseFloat(item.precio || 0));
+      ahorro += calc.ahorro;
+      total += calc.total;
+      kgSum += itemKg;
+      ptsSum += (item.puntos || 10) * Math.ceil(itemKg);
+    });
 
-      return {
-        subtotal: sub,
-        totalAhorro: ahorro,
-        totalEstimado: total,
-        totalKg: parseFloat(kgSum.toFixed(2)),
-        totalItems: cartItems.length,
-        totalPuntos: ptsSum,
-      };
-    }, [cartItems]);
+    return {
+      subtotal: sub,
+      totalAhorro: ahorro,
+      totalEstimado: total,
+      totalKg: parseFloat(kgSum.toFixed(2)),
+      totalItems: cartItems.length,
+      totalPuntos: ptsSum,
+    };
+  }, [cartItems]);
 
   const addToCart = (product, kg = 1, options = {}) => {
     const intKg = Math.max(1, Math.round(Number(kg) || 1));
@@ -116,8 +132,8 @@ export const CartProvider = ({ children }) => {
     }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, cantidad_kg: intKg } : item
-      )
+        item.id === id ? { ...item, cantidad_kg: intKg } : item,
+      ),
     );
   };
 

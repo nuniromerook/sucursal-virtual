@@ -178,8 +178,10 @@ export const CombosSection = () => {
         corte: "Combo preparado de cortes surtidos",
         envasado: "Envasado con cadena de frío",
         kilos: combo.kilos,
-        items_combo: combo.items.map((i) => `${i.peso} de ${i.nombre}`).join(", "),
-      }
+        items_combo: combo.items
+          .map((i) => `${i.peso} de ${i.nombre}`)
+          .join(", "),
+      },
     );
     showToast(`Sumaste ${combo.nombre} al pedido 🥩`);
   };
@@ -196,7 +198,8 @@ export const CombosSection = () => {
             </h2>
           </div>
           <p className="text-xs text-slate-500">
-            Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos. Tocá cualquier combo para ver cada corte con su foto.
+            Paquetes armados por nuestros carniceros con descuentos por volumen
+            y más puntos. Tocá cualquier combo para ver cada corte con su foto.
           </p>
         </div>
       </div>
@@ -284,8 +287,8 @@ export const CombosSection = () => {
                     {combo.badge}
                   </span>
                   <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Sparkles className="size-2.5 text-amber-600" />
-                    +{combo.puntos} pts Club
+                    <Sparkles className="size-2.5 text-amber-600" />+
+                    {combo.puntos} pts Club
                   </span>
                 </div>
 

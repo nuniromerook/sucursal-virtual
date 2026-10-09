@@ -9,7 +9,11 @@ import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
 import { ChevronDown, MapPin, Store } from "lucide-react";
 
-export const Home = ({ onOpenProduct, onOpenCustomizer, onOpenBranchModal }) => {
+export const Home = ({
+  onOpenProduct,
+  onOpenCustomizer,
+  onOpenBranchModal,
+}) => {
   const { productos, isLoading } = useCatalogo();
   const { customerAddress, deliveryMode, selectedBranch } = useLocation();
 
@@ -99,7 +103,7 @@ export const Home = ({ onOpenProduct, onOpenCustomizer, onOpenBranchModal }) => 
               <p className="text-xs font-black text-slate-900 truncate mt-0.5 group-hover:text-[#003366] transition-colors">
                 {deliveryMode === "pickup"
                   ? `Sucursal ${selectedBranch?.nombre || "Luis Guillón"}`
-                  : (customerAddress || "J. Tarulli 1474, Luis Guillón")}
+                  : customerAddress || "J. Tarulli 1474, Luis Guillón"}
               </p>
             </div>
           </div>

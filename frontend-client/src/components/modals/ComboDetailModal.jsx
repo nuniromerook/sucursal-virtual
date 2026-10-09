@@ -27,7 +27,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
   // Manejo de comportamiento nativo de modal: ESC, backdrop, overflow body y gesto de arrastre mobile
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose
+    onClose,
   );
 
   if (!isOpen || !combo) return null;
@@ -61,13 +61,13 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
           .map((i) => `${i.peso} de ${i.nombre}`)
           .join(", "),
         notas: notas.trim() || undefined,
-      }
+      },
     );
 
     showToast(
       cantidad > 1
         ? `Sumaste ${cantidad} combos (${combo.nombre}) al pedido 🥩`
-        : `Sumaste ${combo.nombre} al pedido 🥩`
+        : `Sumaste ${combo.nombre} al pedido 🥩`,
     );
     onClose();
   };
@@ -89,7 +89,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
       {/* Contenedor Modal / Bottom Sheet */}
       <div
         ref={modalRef}
-        className="bg-white w-full sm:max-w-2xl md:max-w-3xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="bg-white w-full sm:max-w-2xl md:max-w-3xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
       >
         {/* Zona táctil de arrastre (celulares) y Header */}
         <div {...dragHandleProps} className="touch-none select-none shrink-0">
@@ -198,7 +198,8 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                   <span className="size-2 rounded-full bg-[#003366]" />
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Inspeccioná las fotos reales y cantidades de cada producto del combo:
+                  Inspeccioná las fotos reales y cantidades de cada producto del
+                  combo:
                 </p>
               </div>
               <span className="text-[11px] font-black text-[#003366] bg-[#003366]/5 px-2.5 py-1 rounded-lg border border-[#003366]/10 self-start sm:self-auto font-num">
@@ -252,21 +253,6 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* 3. Garantía y Procedencia Frigorífico Valette */}
-          <div className="rounded-2xl bg-[#003366]/5 border border-[#003366]/15 p-4 flex items-start gap-3">
-            <div className="size-8 rounded-xl bg-[#003366] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-              <ShieldCheck className="size-4.5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-black text-slate-900">
-                Garantía y Frescura de Frigorífico Valette
-              </h4>
-              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                Cada paquete se prepara en la sucursal de tu zona con pesaje certificado. Te entregamos los cortes debidamente rotulados y listos para cocinar o guardar directamente en el freezer.
-              </p>
             </div>
           </div>
 

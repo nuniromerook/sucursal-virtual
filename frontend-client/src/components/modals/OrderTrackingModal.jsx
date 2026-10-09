@@ -29,7 +29,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
         {/* Header con soporte de arrastre */}
         <div
           {...dragHandleProps}
-          className="flex flex-col w-full bg-white sticky top-0 z-10 touch-none select-none shrink-0"
+          className="flex flex-col w-full bg-white touch-none select-none shrink-0"
         >
           {/* Barra táctil para celulares */}
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
@@ -68,199 +68,201 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Tarjeta 3D de Estado */}
-        <div className="flex items-center gap-4 p-6 border-b border-slate-100">
-          <div className="size-16 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-3xl shrink-0 shadow-2xs">
-            📦
-          </div>
-          <div>
-            <h3 className="text-base font-extrabold text-slate-900">
-              ¡Tu pedido está en camino!
-            </h3>
-            <p className="flex flex-col text-xs text-slate-500">
-              <span>
-                <b>Dirección:</b> J. Tarulli 1474, Luis Guillón
-              </span>
-              <span>
-                <b>Nota:</b> Toldo rojo de porch con lamparitas
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Stepper en Tiempo Real con Checks Verdes */}
-        <div className="py-4 space-y-4 px-6 text-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Estado de preparación y despacho
-          </span>
-
-          <div className="flex items-center gap-3">
-            <div className="size-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-              <Check className="size-3.5 stroke-[3]" />
+        <div className="flex flex-col size-full overflow-y-auto">
+          {/* Tarjeta 3D de Estado */}
+          <div className="flex items-center gap-4 p-6 border-b border-slate-100">
+            <div className="size-16 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-3xl shrink-0 shadow-2xs">
+              📦
             </div>
-            <div className="flex-1 flex justify-between">
-              <span className="font-bold text-slate-800">
-                1. Solicitud de pedido aceptada
-              </span>
-              <span className="text-slate-400 text-[11px]">11:20 hs</span>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">
+                ¡Tu pedido está en camino!
+              </h3>
+              <p className="flex flex-col text-xs text-slate-500">
+                <span>
+                  <b>Dirección:</b> J. Tarulli 1474, Luis Guillón
+                </span>
+                <span>
+                  <b>Nota:</b> Toldo rojo de porch con lamparitas
+                </span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="size-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-              <Check className="size-3.5 stroke-[3]" />
+          {/* Stepper en Tiempo Real con Checks Verdes */}
+          <div className="py-4 space-y-4 px-6 text-xs">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Estado de preparación y despacho
+            </span>
+
+            <div className="flex items-center gap-3">
+              <div className="size-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                <Check className="size-3.5 stroke-[3]" />
+              </div>
+              <div className="flex-1 flex justify-between">
+                <span className="font-bold text-slate-800">
+                  1. Solicitud de pedido aceptada
+                </span>
+                <span className="text-slate-400 text-[11px]">11:20 hs</span>
+              </div>
             </div>
-            <div className="flex-1 flex justify-between">
-              <span className="font-bold text-slate-800">
-                2. En preparación en balanza
-              </span>
-              <span className="text-slate-400 text-[11px]">12:45 hs</span>
+
+            <div className="flex items-center gap-3">
+              <div className="size-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                <Check className="size-3.5 stroke-[3]" />
+              </div>
+              <div className="flex-1 flex justify-between">
+                <span className="font-bold text-slate-800">
+                  2. En preparación en balanza
+                </span>
+                <span className="text-slate-400 text-[11px]">12:45 hs</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="size-6 relative rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                <div className="size-5 aspect-square bg-emerald-400/40 rounded-full animate-ping" />
+                <Check className="absolute inset-0 justify-self-center self-center size-3.5 stroke-[3]" />
+              </div>
+              <div className="flex-1 flex justify-between">
+                <span className="font-bold text-emerald-600">
+                  3. En camino hacia tu domicilio
+                </span>
+                <span className="text-emerald-700 text-[11px] font-bold">
+                  Ahora
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 opacity-40">
+              <div className="size-6 rounded-full border-2 border-slate-300 shrink-0" />
+              <div className="flex-1 flex justify-between">
+                <span className="text-slate-500">4. Entregado</span>
+                <span className="text-slate-400 text-[11px]">Pendiente</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="size-6 relative rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-              <div className="size-5 aspect-square bg-emerald-400/40 rounded-full animate-ping" />
-              <Check className="absolute inset-0 justify-self-center self-center size-3.5 stroke-[3]" />
-            </div>
-            <div className="flex-1 flex justify-between">
-              <span className="font-bold text-emerald-600">
-                3. En camino hacia tu domicilio
-              </span>
-              <span className="text-emerald-700 text-[11px] font-bold">
-                Ahora
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 opacity-40">
-            <div className="size-6 rounded-full border-2 border-slate-300 shrink-0" />
-            <div className="flex-1 flex justify-between">
-              <span className="text-slate-500">4. Entregado</span>
-              <span className="text-slate-400 text-[11px]">Pendiente</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Resumen de Pesaje Real en Balanza */}
-        <div className="p-6 text-xs space-y-2">
-          <span className="font-extrabold text-[11px] text-slate-800 block">
-            Ticket de Pesaje en Balanza:
-          </span>
-          <div className="space-y-1.5 text-slate-600">
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Vacío Novillito
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $17.200
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <p className="flex items-center gap-2">
-                <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
-                  1 kg
-                </span>{" "}
-                Asado Criollo
-              </p>
-              <span className="font-bold text-[13px] text-slate-900">
-                $13.900
-              </span>
-            </div>
-            <div className="flex justify-between font-extrabold text-sm text-[#003366] pt-2 border-t border-slate-200">
-              <span>Total Final Cobrado:</span>
-              <span>$31.100</span>
+          {/* Resumen de Pesaje Real en Balanza */}
+          <div className="p-6 text-xs space-y-2">
+            <span className="font-extrabold text-[11px] text-slate-800 block">
+              Ticket de Pesaje en Balanza:
+            </span>
+            <div className="space-y-1.5 text-slate-600">
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Vacío Novillito
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $17.200
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <p className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 border border-slate-300 bg-white rounded text-[11px]">
+                    1 kg
+                  </span>{" "}
+                  Asado Criollo
+                </p>
+                <span className="font-bold text-[13px] text-slate-900">
+                  $13.900
+                </span>
+              </div>
+              <div className="flex justify-between font-extrabold text-sm text-[#003366] pt-2 border-t border-slate-200">
+                <span>Total Final Cobrado:</span>
+                <span>$31.100</span>
+              </div>
             </div>
           </div>
         </div>

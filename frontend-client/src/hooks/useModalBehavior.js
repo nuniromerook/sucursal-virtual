@@ -95,7 +95,7 @@ export const useModalBehavior = (isOpen, onClose) => {
     if (!isDragging.current) return;
     isDragging.current = false;
 
-    const threshold = 300; // Umbral en píxeles para confirmar el cierre
+    const threshold = 200; // Umbral en píxeles para confirmar el cierre
 
     if (currentDeltaY.current > threshold) {
       // Animar salida hacia abajo y cerrar

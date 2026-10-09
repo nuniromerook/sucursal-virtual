@@ -170,7 +170,7 @@ export const useTabNavigation = () => {
   const context = useContext(TabNavigationContext);
   if (!context) {
     throw new Error(
-      "useTabNavigation debe usarse dentro de un TabNavigationProvider"
+      "useTabNavigation debe usarse dentro de un TabNavigationProvider",
     );
   }
   return context;

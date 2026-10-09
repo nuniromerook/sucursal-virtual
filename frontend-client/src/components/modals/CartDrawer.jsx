@@ -74,32 +74,34 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
               <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none">
                 Tu Carrito
               </h3>
-            <span className="text-[11px] font-bold text-slate-400 block mt-0.5">
-              {totalItems}{" "}
-              {totalItems === 1 ? "corte seleccionado" : "cortes seleccionados"}
-            </span>
+              <span className="text-[11px] font-bold text-slate-400 block mt-0.5">
+                {totalItems}{" "}
+                {totalItems === 1
+                  ? "corte seleccionado"
+                  : "cortes seleccionados"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              title="Cerrar"
+              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer ml-auto mr-4"
+            >
+              <RotateCw className="size-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              title="Cerrar"
+              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
           </div>
-
-          <button
-            type="button"
-            title="Cerrar"
-            className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer ml-auto mr-4"
-          >
-            <RotateCw className="size-5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            title="Cerrar"
-            className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
-          >
-            <X className="size-5" />
-          </button>
         </div>
-      </div>
 
-      {/* Cuerpo del Carrito con scroll fluido */}
+        {/* Cuerpo del Carrito con scroll fluido */}
         <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-4">
           {/* Barra de Cadena de Frío y Envío Bonificado */}
           <div className="p-3.5 rounded-2xl bg-blue-50/90 border border-blue-200/80 text-xs">
@@ -159,18 +161,25 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
                   >
                     {/* Información del corte */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-extrabold text-sm text-slate-900 leading-snug truncate">
-                          {item.nombre}
-                        </h4>
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 transition-colors cursor-pointer shrink-0 rounded-lg hover:bg-red-50"
-                          title="Eliminar corte del pedido"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                      <div className="flex w-full">
+                        <img
+                          src={item.imagen_url}
+                          alt={item.nombre}
+                          className="w-10 h-10 object-cover rounded-lg"
+                        />
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-extrabold text-sm text-slate-900 leading-snug truncate">
+                            {item.nombre}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 transition-colors cursor-pointer shrink-0 rounded-lg hover:bg-red-50"
+                            title="Eliminar corte del pedido"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-1">
