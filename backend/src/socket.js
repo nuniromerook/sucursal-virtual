@@ -14,6 +14,8 @@ const initSocket = (httpServer) => {
     "https://www.abastecedoravalette.digital",
     "https://admin.abastecedoravalette.digital",
     "https://api.abastecedoravalette.digital",
+    "https://abastecedora-calette.vercel.app",
+    "https://abastecedora-valette.vercel.app",
   ];
   const envAllowed = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
@@ -22,9 +24,11 @@ const initSocket = (httpServer) => {
 
   const isOriginAllowed = (origin) => {
     if (!origin) return true;
-    if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) return true;
-    if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
-    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return true;
+    const cleanOrigin = origin.replace(/\/$/, "");
+    if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(cleanOrigin)) return true;
+    if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(cleanOrigin)) return true;
+    if (/^https:\/\/abastecedora-(calette|valette)(.*)?\.vercel\.app$/.test(cleanOrigin)) return true;
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) return true;
     return false;
   };
 

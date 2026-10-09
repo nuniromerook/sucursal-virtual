@@ -36,6 +36,8 @@ const defaultAllowedOrigins = [
   "https://www.abastecedoravalette.digital",
   "https://admin.abastecedoravalette.digital",
   "https://api.abastecedoravalette.digital",
+  "https://abastecedora-calette.vercel.app",
+  "https://abastecedora-valette.vercel.app",
 ];
 
 const envAllowed = process.env.ALLOWED_ORIGINS
@@ -46,12 +48,15 @@ const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllow
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
+  const cleanOrigin = origin.replace(/\/$/, "");
   // Permitir localhost, 127.0.0.1 e IPs de red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x) en cualquier puerto
-  if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(cleanOrigin)) return true;
   // Permitir cualquier subdominio o dominio principal abastecedoravalette.digital (con o sin www)
-  if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(origin)) return true;
+  if (/^https:\/\/(.*\.)?abastecedoravalette\.digital$/.test(cleanOrigin)) return true;
+  // Permitir dominios y previews de Vercel para abastecedora calette / valette
+  if (/^https:\/\/abastecedora-(calette|valette)(.*)?\.vercel\.app$/.test(cleanOrigin)) return true;
   // Permitir lista configurada o wildcard
-  if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return true;
+  if (allowedOrigins.includes("*") || allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) return true;
   return false;
 };
 
