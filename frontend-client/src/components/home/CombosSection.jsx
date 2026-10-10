@@ -9,148 +9,124 @@ import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 export const COMBOS = [
   {
     id: 101,
-    nombre: "Combo Asado Familiar (5 kg)",
-    slug: "combo-asado-familiar",
-    badge: "🔥 Especial Parrilla",
+    nombre: "Combo Asado Parrillero Tradición (5 kg)",
+    slug: "combo-asado-parrillero",
+    badge: "🔥 Parrilla Tradición",
     tagColor: "bg-red-50 text-[#c53030] border-red-200/80",
     kilos: 5,
     rinde: "6 a 8 personas",
-    ahorro: 5200,
-    puntos: 45,
-    precio: 38900,
-    precioAnterior: 44100,
+    ahorro: 5900,
+    puntos: 50,
+    precio: 45900,
+    precioAnterior: 51800,
     descripcion:
-      "La selección parrillera definitiva con novillito seleccionado y chorizo artesanal puro cerdo. Ideal para compartir el domingo en familia.",
+      "La selección parrillera definitiva con novillito seleccionado, cerdo crocante y chorizo puro cerdo. Todo lo indispensable para lucirse frente a las brasas.",
     items: [
       {
         nombre: "Asado Criollo de Centro",
         peso: "2 kg",
         descripcion:
-          "Costillar de hueso plano con carne abundante entrevarada y grasa blanca parrillera.",
+          "Costillar de novillito con hueso plano y veteado parejo. Clásico para hacer a la cruz o sobre brasas lentas.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
       },
       {
-        nombre: "Vacío Especial de Novillito",
+        nombre: "Pechito de Cerdo con Manta",
         peso: "2 kg",
         descripcion:
-          "Tierno y jugoso con su cuerito crocante, seleccionado con la cobertura justa.",
+          "Costillar porcino con abundante manta de carne y hueso fino. Dorado parejo y textura crocante al fuego.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788424319/e94tqmvv5ouclrbwh6vr.jpg",
       },
       {
         nombre: "Chorizo Artesanal Puro Cerdo",
-        peso: "1 kg",
+        peso: "1 kg (6 u.)",
         descripcion:
-          "Elaboración diaria con tripa natural y carne 100% cerdo fresca sin conservantes.",
+          "Embutido parrillero fresco elaborado con receta tradicional en tripa natural. Jugoso y especiado en su punto exacto.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422712/cmtm6r0ahmlpfni0hp2t.jpg",
       },
     ],
   },
   {
     id: 102,
-    nombre: "Combo Llená el Freezer Semanal (6 kg)",
-    slug: "combo-llena-el-freezer",
+    nombre: "Combo Familiar Semanal (6 kg)",
+    slug: "combo-familiar-semanal",
     badge: "📦 Rinde 20+ Comidas",
     tagColor: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
     kilos: 6,
     rinde: "Almuerzos y cenas de la semana",
-    ahorro: 6800,
+    ahorro: 6700,
     puntos: 60,
-    precio: 42500,
-    precioAnterior: 49300,
+    precio: 52900,
+    precioAnterior: 59600,
     descripcion:
-      "Paquete completo de cortes magros y versátiles para resolver almuerzos y cenas cotidianas: milanesas, bifes, pollo y carne picada especial.",
+      "Paquete completo y versátil para resolver las comidas cotidianas con proteínas magras y cortes rendidores: supremas frescas, roast beef y hamburguesas caseras de pollo.",
     items: [
       {
-        nombre: "Milanesas de Nalga Fileteadas",
+        nombre: "Supremas de Pollo Desgrasadas",
         peso: "2 kg",
         descripcion:
-          "Corte vacuno tierno y parejo, fileteado a máquina listo para empanar al horno o fritas.",
+          "Pechuga de pollo desgrasada y sin piel, 100% pulpa limpia. Proteína magra lista para la plancha o rebozar.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788423106/g5fm0mszttcxua4lohoh.jpg",
       },
       {
-        nombre: "Carne Picada Especial Magra",
-        peso: "1 kg",
+        nombre: "Roast Beef Seleccionado",
+        peso: "2 kg",
         descripcion:
-          "Molida en el momento con corte de novillito de bajo contenido graso para empanadas o salsas.",
+          "Corte vacuno sabroso con vetas de colágeno que funden en guisos, empanadas al cuchillo o estofados.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?q=80&w=600",
-      },
-      {
-        nombre: "Supremas de Pollo Desgrasadas",
-        peso: "1 kg",
-        descripcion:
-          "Pechugas frescas limpias sin piel ni grasa sobrante, 100% rendimiento y carne blanca.",
-        imagenUrl:
-          "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=600",
-      },
-      {
-        nombre: "Bife Ancho Seleccionado",
-        peso: "1 kg",
-        descripcion:
-          "Ojo de bife veteado de novillito para vuelta y vuelta en plancha o sartén de hierro.",
-        imagenUrl:
-          "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422116/jlpysradtx1tkv5ulvi1.png",
       },
       {
         nombre: "Hamburguesas Caseras de Pollo",
-        peso: "1 kg",
+        peso: "2 kg",
         descripcion:
-          "Medallones artesanales moldeados con pechuga y condimentos suaves listos para cocinar.",
+          "Medallones caseros elaborados con pechuga de pollo magra y hierbas seleccionadas, listos para cocinar.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526554/vnyy97p93eg6hncyux34.jpg",
       },
     ],
   },
   {
     id: 103,
-    nombre: "Combo Mix Parrilla & Cerdo (5 kg)",
-    slug: "combo-mix-parrilla-cerdo",
-    badge: "🥩 Vacuno + Cerdo",
+    nombre: "Combo Cortes Especiales & Cerdo (5 kg)",
+    slug: "combo-cortes-especiales-cerdo",
+    badge: "🥩 Selección Gourmet",
     tagColor: "bg-amber-50 text-amber-900 border-amber-200/80",
     kilos: 5,
-    rinde: "5 a 7 personas",
-    ahorro: 4500,
-    puntos: 40,
-    precio: 35900,
-    precioAnterior: 40400,
+    rinde: "6 a 8 personas",
+    ahorro: 7000,
+    puntos: 55,
+    precio: 52500,
+    precioAnterior: 59500,
     descripcion:
-      "La combinación preferida de los asadores: pechito crocante de cerdo, bondiola jugosa, asado criollo de novillito y chorizos artesanales.",
+      "Cortes tiernos y selectos para los amantes del buen comer: bifes anchos con ojo de bife veteado, bondiola jugosa de cerdo y matambre vacuno tierno.",
     items: [
       {
-        nombre: "Pechito de Cerdo con Manta",
+        nombre: "Bife Ancho Seleccionado",
         peso: "2 kg",
         descripcion:
-          "Costillitas de cerdo tiernas con manta carnosa y cuero que dora crocante al fuego.",
+          "Corte vacuno con el clásico ojo central y veteado parrillero. Jugosidad intensa y sellado perfecto a la plancha o a las brasas.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526517/iuxf6wqw6cybgob7n4jf.jpg",
       },
       {
         nombre: "Bondiola Fresca de Cerdo",
-        peso: "1 kg",
+        peso: "2 kg",
         descripcion:
-          "Corte veteado súper tierno para hacer bifes a la plancha o brasear con miel y mostaza.",
+          "Corte de cerdo premium con grasa intramuscular. Se dora crocante por fuera y queda tierna y jugosa al brasear o en bifes.",
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422423/nwcd2bvbh1gcfkbehsv5.webp",
       },
       {
-        nombre: "Asado Criollo de Centro",
+        nombre: "Matambre Vacuno Tierno",
         peso: "1 kg",
         descripcion:
-          "Tiras clásicas de costilla con hueso plano y terneza garantizada.",
+          "Corte delgado y tierno entre el cuero y el costillar. Clásico para tiernizar a la pizza, arrollar o hacer a la parrilla.",
         imagenUrl:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
-      },
-      {
-        nombre: "Chorizo Artesanal Puro Cerdo",
-        peso: "1 kg",
-        descripcion:
-          "Embutido artesanal de receta tradicional parrillera con tripa natural.",
-        imagenUrl:
-          "https://images.unsplash.com/photo-1587593810167-a84920ea0781?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526373/geg0ezk3acs5xrhd0jmf.webp",
       },
     ],
   },
@@ -171,7 +147,7 @@ export const CombosSection = () => {
         puntos: combo.puntos,
         imagen_url:
           combo.items[0]?.imagenUrl ||
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
       },
       1,
       {

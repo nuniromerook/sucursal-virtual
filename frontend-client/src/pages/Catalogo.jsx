@@ -28,9 +28,9 @@ import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 export const CATEGORY_SECTIONS = [
   {
     id: "asado",
-    titulo: "Sección Asado 🔥",
+    titulo: "🔥 Sector Asado",
     descripcion:
-      "Sección rápida de cortes parrilleros clásicos, cerdo y achuras seleccionados para el fuego.",
+      "Selección de cortes parrilleros clásicos, cerdo y achuras, todo para el fuego.",
     badge: "Parrilla del Domingo",
     filter: (p) =>
       ["vacuno", "cerdo", "embutidos", "achuras"].includes(p.categoria) &&
@@ -132,18 +132,18 @@ const CategoryHorizontalShelf = ({
       {/* Header de la Sección */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3.5 px-4 sm:px-6">
         <div>
-          <div className="flex items-center gap-2 mt-2">
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-5.5">
+          <div className="flex items-center gap-2 mt-10">
+            <h2 className="text-xl font-black text-slate-900 leading-5.5">
               {title}
             </h2>
             {count !== undefined && (
-              <span className="text-[11px] font-bold ml-auto lg:ml-0 text-slate-500 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap">
+              <span className="text-[11px] font-bold ml-auto lg:ml-0 text-slate-500 bg-white border border-slate-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap">
                 {count} {count === 1 ? "producto" : "productos"}
               </span>
             )}
           </div>
           {description && (
-            <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+            <p className="text-sm text-slate-600 mt-0.5">{description}</p>
           )}
         </div>
 
@@ -173,7 +173,7 @@ const CategoryHorizontalShelf = ({
       {/* Div con scroll horizontal con todos los productos de cada categoría */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-6 pt-1 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
+        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-6 pt-4 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
       >
         {children}
         {/* Spacer de cierre para garantizar que el último elemento conserve el padding derecho del contenedor */}
@@ -385,31 +385,41 @@ export const Catalogo = ({ onOpenProduct, onOpenCustomizer }) => {
 
   // Categorías con conteos dinámicos oficiales de PostgreSQL
   const categoriesList = useMemo(
-    () => [
-      { id: "todos", label: "Todos", count: categoryCounts.todos },
-      {
-        id: "asado",
-        label: "Especial Asado 🔥",
-        special: true,
-        count: categoryCounts.asado,
-      },
-      { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
-      { id: "vacuno", label: "Carne Vacuna", count: categoryCounts.vacuno },
-      { id: "cerdo", label: "Cerdo", count: categoryCounts.cerdo },
-      { id: "pollo", label: "Granja & Pollo", count: categoryCounts.pollo },
-      {
-        id: "preparados",
-        label: "Preparados",
-        count: categoryCounts.preparados,
-      },
-      { id: "embutidos", label: "Embutidos", count: categoryCounts.embutidos },
-      { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
-      {
-        id: "almacen",
-        label: "Almacén Parrillero",
-        count: categoryCounts.almacen,
-      },
-    ].filter((cat) => cat.special || cat.id === "todos" || (cat.count !== undefined && cat.count > 0)),
+    () =>
+      [
+        { id: "todos", label: "Todos", count: categoryCounts.todos },
+        {
+          id: "asado",
+          label: "Especial Asado 🔥",
+          special: true,
+          count: categoryCounts.asado,
+        },
+        { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
+        { id: "vacuno", label: "Carne Vacuna", count: categoryCounts.vacuno },
+        { id: "cerdo", label: "Cerdo", count: categoryCounts.cerdo },
+        { id: "pollo", label: "Granja & Pollo", count: categoryCounts.pollo },
+        {
+          id: "preparados",
+          label: "Preparados",
+          count: categoryCounts.preparados,
+        },
+        {
+          id: "embutidos",
+          label: "Embutidos",
+          count: categoryCounts.embutidos,
+        },
+        { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
+        {
+          id: "almacen",
+          label: "Almacén Parrillero",
+          count: categoryCounts.almacen,
+        },
+      ].filter(
+        (cat) =>
+          cat.special ||
+          cat.id === "todos" ||
+          (cat.count !== undefined && cat.count > 0),
+      ),
     [categoryCounts],
   );
 

@@ -50,7 +50,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
         puntos: combo.puntos,
         imagen_url:
           combo.items[0]?.imagenUrl ||
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
       },
       cantidad,
       {
