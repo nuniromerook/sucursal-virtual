@@ -94,22 +94,6 @@ export const Navbar = ({
             </span>
           </button>
 
-          {/* Logo Mobile clickeable al inicio */}
-          <Link
-            to="/"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="flex items-center gap-1.5"
-          >
-            <img
-              src="/favicon.svg"
-              alt="Abastecedora Valette"
-              className="h-8 w-auto object-contain"
-            />
-            <span className="font-black text-sm text-slate-900 tracking-tight">
-              Valette
-            </span>
-          </Link>
-
           {/* Acciones: Carrito y Notificaciones */}
           <div className="flex items-center gap-1.5">
             <button

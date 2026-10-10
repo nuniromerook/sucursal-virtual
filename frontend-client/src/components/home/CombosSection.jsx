@@ -3,7 +3,14 @@ import React, { useState, useRef, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
-import { Scale, ShoppingCart, Sparkles, Eye, ChevronRight, ChevronLeft } from "lucide-react";
+import {
+  Scale,
+  ShoppingCart,
+  Sparkles,
+  Eye,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
 import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 
 export const COMBOS = [
@@ -194,14 +201,15 @@ export const CombosSection = ({ searchQuery = "" }) => {
           <div className="flex items-center gap-2 mt-4 sm:mt-6">
             <span className="text-xl">📦</span>
             <h2 className="text-xl font-black text-slate-900 leading-tight">
-              Combos de Frigorífico Ahorro
+              Combos esenciales
             </h2>
             <span className="text-[11px] font-bold ml-auto lg:ml-0 text-[#c53030] bg-red-50 border border-red-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap shadow-2xs">
               {filteredCombos.length} combos
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos.
+            Paquetes armados por nuestros carniceros con descuentos por volumen
+            y más puntos.
           </p>
         </div>
 

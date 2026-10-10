@@ -6,7 +6,10 @@ import { LocationProvider } from "@/context/LocationContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { CatalogoProvider, useCatalogo } from "@/context/CatalogoContext";
-import { NotificationProvider, useNotifications } from "@/context/NotificationContext";
+import {
+  NotificationProvider,
+  useNotifications,
+} from "@/context/NotificationContext";
 import { TabNavigationProvider } from "@/context/TabNavigationContext";
 
 // Componentes de Layout
@@ -58,7 +61,8 @@ function AppContent() {
   };
 
   // Sincronización de Producto con la URL (?producto= o ?corte=) usando la base de datos oficial
-  const productParam = searchParams.get("producto") || searchParams.get("corte");
+  const productParam =
+    searchParams.get("producto") || searchParams.get("corte");
   const activeProduct = useMemo(() => {
     if (!productParam) return null;
     return getProductBySlugOrId(productParam);
@@ -101,7 +105,7 @@ function AppContent() {
       />
 
       {/* 2. Pantalla Principal Integral con Todas las Secciones y Combos */}
-      <main className="w-full">
+      <main className="relative w-full">
         <Home
           onOpenProduct={handleOpenProduct}
           onOpenCustomizer={handleOpenProduct}

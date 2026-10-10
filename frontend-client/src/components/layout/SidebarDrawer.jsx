@@ -61,7 +61,7 @@ export const SidebarDrawer = ({
 
   const whatsappPhone = selectedBranch?.telefono || "1135534033";
   const whatsappUrl = `https://wa.me/54${whatsappPhone}?text=${encodeURIComponent(
-    "¡Hola Abastecedora Valette! Quiero consultar por un pedido desde la Sucursal Virtual."
+    "¡Hola Abastecedora Valette! Quiero consultar por un pedido desde la Sucursal Virtual.",
   )}`;
 
   return (
@@ -74,21 +74,20 @@ export const SidebarDrawer = ({
         className="bg-white w-full max-w-[320px] sm:max-w-sm h-full shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-left duration-250 border-r border-slate-200/80"
       >
         {/* 1. Header con Logo Oficial y Botón Cerrar */}
-        <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-          <div className="flex items-center gap-3">
-            <div className="size-11 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center p-1 shrink-0">
-              <img
-                src="/favicon.svg"
-                alt="Abastecedora Valette"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight">
+        <div className="relative p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+          <div className="flex flex-col items-center w-full">
+            <img
+              src="/favicon.svg"
+              alt="Abastecedora Valette"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="size-30 shrink-0"
+            />
+            <div className="flex flex-col items-center">
+              <h3 className="font-black text-slate-900 tracking-tight leading-tight">
                 Abastecedora Valette
               </h3>
               <p className="text-[11px] font-semibold text-[#003366]">
-                Sucursal Virtual Oficial
+                Sucursal Virtual
               </p>
             </div>
           </div>
@@ -96,7 +95,7 @@ export const SidebarDrawer = ({
           <button
             type="button"
             onClick={onClose}
-            className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold cursor-pointer transition-colors"
+            className="absolute top-5 right-5 size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold cursor-pointer transition-colors"
             title="Cerrar menú"
           >
             <X className="size-4" />
@@ -108,10 +107,10 @@ export const SidebarDrawer = ({
           {/* Card de Cuenta & Puntos Club Valette (Estratégico) */}
           <div
             onClick={() => handleNav(onOpenProfileModal)}
-            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#003366]/5 via-[#003366]/10 to-amber-500/10 border border-[#003366]/15 hover:border-[#003366]/30 transition-all cursor-pointer flex items-center justify-between group"
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-100/10 to-amber-500/10 border border-amber-700/10 hover:border-[#003366]/30 transition-all cursor-pointer flex items-center justify-between group"
           >
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-[#003366] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
+              <div className="size-10 rounded-full bg-[#003366] text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
                 JP
               </div>
               <div>
@@ -304,19 +303,6 @@ export const SidebarDrawer = ({
               </a>
             </div>
           </div>
-        </div>
-
-        {/* 3. Footer con Marca y Seguridad */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/60 shrink-0">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
-            <span className="font-bold text-slate-700">Sucursal Virtual v1.0</span>
-            <span className="flex items-center gap-1 text-emerald-700 font-bold">
-              <ShieldCheck className="size-3.5" /> 100% Calidad Frigorífico
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-400 text-center">
-            Abastecedora Valette SRL • CUIT 30-71649231-9
-          </p>
         </div>
       </div>
     </div>
