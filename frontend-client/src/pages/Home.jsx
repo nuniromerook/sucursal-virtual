@@ -31,11 +31,14 @@ export const Home = ({
   const [activeSection, setActiveSection] = useState("combos");
   const [isNavbarFused, setIsNavbarFused] = useState(false);
 
+  const activeSectionRef = useRef("combos");
   const categoryBarRef = useRef(null);
   const chipRefs = useRef({});
   const sentinelRef = useRef(null);
-  const isProgrammaticScroll = useRef(false);
-  const scrollTimeoutRef = useRef(null);
+  const programmaticScrollUntil = useRef(0);
+  const isCenteringChip = useRef(false);
+  const isUserScrollingBar = useRef(false);
+  const userBarTimeoutRef = useRef(null);
 
   // Auto-scroll si el usuario ingresa con parámetro ?categoria= en la URL
   useEffect(() => {
@@ -118,9 +121,7 @@ export const Home = ({
         { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
         { id: "almacen", label: "Almacén", count: categoryCounts.almacen },
       ].filter(
-        (cat) =>
-          cat.special ||
-          (cat.count !== undefined && cat.count > 0),
+        (cat) => cat.special || (cat.count !== undefined && cat.count > 0),
       ),
     [categoryCounts],
   );
@@ -136,30 +137,43 @@ export const Home = ({
     const chipWidth = chip.offsetWidth;
 
     const targetScrollLeft = chipLeft - containerWidth / 2 + chipWidth / 2;
+    isCenteringChip.current = true;
     container.scrollTo({
       left: Math.max(0, targetScrollLeft),
       behavior: "smooth",
     });
+    setTimeout(() => {
+      isCenteringChip.current = false;
+    }, 350);
+  };
+
+  // Manejo de scroll manual en la barra de categorías
+  const handleCategoryBarScroll = () => {
+    if (isCenteringChip.current) return;
+    isUserScrollingBar.current = true;
+    if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
+    userBarTimeoutRef.current = setTimeout(() => {
+      isUserScrollingBar.current = false;
+    }, 2000);
   };
 
   // Navegación suave hasta el inicio de la sección seleccionada
   const handleCategoryScroll = (catId) => {
-    // 1. Bloquear temporalmente la detección pasiva de scroll para evitar saltos
-    isProgrammaticScroll.current = true;
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    // Reactivar detección y auto-centrado inmediatamente al tocar la categoría
+    isUserScrollingBar.current = false;
+    if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
+
+    // Bloquear temporalmente interferencia pasiva durante la animación de scroll (~750ms)
+    programmaticScrollUntil.current = Date.now() + 750;
 
     setActiveSection(catId);
+    activeSectionRef.current = catId;
     centerChip(catId);
 
     const target = document.getElementById(`seccion-${catId}`);
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-
-    // 2. Liberar bloqueo cuando la animación de desplazamiento termina
-    scrollTimeoutRef.current = setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 750);
   };
 
   // Detección precisa de sección activa + detección de fusión de navbar (sombra 0)
@@ -184,8 +198,8 @@ export const Home = ({
         onStickyChange?.(false);
       }
 
-      // 2. Si hay scroll programático (click en chip), no actualizar categoría pasiva
-      if (isProgrammaticScroll.current) return;
+      // 2. Si hay scroll programático en curso por click, no interferir con la animación
+      if (Date.now() < programmaticScrollUntil.current) return;
 
       // 3. Offset dinámico para detectar en qué sección se encuentra el usuario
       const triggerOffset = navbarHeight + 70;
@@ -202,9 +216,12 @@ export const Home = ({
         }
       }
 
-      if (current !== activeSection) {
+      if (current !== activeSectionRef.current) {
+        activeSectionRef.current = current;
         setActiveSection(current);
-        centerChip(current);
+        if (!isUserScrollingBar.current) {
+          centerChip(current);
+        }
       }
     };
 
@@ -213,9 +230,9 @@ export const Home = ({
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
     };
-  }, [activeSection, onStickyChange]);
+  }, [onStickyChange]);
 
   const handleProductClick = (product) => {
     if (onOpenProduct) {
@@ -226,8 +243,7 @@ export const Home = ({
   };
 
   const hasAnyResults =
-    sectionsWithProducts.length > 0 ||
-    (!searchQuery.trim() && !onlyStock);
+    sectionsWithProducts.length > 0 || (!searchQuery.trim() && !onlyStock);
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col">
@@ -287,6 +303,10 @@ export const Home = ({
       {/* 3. Div Horizontal de Categorías (Debajo del Carrusel, Sticky en Mobile y Oculto en Desktop) */}
       <nav
         ref={categoryBarRef}
+        onScroll={handleCategoryBarScroll}
+        onTouchStart={() => {
+          isUserScrollingBar.current = true;
+        }}
         aria-label="Categorías de cortes"
         style={{ top: "var(--navbar-height, 96px)" }}
         className={`md:hidden sticky z-30 bg-white transition-all duration-150 px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth my-3 ${
@@ -425,7 +445,7 @@ export const Home = ({
                 {sec.products.map((prod) => (
                   <div
                     key={prod.id}
-                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start last:snap-end"
+                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start last:snap-end pb-4"
                   >
                     <ProductCard
                       product={prod}
