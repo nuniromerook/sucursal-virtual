@@ -15,7 +15,7 @@ export const BranchesSection = () => {
   };
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-native mb-12">
+    <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
         <div>
           <span className="text-xs font-bold text-[#003366] uppercase tracking-wider">
@@ -44,7 +44,7 @@ export const BranchesSection = () => {
         {sucursales.map((branch) => (
           <div
             key={branch.id}
-            className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between"
+            className="p-5 rounded-2xl bg-white border border-slate-200/90 flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -82,7 +82,7 @@ export const BranchesSection = () => {
               <button
                 type="button"
                 onClick={() => handleSelect(branch)}
-                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-valette-blue border border-slate-200 text-white font-bold text-xs hover:bg-slate-100 cursor-pointer"
               >
                 Elegir esta
               </button>
@@ -90,6 +90,6 @@ export const BranchesSection = () => {
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 };

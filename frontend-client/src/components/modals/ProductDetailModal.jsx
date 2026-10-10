@@ -34,7 +34,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
   // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose
+    onClose,
   );
 
   const unidadMedida = formatUnidadMedida(product?.unidad_medida);
@@ -44,8 +44,8 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     product?.opciones_corte && product.opciones_corte.length > 0
       ? product.opciones_corte[0]
       : esUnidad
-      ? "Estándar"
-      : "Corte tradicional";
+        ? "Estándar"
+        : "Corte tradicional";
 
   const [selectedKg, setSelectedKg] = useState(1);
   const [selectedCut, setSelectedCut] = useState(defaultCut);
@@ -84,7 +84,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     });
 
     showToast(
-      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`
+      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`,
     );
     onClose();
   };
@@ -206,7 +206,10 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
 
                 {product.precio_anterior > product.precio && (
                   <span className="text-xs text-slate-400 line-through ml-1 font-num">
-                    {formatPrecioPorUnidad(product.precio_anterior, unidadMedida)}
+                    {formatPrecioPorUnidad(
+                      product.precio_anterior,
+                      unidadMedida,
+                    )}
                   </span>
                 )}
               </div>
@@ -218,7 +221,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
           </div>
 
           {/* 3. Ficha Técnica Rápida (Rendimiento, Cocción & Información Nutricional de PostgreSQL) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pb-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pb-2">
             {product.metodos_coccion && product.metodos_coccion.length > 0 && (
               <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
                 <Flame className="size-4 text-orange-500 shrink-0" />
@@ -256,7 +259,9 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                 </span>
                 <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
                   {product.calorias ? `${product.calorias} kcal` : "245 kcal"}{" "}
-                  <span className="text-[10px] font-normal text-slate-400">/ 100g</span>
+                  <span className="text-[10px] font-normal text-slate-400">
+                    / 100g
+                  </span>
                 </span>
               </div>
             </div>
@@ -269,7 +274,9 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   Proteínas / Grasas
                 </span>
                 <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
-                  {product.proteinas || 20}g <span className="text-slate-300">|</span> {product.grasas || 15}g
+                  {product.proteinas || 20}g{" "}
+                  <span className="text-slate-300">|</span>{" "}
+                  {product.grasas || 15}g
                 </span>
               </div>
             </div>
@@ -359,7 +366,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                           <strong className="text-slate-900 font-num">
                             {formatPrecioPorUnidad(
                               promo.precio_promocional,
-                              unidadMedida
+                              unidadMedida,
                             )}
                           </strong>
                         </span>

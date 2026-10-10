@@ -49,7 +49,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "embutidos",
-    titulo: "🌭 Embutidos producción propia",
+    titulo: "🌭 Embutidos Artesanales",
     descripcion:
       "Elaboración diaria con tripa natural y carne fresca pura sin conservantes.",
     badge: "Elaboración Diaria",
@@ -124,7 +124,9 @@ export const CategoryHorizontalShelf = ({
             )}
           </div>
           {description && (
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">{description}</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              {description}
+            </p>
           )}
         </div>
 
