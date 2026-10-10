@@ -7,19 +7,15 @@ import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { CatalogoProvider, useCatalogo } from "@/context/CatalogoContext";
 import { NotificationProvider, useNotifications } from "@/context/NotificationContext";
-import {
-  TabNavigationProvider,
-  useTabNavigation,
-} from "@/context/TabNavigationContext";
+import { TabNavigationProvider } from "@/context/TabNavigationContext";
 
 // Componentes de Layout
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileDock } from "@/components/layout/MobileDock";
 import { SidebarDrawer } from "@/components/layout/SidebarDrawer";
 
-// Páginas
+// Página Principal Integral
 import { Home } from "@/pages/Home";
-import { Catalogo } from "@/pages/Catalogo";
 
 // Modales Nativos
 import { ProductDetailModal } from "@/components/modals/ProductDetailModal";
@@ -36,7 +32,30 @@ function AppContent() {
   const { getProductBySlugOrId } = useCatalogo();
   const { isNotificationsOpen, setIsNotificationsOpen } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isHome, isCatalogo } = useTabNavigation();
+
+  // Estados de Búsqueda y Filtros
+  const searchQuery = searchParams.get("q") || "";
+  const [sortBy, setSortBy] = useState("destacados");
+  const [onlyStock, setOnlyStock] = useState(false);
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+
+  const handleSearchChange = (val) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (!val.trim()) {
+      newParams.delete("q");
+    } else {
+      newParams.set("q", val);
+    }
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const handleResetFilters = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("q");
+    setSearchParams(newParams);
+    setSortBy("destacados");
+    setOnlyStock(false);
+  };
 
   // Sincronización de Producto con la URL (?producto= o ?corte=) usando la base de datos oficial
   const productParam = searchParams.get("producto") || searchParams.get("corte");
@@ -64,44 +83,32 @@ function AppContent() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState("destacados");
-  const [onlyStock, setOnlyStock] = useState(false);
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
-      {/* 1. Header con Buscador Inteligente, Carrito, Sucursal, Notificaciones y Menú */}
+      {/* 1. Header con Buscador Inteligente en Mobile/Desktop, Filtros, Carrito y Menú */}
       <Navbar
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        onOpenFiltersModal={() => setIsFiltersModalOpen(true)}
+        hasActiveFilters={sortBy !== "destacados" || onlyStock}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenSidebar={() => setIsSidebarOpen(true)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
 
-      {/* 2. Pantallas Principales estilo Fragments con Memoria de Scroll y Ubicación */}
+      {/* 2. Pantalla Principal Integral con Todas las Secciones y Combos */}
       <main className="w-full">
-        <div
-          id="fragment-home"
-          style={{ display: isHome ? "block" : "none" }}
-          aria-hidden={!isHome}
-        >
-          <Home
-            onOpenProduct={handleOpenProduct}
-            onOpenCustomizer={handleOpenProduct}
-            onOpenBranchModal={() => setIsBranchModalOpen(true)}
-          />
-        </div>
-
-        <div
-          id="fragment-catalogo"
-          style={{ display: isCatalogo ? "block" : "none" }}
-          aria-hidden={!isCatalogo}
-        >
-          <Catalogo
-            onOpenProduct={handleOpenProduct}
-            onOpenCustomizer={handleOpenProduct}
-          />
-        </div>
+        <Home
+          onOpenProduct={handleOpenProduct}
+          onOpenCustomizer={handleOpenProduct}
+          onOpenBranchModal={() => setIsBranchModalOpen(true)}
+          searchQuery={searchQuery}
+          sortBy={sortBy}
+          onlyStock={onlyStock}
+          onResetFilters={handleResetFilters}
+        />
       </main>
 
       {/* 3. Dock Inferior Mobile */}
@@ -119,7 +126,7 @@ function AppContent() {
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
       />
 
-      {/* 5. Modal / Bottom Sheet de Notificaciones (como en 0.0) */}
+      {/* 5. Modal / Bottom Sheet de Notificaciones */}
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}

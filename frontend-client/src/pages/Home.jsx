@@ -1,10 +1,15 @@
 // src/pages/Home.jsx
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
 import { CombosSection } from "@/components/home/CombosSection";
 import { BranchesSection } from "@/components/home/BranchesSection";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
+import {
+  CategoryHorizontalShelf,
+  CATEGORY_SECTIONS,
+} from "@/components/products/CategoryHorizontalShelf";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
 import { ChevronDown, MapPin, Store } from "lucide-react";
@@ -13,32 +18,34 @@ export const Home = ({
   onOpenProduct,
   onOpenCustomizer,
   onOpenBranchModal,
+  searchQuery = "",
+  sortBy = "destacados",
+  onlyStock = false,
+  onResetFilters,
 }) => {
-  const { productos, isLoading } = useCatalogo();
+  const { productos, isLoading, categoryCounts } = useCatalogo();
   const { customerAddress, deliveryMode, selectedBranch } = useLocation();
+  const [searchParams] = useSearchParams();
 
-  const [selectedCategory, setSelectedCategory] = useState("todos");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, _setSortBy] = useState("destacados");
-  const [onlyStock, _setOnlyStock] = useState(false);
+  const [activeSection, setActiveSection] = useState("combos");
+  const chipRefs = useRef({});
+
+  // Auto-scroll si el usuario ingresa con parámetro ?categoria= en la URL
+  useEffect(() => {
+    const cat = searchParams.get("categoria");
+    if (cat) {
+      const target = document.getElementById(`seccion-${cat}`);
+      if (target) {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      }
+    }
+  }, [searchParams]);
 
   // Filtrado reactivo de cortes oficiales desde PostgreSQL
   const filteredProducts = useMemo(() => {
     let list = [...productos];
-
-    if (selectedCategory !== "todos") {
-      if (selectedCategory === "asado") {
-        list = list.filter(
-          (p) =>
-            p.categoria === "vacuno" ||
-            p.categoria === "cerdo" ||
-            p.categoria === "embutidos" ||
-            p.categoria === "achuras",
-        );
-      } else {
-        list = list.filter((p) => p.categoria === selectedCategory);
-      }
-    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -64,7 +71,104 @@ export const Home = ({
     }
 
     return list;
-  }, [productos, selectedCategory, searchQuery, onlyStock, sortBy]);
+  }, [productos, searchQuery, onlyStock, sortBy]);
+
+  // Secciones con productos disponibles según filtros
+  const sectionsWithProducts = useMemo(() => {
+    return CATEGORY_SECTIONS.map((sec) => {
+      const prods = filteredProducts.filter((p) => sec.filter(p));
+      return {
+        ...sec,
+        products: prods,
+      };
+    }).filter((sec) => sec.products.length > 0);
+  }, [filteredProducts]);
+
+  // Lista de chips de categorías para el div horizontal mobile
+  const stickyCategories = useMemo(
+    () =>
+      [
+        { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
+        {
+          id: "asado",
+          label: "Sector Asado 🔥",
+          special: true,
+          count: categoryCounts.asado,
+        },
+        { id: "vacuno", label: "Vacuno", count: categoryCounts.vacuno },
+        { id: "cerdo", label: "Cerdo", count: categoryCounts.cerdo },
+        { id: "pollo", label: "Pollo & Granja", count: categoryCounts.pollo },
+        {
+          id: "embutidos",
+          label: "Embutidos",
+          count: categoryCounts.embutidos,
+        },
+        {
+          id: "preparados",
+          label: "Preparados",
+          count: categoryCounts.preparados,
+        },
+        { id: "achuras", label: "Achuras", count: categoryCounts.achuras },
+        { id: "almacen", label: "Almacén", count: categoryCounts.almacen },
+      ].filter(
+        (cat) =>
+          cat.special ||
+          (cat.count !== undefined && cat.count > 0),
+      ),
+    [categoryCounts],
+  );
+
+  // Navegación suave hasta el inicio de la sección seleccionada
+  const handleCategoryScroll = (catId) => {
+    setActiveSection(catId);
+    const target = document.getElementById(`seccion-${catId}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Monitoreo del scroll para detectar sección activa y sincronizar chips
+  useEffect(() => {
+    const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
+    const elements = sectionIds
+      .map((id) => document.getElementById(`seccion-${id}`))
+      .filter(Boolean);
+
+    if (elements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) {
+          visible.sort(
+            (a, b) =>
+              Math.abs(a.boundingClientRect.top) -
+              Math.abs(b.boundingClientRect.top),
+          );
+          const currentId = visible[0].target.id.replace("seccion-", "");
+          setActiveSection(currentId);
+        }
+      },
+      {
+        rootMargin: "-100px 0px -50% 0px",
+        threshold: [0.1, 0.3],
+      },
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [sectionsWithProducts]);
+
+  // Centrar el chip activo en el contenedor horizontal mobile
+  useEffect(() => {
+    if (activeSection && chipRefs.current[activeSection]) {
+      chipRefs.current[activeSection]?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [activeSection]);
 
   const handleProductClick = (product) => {
     if (onOpenProduct) {
@@ -74,10 +178,14 @@ export const Home = ({
     }
   };
 
+  const hasAnyResults =
+    sectionsWithProducts.length > 0 ||
+    (!searchQuery.trim() && !onlyStock);
+
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 gap-6 flex flex-col">
-      {/* Selector de Entrega / Retiro & Dirección Mobile */}
-      <div className="sm:hidden -mt-1">
+    <div className="max-w-6xl mx-auto flex flex-col">
+      {/* 1. Selector de Entrega / Retiro & Dirección Mobile */}
+      <div className="px-4 sm:px-6 pt-4 sm:hidden">
         <button
           type="button"
           onClick={onOpenBranchModal}
@@ -117,79 +225,165 @@ export const Home = ({
         </button>
       </div>
 
-      {/* Carrusel de Banners Publicitarios Oficiales */}
-      <BannerCarousel onSelectCategory={(cat) => setSelectedCategory(cat)} />
+      {/* 2. Carrusel de Banners Publicitarios Oficiales */}
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6">
+        <BannerCarousel onSelectCategory={handleCategoryScroll} />
+      </div>
 
-      {/* Sección de Combos (Visible si está en todos o combos) */}
-      {(selectedCategory === "todos" || selectedCategory === "combos") && (
-        <CombosSection onSelectCategory={(cat) => setSelectedCategory(cat)} />
-      )}
+      {/* 3. Div Horizontal de Categorías (Debajo del Carrusel, Sticky en Mobile y Oculto en Desktop) */}
+      <nav
+        aria-label="Categorías de cortes"
+        className="md:hidden sticky top-[92px] z-30 bg-white/95 backdrop-blur-md border-y border-slate-200/80 shadow-xs px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth my-4"
+      >
+        {stickyCategories.map((cat) => {
+          const isCurrentActive = activeSection === cat.id;
 
-      {/* Catálogo de Cortes Destacados */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Productos destacados
-            </h2>
-            <p className="text-xs text-slate-500">
-              Cortes frescos de frigorífico seleccionados por calidad y
-              rendimiento.
-            </p>
-          </div>
-          <div className="text-xs text-slate-500 hidden sm:block">
-            Mostrando{" "}
-            <span className="font-bold text-slate-800">
-              {filteredProducts.length}{" "}
-              {filteredProducts.length === 1 ? "producto" : "productos"}
-            </span>
-          </div>
-        </div>
+          if (cat.special) {
+            return (
+              <button
+                key={cat.id}
+                ref={(el) => (chipRefs.current[cat.id] = el)}
+                type="button"
+                onClick={() => handleCategoryScroll(cat.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isCurrentActive
+                    ? "bg-[#c53030] text-white shadow-2xs scale-102"
+                    : "bg-red-50 text-[#c53030] border border-red-200/70 hover:bg-red-100/80"
+                }`}
+              >
+                <span>{cat.label}</span>
+                {cat.tag && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-black uppercase ${
+                      isCurrentActive
+                        ? "bg-white/20 text-white"
+                        : "bg-red-200/70 text-[#c53030]"
+                    }`}
+                  >
+                    {cat.tag}
+                  </span>
+                )}
+                {cat.count !== undefined && cat.count > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-num ${
+                      isCurrentActive
+                        ? "bg-white/20 text-white"
+                        : "bg-red-200/70 text-[#c53030]"
+                    }`}
+                  >
+                    {cat.count}
+                  </span>
+                )}
+              </button>
+            );
+          }
 
-        {/* Estado de carga con Skeleton Loaders estilo Uber / PedidosYa */}
+          return (
+            <button
+              key={cat.id}
+              ref={(el) => (chipRefs.current[cat.id] = el)}
+              type="button"
+              onClick={() => handleCategoryScroll(cat.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+                isCurrentActive
+                  ? "bg-[#003366] text-white shadow-2xs scale-102"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/70"
+              }`}
+            >
+              <span>{cat.label}</span>
+              {cat.count !== undefined && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-num ${
+                    isCurrentActive
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {cat.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* 4. Sección de Combos con Scroll Horizontal Oficial */}
+      <div className="mt-2">
+        <CombosSection searchQuery={searchQuery} />
+      </div>
+
+      {/* 5. Secciones de Categorías con Scroll Horizontal (Debajo de los Combos) */}
+      <div id="secciones-catalogo" className="space-y-2">
+        {/* Skeleton Loaders en estado de carga */}
         {isLoading && productos.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <ProductCardSkeleton key={i} />
+          <div className="space-y-8 px-4 sm:px-6">
+            {[1, 2].map((row) => (
+              <div key={row} className="space-y-3">
+                <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
+                <div className="flex gap-4 overflow-x-hidden">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-[80vw] sm:w-75 shrink-0">
+                      <ProductCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native">
+        ) : !hasAnyResults ? (
+          /* Estado vacío si no hay coincidencias de búsqueda */
+          <div className="mx-4 sm:px-6 bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native my-8">
             <p className="text-3xl mb-2">🔍</p>
             <h3 className="font-black text-base text-slate-800">
               No encontramos cortes para esa búsqueda
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Intentá buscando por especie como "asado", "vacio", "bondiola" o
-              "pollo"
+              Probá buscando términos como "asado", "vacio", "pollo", "bondiola"
             </p>
             <button
               type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("todos");
-              }}
-              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer hover:bg-valette-dark transition-colors"
+              onClick={onResetFilters}
+              className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer hover:bg-valette-dark transition-colors shadow-2xs"
             >
               Restablecer Filtros
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-3">
-            {filteredProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                onOpenCustomizer={() => handleProductClick(prod)}
-              />
-            ))}
-          </div>
+          /* Renderizado de todas las secciones de categorías */
+          sectionsWithProducts.map((sec) => (
+            <div
+              key={sec.id}
+              id={`seccion-${sec.id}`}
+              className="scroll-mt-36 md:scroll-mt-32"
+            >
+              <CategoryHorizontalShelf
+                title={sec.titulo}
+                description={sec.descripcion}
+                badge={sec.badge}
+                count={sec.products.length}
+              >
+                {sec.products.map((prod) => (
+                  <div
+                    key={prod.id}
+                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start last:snap-end"
+                  >
+                    <ProductCard
+                      product={prod}
+                      onOpenCustomizer={() => handleProductClick(prod)}
+                    />
+                  </div>
+                ))}
+              </CategoryHorizontalShelf>
+            </div>
+          ))
         )}
       </div>
 
-      {/* Fichas de Sucursales y Horarios */}
-      <BranchesSection />
-    </main>
+      {/* 6. Fichas de Sucursales y Horarios */}
+      <div className="px-4 sm:px-6 mt-6">
+        <BranchesSection />
+      </div>
+    </div>
   );
 };
 

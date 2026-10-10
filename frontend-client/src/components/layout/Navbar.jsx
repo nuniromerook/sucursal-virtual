@@ -1,8 +1,8 @@
 // src/components/layout/Navbar.jsx
-import { Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
-import { useTabNavigation } from "@/context/TabNavigationContext";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useNotifications } from "@/context/NotificationContext";
 import {
@@ -12,21 +12,27 @@ import {
   ChevronDown,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 
-const CATEGORIES = [
-  { id: "todos", label: "Todos los productos", path: "/productos" },
+export const CATEGORIES = [
+  { id: "todos", label: "Todos los productos" },
+  { id: "combos", label: "Combos Ahorro", special: true },
   { id: "asado", label: "Especial Asado 🔥" },
   { id: "vacuno", label: "Vacuno" },
   { id: "cerdo", label: "Cerdo" },
   { id: "pollo", label: "Granja & Pollo" },
-  { id: "preparados", label: "Preparados" },
   { id: "embutidos", label: "Embutidos" },
+  { id: "preparados", label: "Preparados" },
   { id: "achuras", label: "Achuras" },
-  { id: "combos", label: "Combos Ahorro", special: true },
+  { id: "almacen", label: "Almacén" },
 ];
 
 export const Navbar = ({
+  searchQuery = "",
+  onSearchChange,
+  onOpenFiltersModal,
+  hasActiveFilters = false,
   onOpenBranchModal,
   onOpenProfileModal,
   onOpenSidebar,
@@ -34,113 +40,187 @@ export const Navbar = ({
 }) => {
   const { totalItems, setIsCartOpen } = useCart();
   const { deliveryMode, selectedBranch, customerAddress } = useLocation();
-  const { isHome, goToHome, goToCatalogo } = useTabNavigation();
   const { categoryCounts } = useCatalogo();
   const { unreadCount } = useNotifications();
-  const navigate = useNavigate();
 
   const handleCategoryClick = (cat) => {
     if (cat.id === "todos") {
-      goToCatalogo();
-    } else {
-      navigate(`/productos?categoria=${cat.id}`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const target = document.getElementById(`seccion-${cat.id}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
   return (
-    <div className="flex flex-col w-full h-fit bg-white sticky top-0 z-40 border-b border-slate-200/80">
-      {/* Mobile section */}
-      <div className="flex md:hidden items-center justify-between w-full px-4 py-3">
-        {/* Botón de Menu Mobile (Abre Sidebar Estratégica) */}
-        <button
-          type="button"
-          onClick={onOpenSidebar}
-          className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
-          title="Menú y Categorías"
-        >
-          <Menu className="size-5 stroke-[2.2]" />
-          <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-            {categoryCounts.todos || 12}
-          </span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          {/* Botón de Carrito Mobile con Badge */}
+    <header className="flex flex-col w-full h-fit bg-white sticky top-0 z-40 border-b border-slate-200/80 shadow-xs">
+      {/* 1. Mobile Section: 2 filas compactas con Buscador y Filtro funcional */}
+      <div className="flex md:hidden flex-col w-full">
+        {/* Fila 1: Menú hamburguesa, Logo central y Carrito/Notificaciones */}
+        <div className="flex items-center justify-between w-full px-4 pt-2.5 pb-2">
+          {/* Botón de Menú Mobile (Abre Sidebar Estratégica) */}
           <button
             type="button"
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
-            title="Ver Carrito"
+            onClick={onOpenSidebar}
+            className="relative p-2 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+            title="Menú y Categorías"
           >
-            <ShoppingCart className="size-5 stroke-[2.2]" />
-            {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-                {totalItems}
-              </span>
-            )}
+            <Menu className="size-5 stroke-[2.2]" />
+            <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+              {categoryCounts.todos || 12}
+            </span>
           </button>
 
-          {/* Botón de Notificaciones Mobile con Badge */}
+          {/* Logo Mobile clickeable al inicio */}
+          <Link
+            to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-1.5"
+          >
+            <img
+              src="/favicon.svg"
+              alt="Abastecedora Valette"
+              className="h-8 w-auto object-contain"
+            />
+            <span className="font-black text-sm text-slate-900 tracking-tight">
+              Valette
+            </span>
+          </Link>
+
+          {/* Acciones: Carrito y Notificaciones */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+              title="Ver Carrito"
+            >
+              <ShoppingCart className="size-5 stroke-[2.2]" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-[#c53030] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenNotificationsModal}
+              className="relative p-2 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
+              title="Notificaciones"
+            >
+              <Bell className="size-5 stroke-[2.2]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-[#c53030] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Fila 2: Barra Buscadora Mobile con Botón de Filtros Funcional */}
+        <div className="flex items-center gap-2 px-4 pb-2.5">
+          <div className="relative flex-1 flex items-center">
+            <div className="absolute left-3 text-slate-400 pointer-events-none">
+              <Search className="size-4 stroke-[2.5]" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="Buscar vacío, asado, pollo, bondiola..."
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#F1F4F8] border border-slate-200/60 text-xs font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange?.("")}
+                className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                title="Limpiar búsqueda"
+              >
+                <X className="size-3.5 stroke-[2.5]" />
+              </button>
+            )}
+          </div>
+
           <button
             type="button"
-            onClick={onOpenNotificationsModal}
-            className="relative p-2.5 rounded-full bg-slate-100 text-slate-700 active:scale-95 transition-transform cursor-pointer"
-            title="Notificaciones"
+            onClick={onOpenFiltersModal}
+            className={`p-2 rounded-xl border flex items-center justify-center transition-colors cursor-pointer shrink-0 relative ${
+              hasActiveFilters
+                ? "bg-[#003366] text-white border-[#003366] shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+            title="Filtros de búsqueda"
           >
-            <Bell className="size-5 stroke-[2.2]" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-                {unreadCount}
-              </span>
+            <SlidersHorizontal className="size-4 stroke-[2.2]" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 size-2 rounded-full bg-emerald-500 animate-pulse" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Desktop section */}
+      {/* 2. Desktop Section */}
       <div className="hidden md:flex w-full">
         <div className="flex w-full max-w-6xl mx-auto gap-4 px-4 sm:px-6 items-center">
           {/* Logo clickeable hacia "/" */}
           <Link
             to="/"
-            onClick={(e) => {
-              if (isHome) {
-                e.preventDefault();
-                goToHome();
-              }
-            }}
-            className="shrink-0 flex items-center gap-2 group"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="shrink-0 flex items-center gap-2 group py-2"
           >
-            <img src="/favicon.svg" alt="Abastecedora Valette" className="size-28" />
+            <img
+              src="/favicon.svg"
+              alt="Abastecedora Valette"
+              className="size-24 object-contain"
+            />
           </Link>
 
-          <div className="flex flex-col w-full justify-center gap-2">
+          <div className="flex flex-col w-full justify-center gap-2 py-2">
             {/* Buscador, Puntos, Notificaciones, Carrito y Perfil */}
             <div className="flex items-center gap-3 transition-all whitespace-nowrap">
-              {/* Input Buscador */}
+              {/* Input Buscador Desktop */}
               <div className="relative flex w-full items-center">
                 <div className="absolute left-3.5 text-slate-400 pointer-events-none">
                   <Search className="size-4 stroke-[2.5]" />
                 </div>
                 <input
                   type="text"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      navigate(
-                        `/productos?q=${encodeURIComponent(e.target.value)}`,
-                      );
-                    }
-                  }}
-                  placeholder="Buscar vacío, asado, milanesas, pechuga, matambre..."
-                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-[#F1F4F8] border-none text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange?.(e.target.value)}
+                  placeholder="Buscar vacío, asado, milanesas, pechuga, matambre, combos..."
+                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-[#F1F4F8] border border-slate-200/60 text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => onSearchChange?.("")}
+                    className="absolute right-24 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    title="Limpiar búsqueda"
+                  >
+                    <X className="size-4 stroke-[2.5]" />
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={goToCatalogo}
-                  className="absolute right-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  onClick={onOpenFiltersModal}
+                  className={`absolute right-2 px-3 py-1.5 rounded-xl border font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    hasActiveFilters
+                      ? "bg-[#003366] text-white border-[#003366]"
+                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  }`}
                 >
-                  <SlidersHorizontal className="size-3 text-slate-500 stroke-[2.5]" />
+                  <SlidersHorizontal
+                    className={`size-3 stroke-[2.5] ${hasActiveFilters ? "text-white" : "text-slate-500"}`}
+                  />
                   <span>Filtros</span>
+                  {hasActiveFilters && (
+                    <span className="size-1.5 rounded-full bg-emerald-400" />
+                  )}
                 </button>
               </div>
 
@@ -200,7 +280,7 @@ export const Navbar = ({
               </button>
             </div>
 
-            {/* Enviar a & Categorías */}
+            {/* Enviar a & Categorías Desktop */}
             <div className="flex w-full gap-8 items-center justify-between">
               {/* Enviar a / Selector de Sucursal */}
               <button
@@ -217,16 +297,21 @@ export const Navbar = ({
                 <ChevronDown className="size-3 text-slate-400 shrink-0 stroke-[2.5]" />
               </button>
 
-              {/* Links de Categorías */}
-              <div className="flex items-center gap-5 overflow-x-auto no-scrollbar">
+              {/* Links de Categorías en Desktop */}
+              <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => handleCategoryClick(cat)}
-                    className="text-[13px] hover:text-[#003366] hover:border-b-2 hover:border-[#003366] py-1 font-semibold text-slate-600 transition-colors cursor-pointer shrink-0"
+                    className="text-[13px] hover:text-[#003366] hover:border-b-2 hover:border-[#003366] py-1 font-semibold text-slate-600 transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
                   >
-                    {cat.label}
+                    <span>{cat.label}</span>
+                    {cat.special && (
+                      <span className="text-[10px] font-bold bg-red-100 text-[#c53030] px-1.5 py-0.2 rounded-full">
+                        Promo
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -234,7 +319,7 @@ export const Navbar = ({
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 

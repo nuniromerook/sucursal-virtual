@@ -1,9 +1,9 @@
 // src/components/home/CombosSection.jsx
-import React, { useState } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
-import { Scale, ShoppingCart, Sparkles, Eye, ChevronRight } from "lucide-react";
+import { Scale, ShoppingCart, Sparkles, Eye, ChevronRight, ChevronLeft } from "lucide-react";
 import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 
 export const COMBOS = [
@@ -132,10 +132,34 @@ export const COMBOS = [
   },
 ];
 
-export const CombosSection = () => {
+export const CombosSection = ({ searchQuery = "" }) => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const [selectedCombo, setSelectedCombo] = useState(null);
+  const scrollRef = useRef(null);
+
+  const filteredCombos = useMemo(() => {
+    if (!searchQuery.trim()) return COMBOS;
+    const q = searchQuery.toLowerCase().trim();
+    return COMBOS.filter(
+      (c) =>
+        c.nombre.toLowerCase().includes(q) ||
+        c.descripcion.toLowerCase().includes(q) ||
+        c.items.some((it) => it.nombre.toLowerCase().includes(q)),
+    );
+  }, [searchQuery]);
+
+  if (filteredCombos.length === 0) return null;
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 360;
+      scrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const handleAddCombo = (combo) => {
     addToCart(
@@ -163,189 +187,225 @@ export const CombosSection = () => {
   };
 
   return (
-    <div className="mb-10">
-      {/* Cabecera de Sección */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex flex-col w-full">
-          <div className="flex items-center gap-2">
+    <section id="seccion-combos" className="scroll-mt-36 md:scroll-mt-32 mb-8">
+      {/* Cabecera de Sección con Flechas Desktop */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3 px-4 sm:px-6">
+        <div>
+          <div className="flex items-center gap-2 mt-4 sm:mt-6">
             <span className="text-xl">📦</span>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl font-black text-slate-900 leading-tight">
               Combos de Frigorífico Ahorro
             </h2>
+            <span className="text-[11px] font-bold ml-auto lg:ml-0 text-[#c53030] bg-red-50 border border-red-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap shadow-2xs">
+              {filteredCombos.length} combos
+            </span>
           </div>
-          <p className="text-xs text-slate-500">
-            Paquetes armados por nuestros carniceros con descuentos por volumen
-            y más puntos. Tocá cualquier combo para ver cada corte con su foto.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Paquetes armados por nuestros carniceros con descuentos por volumen y más puntos.
           </p>
+        </div>
+
+        {/* Flechas de navegación en Desktop */}
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleScroll("left")}
+            className="size-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+            title="Ver anteriores"
+            aria-label="Ver anteriores"
+          >
+            <ChevronLeft className="size-4 stroke-[2.5]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleScroll("right")}
+            className="size-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+            title="Ver siguientes"
+            aria-label="Ver siguientes"
+          >
+            <ChevronRight className="size-4 stroke-[2.5]" />
+          </button>
         </div>
       </div>
 
-      {/* Grilla de Tarjetas de Combos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {COMBOS.map((combo) => {
+      {/* Contenedor con Scroll Horizontal de Tarjetas de Combos */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-1 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
+      >
+        {filteredCombos.map((combo) => {
           const totalCortes = combo.items.length;
           const extraCortes = Math.max(0, totalCortes - 2);
 
           return (
             <div
               key={combo.id}
-              onClick={() => setSelectedCombo(combo)}
-              className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer"
+              className="w-[85vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
             >
-              <div>
-                {/* 1. Tira de 3 Miniaturas de los Cortes del Combo */}
-                <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
-                  {/* Badge flotante de Kilos Totales sobre las fotos */}
-                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1">
-                      <Scale className="size-3" />
-                      <span>{combo.kilos} kg en total</span>
-                    </span>
-                  </div>
-
-                  {/* Badge flotante "Ver fotos" en esquina derecha */}
-                  <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                    <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">
-                      <Eye className="size-2.5" />
-                      <span>Ver fotos</span>
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 w-full aspect-16/7 divide-x divide-white/80">
-                    {/* Miniatura 1 */}
-                    <div className="relative h-full w-full overflow-hidden">
-                      <img
-                        src={combo.items[0]?.imagenUrl}
-                        alt={combo.items[0]?.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    {/* Miniatura 2 */}
-                    <div className="relative h-full w-full overflow-hidden">
-                      <img
-                        src={combo.items[1]?.imagenUrl}
-                        alt={combo.items[1]?.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    {/* Miniatura 3 (con overlay indicador si hay más cortes) */}
-                    <div className="relative h-full w-full overflow-hidden">
-                      <img
-                        src={combo.items[2]?.imagenUrl}
-                        alt={combo.items[2]?.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-
-                      {totalCortes > 3 && (
-                        <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
-                          <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
-                            +{extraCortes}
-                          </span>
-                          <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
-                            cortes
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Badges de Ahorro y Puntos */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}
-                  >
-                    {combo.badge}
-                  </span>
-                  <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Sparkles className="size-2.5 text-amber-600" />+
-                    {combo.puntos} pts Club
-                  </span>
-                </div>
-
-                {/* 3. Título y Rinde */}
-                <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
-                  <span>{combo.nombre}</span>
-                  <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                  Rinde estimado: {combo.rinde}
-                </p>
-
-                {/* 4. Desglose Escaneable de Cortes Incluidos */}
-                <div className="my-3 space-y-1.5 w-full">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-0.5">
-                    <span>Incluye en el paquete:</span>
-                    <span className="text-[#003366] font-black">
-                      {totalCortes} variedades
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    {combo.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 group-hover:bg-slate-100/70 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
-                          <span className="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">
-                            {item.nombre}
-                          </span>
-                        </div>
-                        <span className="font-black text-[#003366] text-[10px] sm:text-[11px] bg-white px-2 py-0.5 rounded-md border border-slate-200 shrink-0 ml-2 shadow-2xs font-num">
-                          {item.peso}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Enlace sutil para abrir el modal */}
-                <div className="mb-1 text-center">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#003366] group-hover:underline">
-                    <Eye className="size-3" />
-                    <span>Ver fotos y detalle de cada corte</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* 5. Precios y Botón de Acción en la Base */}
-              <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
+              <div
+                onClick={() => setSelectedCombo(combo)}
+                className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
+              >
                 <div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-black text-slate-900 font-num">
-                      {formatPrecio(combo.precio)}
+                  {/* 1. Tira de 3 Miniaturas de los Cortes del Combo */}
+                  <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
+                    {/* Badge flotante de Kilos Totales sobre las fotos */}
+                    <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
+                        <Scale className="size-3" />
+                        <span>{combo.kilos} kg en total</span>
+                      </span>
+                    </div>
+
+                    {/* Badge flotante "Ver fotos" en esquina derecha */}
+                    <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                      <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">
+                        <Eye className="size-2.5" />
+                        <span>Ver fotos</span>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 w-full aspect-16/7 divide-x divide-white/80">
+                      {/* Miniatura 1 */}
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[0]?.imagenUrl}
+                          alt={combo.items[0]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Miniatura 2 */}
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[1]?.imagenUrl}
+                          alt={combo.items[1]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Miniatura 3 */}
+                      <div className="relative h-full w-full overflow-hidden">
+                        <img
+                          src={combo.items[2]?.imagenUrl}
+                          alt={combo.items[2]?.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+
+                        {totalCortes > 3 && (
+                          <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
+                            <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
+                              +{extraCortes}
+                            </span>
+                            <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
+                              cortes
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Badges de Ahorro y Puntos */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}
+                    >
+                      {combo.badge}
                     </span>
-                    <span className="text-[11px] text-slate-400 line-through font-num">
-                      {formatPrecio(combo.precioAnterior)}
+                    <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
+                      <Sparkles className="size-2.5 text-amber-600" />+
+                      {combo.puntos} pts Club
                     </span>
                   </div>
-                  <span className="text-[10px] font-black text-[#c53030] block">
-                    Ahorrás {formatPrecio(combo.ahorro)}
-                  </span>
+
+                  {/* 3. Título y Rinde */}
+                  <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
+                    <span>{combo.nombre}</span>
+                    <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                    Rinde estimado: {combo.rinde}
+                  </p>
+
+                  {/* 4. Desglose Escaneable de Cortes Incluidos */}
+                  <div className="my-3 space-y-1.5 w-full">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-0.5">
+                      <span>Incluye en el paquete:</span>
+                      <span className="text-[#003366] font-black">
+                        {totalCortes} variedades
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {combo.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 group-hover:bg-slate-100/70 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
+                            <span className="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">
+                              {item.nombre}
+                            </span>
+                          </div>
+                          <span className="font-black text-[#003366] text-[10px] sm:text-[11px] bg-white px-2 py-0.5 rounded-md border border-slate-200 shrink-0 ml-2 shadow-2xs font-num">
+                            {item.peso}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Enlace sutil para abrir el modal */}
+                  <div className="mb-1 text-center">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#003366] group-hover:underline">
+                      <Eye className="size-3" />
+                      <span>Ver fotos y detalle de cada corte</span>
+                    </span>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddCombo(combo);
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
-                >
-                  <ShoppingCart className="size-3.5" />
-                  <span>Sumar</span>
-                </button>
+                {/* 5. Precios y Botón de Acción en la Base */}
+                <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-black text-slate-900 font-num">
+                        {formatPrecio(combo.precio)}
+                      </span>
+                      <span className="text-[11px] text-slate-400 line-through font-num">
+                        {formatPrecio(combo.precioAnterior)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-black text-[#c53030] block">
+                      Ahorrás {formatPrecio(combo.ahorro)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddCombo(combo);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
+                  >
+                    <ShoppingCart className="size-3.5" />
+                    <span>Sumar</span>
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
+        {/* Spacer de cierre */}
+        <div
+          className="shrink-0 w-1 sm:w-3 select-none pointer-events-none"
+          aria-hidden="true"
+        />
       </div>
 
       {/* Modal / Bottom Sheet para Visualizar el Combo con foto de cada corte */}
@@ -355,7 +415,7 @@ export const CombosSection = () => {
         onClose={() => setSelectedCombo(null)}
         combo={selectedCombo}
       />
-    </div>
+    </section>
   );
 };
 

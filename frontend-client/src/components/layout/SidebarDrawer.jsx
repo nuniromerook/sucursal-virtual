@@ -49,7 +49,14 @@ export const SidebarDrawer = ({
 
   const handleCategoryNav = (catId) => {
     onClose();
-    navigate(`/productos?categoria=${catId}`);
+    if (catId === "todos") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const target = document.getElementById(`seccion-${catId}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const whatsappPhone = selectedBranch?.telefono || "1135534033";
