@@ -1,5 +1,5 @@
 // src/components/layout/Navbar.jsx
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
@@ -33,6 +33,7 @@ export const Navbar = ({
   onSearchChange,
   onOpenFiltersModal,
   hasActiveFilters = false,
+  isNavbarFused = false,
   onOpenBranchModal,
   onOpenProfileModal,
   onOpenSidebar,
@@ -42,6 +43,24 @@ export const Navbar = ({
   const { deliveryMode, selectedBranch, customerAddress } = useLocation();
   const { categoryCounts } = useCatalogo();
   const { unreadCount } = useNotifications();
+  const navbarRef = useRef(null);
+
+  // Medir dinámicamente el alto exacto de la navbar para alinear la barra sticky al píxel
+  useEffect(() => {
+    const updateNavbarHeight = () => {
+      if (navbarRef.current) {
+        const height = navbarRef.current.offsetHeight;
+        document.documentElement.style.setProperty(
+          "--navbar-height",
+          `${height}px`,
+        );
+      }
+    };
+
+    updateNavbarHeight();
+    window.addEventListener("resize", updateNavbarHeight);
+    return () => window.removeEventListener("resize", updateNavbarHeight);
+  }, []);
 
   const handleCategoryClick = (cat) => {
     if (cat.id === "todos") {
@@ -55,7 +74,14 @@ export const Navbar = ({
   };
 
   return (
-    <header className="flex flex-col w-full h-fit bg-white sticky top-0 z-40 border-b border-slate-200/80 shadow-xs">
+    <header
+      ref={navbarRef}
+      className={`flex flex-col w-full h-fit bg-white sticky top-0 z-40 transition-all duration-150 ${
+        isNavbarFused
+          ? "border-b border-transparent shadow-none"
+          : "border-b border-slate-200/80 shadow-xs"
+      }`}
+    >
       {/* 1. Mobile Section: 2 filas compactas con Buscador y Filtro funcional */}
       <div className="flex md:hidden flex-col w-full">
         {/* Fila 1: Menú hamburguesa, Logo central y Carrito/Notificaciones */}

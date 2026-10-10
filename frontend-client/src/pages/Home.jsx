@@ -22,13 +22,20 @@ export const Home = ({
   sortBy = "destacados",
   onlyStock = false,
   onResetFilters,
+  onStickyChange,
 }) => {
   const { productos, isLoading, categoryCounts } = useCatalogo();
   const { customerAddress, deliveryMode, selectedBranch } = useLocation();
   const [searchParams] = useSearchParams();
 
   const [activeSection, setActiveSection] = useState("combos");
+  const [isNavbarFused, setIsNavbarFused] = useState(false);
+
+  const categoryBarRef = useRef(null);
   const chipRefs = useRef({});
+  const sentinelRef = useRef(null);
+  const isProgrammaticScroll = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
   // Auto-scroll si el usuario ingresa con parámetro ?categoria= en la URL
   useEffect(() => {
@@ -118,57 +125,93 @@ export const Home = ({
     [categoryCounts],
   );
 
+  // Centrado de chip horizontal sin perturbar el scroll vertical del window
+  const centerChip = (catId) => {
+    const container = categoryBarRef.current;
+    const chip = chipRefs.current[catId];
+    if (!container || !chip) return;
+
+    const containerWidth = container.offsetWidth;
+    const chipLeft = chip.offsetLeft;
+    const chipWidth = chip.offsetWidth;
+
+    const targetScrollLeft = chipLeft - containerWidth / 2 + chipWidth / 2;
+    container.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: "smooth",
+    });
+  };
+
   // Navegación suave hasta el inicio de la sección seleccionada
   const handleCategoryScroll = (catId) => {
+    // 1. Bloquear temporalmente la detección pasiva de scroll para evitar saltos
+    isProgrammaticScroll.current = true;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+
     setActiveSection(catId);
+    centerChip(catId);
+
     const target = document.getElementById(`seccion-${catId}`);
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+
+    // 2. Liberar bloqueo cuando la animación de desplazamiento termina
+    scrollTimeoutRef.current = setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 750);
   };
 
-  // Monitoreo del scroll para detectar sección activa y sincronizar chips
+  // Detección precisa de sección activa + detección de fusión de navbar (sombra 0)
   useEffect(() => {
-    const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
-    const elements = sectionIds
-      .map((id) => document.getElementById(`seccion-${id}`))
-      .filter(Boolean);
+    const handleScroll = () => {
+      const navbarHeight = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--navbar-height",
+        ) || "96",
+      );
 
-    if (elements.length === 0) return;
+      // 1. Verificar si la barra de categorías tocó la base de la navbar
+      if (sentinelRef.current) {
+        const sentinelRect = sentinelRef.current.getBoundingClientRect();
+        // Si el sentinel llegó o pasó la base de la navbar, activar fusión
+        const isSticky = sentinelRect.top <= navbarHeight + 2;
+        setIsNavbarFused(isSticky);
+        onStickyChange?.(isSticky);
+      }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length > 0) {
-          visible.sort(
-            (a, b) =>
-              Math.abs(a.boundingClientRect.top) -
-              Math.abs(b.boundingClientRect.top),
-          );
-          const currentId = visible[0].target.id.replace("seccion-", "");
-          setActiveSection(currentId);
+      // 2. Si hay scroll programático (click en chip), no actualizar categoría pasiva
+      if (isProgrammaticScroll.current) return;
+
+      // 3. Offset dinámico para detectar en qué sección se encuentra el usuario
+      const triggerOffset = navbarHeight + 70;
+      const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
+      let current = sectionIds[0];
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(`seccion-${id}`);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= triggerOffset) {
+            current = id;
+          }
         }
-      },
-      {
-        rootMargin: "-100px 0px -50% 0px",
-        threshold: [0.1, 0.3],
-      },
-    );
+      }
 
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [sectionsWithProducts]);
+      if (current !== activeSection) {
+        setActiveSection(current);
+        centerChip(current);
+      }
+    };
 
-  // Centrar el chip activo en el contenedor horizontal mobile
-  useEffect(() => {
-    if (activeSection && chipRefs.current[activeSection]) {
-      chipRefs.current[activeSection]?.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }
-  }, [activeSection]);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Chequeo inicial
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, [activeSection, onStickyChange]);
 
   const handleProductClick = (product) => {
     if (onOpenProduct) {
@@ -230,10 +273,23 @@ export const Home = ({
         <BannerCarousel onSelectCategory={handleCategoryScroll} />
       </div>
 
+      {/* Sentinel Invisible para detectar con precisión cuándo se alcanza el estado sticky */}
+      <div
+        ref={sentinelRef}
+        className="h-px w-full pointer-events-none invisible"
+        aria-hidden="true"
+      />
+
       {/* 3. Div Horizontal de Categorías (Debajo del Carrusel, Sticky en Mobile y Oculto en Desktop) */}
       <nav
+        ref={categoryBarRef}
         aria-label="Categorías de cortes"
-        className="md:hidden sticky top-[92px] z-30 bg-white/95 backdrop-blur-md border-y border-slate-200/80 shadow-xs px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth my-4"
+        style={{ top: "var(--navbar-height, 96px)" }}
+        className={`md:hidden sticky z-30 bg-white transition-all duration-150 px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth my-3 ${
+          isNavbarFused
+            ? "border-b border-slate-200/90 shadow-xs"
+            : "border-y border-slate-200/80 shadow-none"
+        }`}
       >
         {stickyCategories.map((cat) => {
           const isCurrentActive = activeSection === cat.id;
@@ -354,7 +410,7 @@ export const Home = ({
             <div
               key={sec.id}
               id={`seccion-${sec.id}`}
-              className="scroll-mt-36 md:scroll-mt-32"
+              className="scroll-mt-40 md:scroll-mt-32"
             >
               <CategoryHorizontalShelf
                 title={sec.titulo}

@@ -83,6 +83,7 @@ function AppContent() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isNavbarFused, setIsNavbarFused] = useState(false);
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
@@ -92,6 +93,7 @@ function AppContent() {
         onSearchChange={handleSearchChange}
         onOpenFiltersModal={() => setIsFiltersModalOpen(true)}
         hasActiveFilters={sortBy !== "destacados" || onlyStock}
+        isNavbarFused={isNavbarFused}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenSidebar={() => setIsSidebarOpen(true)}
@@ -108,6 +110,7 @@ function AppContent() {
           sortBy={sortBy}
           onlyStock={onlyStock}
           onResetFilters={handleResetFilters}
+          onStickyChange={setIsNavbarFused}
         />
       </main>
 
