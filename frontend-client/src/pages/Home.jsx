@@ -201,17 +201,35 @@ export const Home = ({
       // 2. Si hay scroll programático en curso por click, no interferir con la animación
       if (Date.now() < programmaticScrollUntil.current) return;
 
-      // 3. Offset dinámico para detectar en qué sección se encuentra el usuario
-      const triggerOffset = navbarHeight + 70;
+      // 3. Anticipación de detección: detecta la sección entrante antes (al final de la card anterior)
+      const categoryBarHeight = 48;
+      const cardAnticipation = 230; // Anticipa la detección cuando la card anterior está finalizando
+      const triggerOffset = navbarHeight + categoryBarHeight + cardAnticipation;
+
       const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
       let current = sectionIds[0];
 
-      for (const id of sectionIds) {
-        const el = document.getElementById(`seccion-${id}`);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= triggerOffset) {
-            current = id;
+      // Chequeo si el usuario llegó al final de la página (última sección disponible)
+      const isAtPageBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 80;
+
+      if (isAtPageBottom) {
+        // Encontrar la última sección que tenga productos renderizados
+        const availableSections = sectionIds.filter(
+          (id) => id === "combos" || sectionsWithProducts.some((s) => s.id === id),
+        );
+        if (availableSections.length > 0) {
+          current = availableSections[availableSections.length - 1];
+        }
+      } else {
+        for (const id of sectionIds) {
+          const el = document.getElementById(`seccion-${id}`);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= triggerOffset) {
+              current = id;
+            }
           }
         }
       }
