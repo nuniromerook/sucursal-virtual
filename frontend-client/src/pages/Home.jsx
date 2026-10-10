@@ -171,13 +171,17 @@ export const Home = ({
         ) || "96",
       );
 
-      // 1. Verificar si la barra de categorías tocó la base de la navbar
-      if (sentinelRef.current) {
+      // 1. Verificar si la barra de categorías tocó la base de la navbar (SÓLO EN MOBILE)
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && sentinelRef.current) {
         const sentinelRect = sentinelRef.current.getBoundingClientRect();
         // Si el sentinel llegó o pasó la base de la navbar, activar fusión
         const isSticky = sentinelRect.top <= navbarHeight + 2;
         setIsNavbarFused(isSticky);
         onStickyChange?.(isSticky);
+      } else if (!isMobile) {
+        setIsNavbarFused(false);
+        onStickyChange?.(false);
       }
 
       // 2. Si hay scroll programático (click en chip), no actualizar categoría pasiva

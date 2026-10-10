@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 export const CATEGORIES = [
-  { id: "todos", label: "Todos los productos" },
   { id: "combos", label: "Combos Ahorro", special: true },
   { id: "asado", label: "Especial Asado 🔥" },
   { id: "vacuno", label: "Vacuno" },
@@ -63,10 +62,6 @@ export const Navbar = ({
   }, []);
 
   const handleCategoryClick = (cat) => {
-    if (cat.id === "todos") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
     const target = document.getElementById(`seccion-${cat.id}`);
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -78,7 +73,7 @@ export const Navbar = ({
       ref={navbarRef}
       className={`flex flex-col w-full h-fit bg-white sticky top-0 z-40 transition-all duration-150 ${
         isNavbarFused
-          ? "border-b border-transparent shadow-none"
+          ? "border-b border-transparent shadow-none md:border-b md:border-slate-200/80 md:shadow-xs"
           : "border-b border-slate-200/80 shadow-xs"
       }`}
     >
