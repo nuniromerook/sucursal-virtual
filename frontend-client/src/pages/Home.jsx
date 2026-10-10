@@ -36,9 +36,8 @@ export const Home = ({
   const chipRefs = useRef({});
   const sentinelRef = useRef(null);
   const programmaticScrollUntil = useRef(0);
-  const isCenteringChip = useRef(false);
-  const isUserScrollingBar = useRef(false);
-  const userBarTimeoutRef = useRef(null);
+  const isUserTouchingBar = useRef(false);
+  const sectionsWithProductsRef = useRef([]);
 
   // Auto-scroll si el usuario ingresa con parámetro ?categoria= en la URL
   useEffect(() => {
@@ -94,6 +93,10 @@ export const Home = ({
     }).filter((sec) => sec.products.length > 0);
   }, [filteredProducts]);
 
+  useEffect(() => {
+    sectionsWithProductsRef.current = sectionsWithProducts;
+  }, [sectionsWithProducts]);
+
   // Lista de chips de categorías para el div horizontal mobile
   const stickyCategories = useMemo(
     () =>
@@ -137,31 +140,16 @@ export const Home = ({
     const chipWidth = chip.offsetWidth;
 
     const targetScrollLeft = chipLeft - containerWidth / 2 + chipWidth / 2;
-    isCenteringChip.current = true;
     container.scrollTo({
       left: Math.max(0, targetScrollLeft),
       behavior: "smooth",
     });
-    setTimeout(() => {
-      isCenteringChip.current = false;
-    }, 350);
-  };
-
-  // Manejo de scroll manual en la barra de categorías
-  const handleCategoryBarScroll = () => {
-    if (isCenteringChip.current) return;
-    isUserScrollingBar.current = true;
-    if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
-    userBarTimeoutRef.current = setTimeout(() => {
-      isUserScrollingBar.current = false;
-    }, 2000);
   };
 
   // Navegación suave hasta el inicio de la sección seleccionada
   const handleCategoryScroll = (catId) => {
-    // Reactivar detección y auto-centrado inmediatamente al tocar la categoría
-    isUserScrollingBar.current = false;
-    if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
+    // Si el usuario toca un chip, liberamos el bloqueo táctil de inmediato
+    isUserTouchingBar.current = false;
 
     // Bloquear temporalmente interferencia pasiva durante la animación de scroll (~750ms)
     programmaticScrollUntil.current = Date.now() + 750;
@@ -201,35 +189,55 @@ export const Home = ({
       // 2. Si hay scroll programático en curso por click, no interferir con la animación
       if (Date.now() < programmaticScrollUntil.current) return;
 
-      // 3. Anticipación de detección: detecta la sección entrante antes (al final de la card anterior)
+      const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
+
+      // 3. Respuesta instantánea para scroll rápido al INICIO
+      if (window.scrollY < 180) {
+        if (activeSectionRef.current !== "combos") {
+          activeSectionRef.current = "combos";
+          setActiveSection("combos");
+          if (!isUserTouchingBar.current) {
+            centerChip("combos");
+          }
+        }
+        return;
+      }
+
+      // 4. Respuesta instantánea para scroll rápido al FINAL de la página
+      const isAtPageBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 160;
+
+      if (isAtPageBottom) {
+        const availableSections = sectionIds.filter(
+          (id) =>
+            id === "combos" ||
+            sectionsWithProductsRef.current.some((s) => s.id === id),
+        );
+        const lastSection =
+          availableSections[availableSections.length - 1] || "combos";
+        if (activeSectionRef.current !== lastSection) {
+          activeSectionRef.current = lastSection;
+          setActiveSection(lastSection);
+          if (!isUserTouchingBar.current) {
+            centerChip(lastSection);
+          }
+        }
+        return;
+      }
+
+      // 5. Anticipación de detección entre secciones (al final de la card anterior)
       const categoryBarHeight = 48;
       const cardAnticipation = 230; // Anticipa la detección cuando la card anterior está finalizando
       const triggerOffset = navbarHeight + categoryBarHeight + cardAnticipation;
 
-      const sectionIds = ["combos", ...CATEGORY_SECTIONS.map((s) => s.id)];
       let current = sectionIds[0];
-
-      // Chequeo si el usuario llegó al final de la página (última sección disponible)
-      const isAtPageBottom =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 80;
-
-      if (isAtPageBottom) {
-        // Encontrar la última sección que tenga productos renderizados
-        const availableSections = sectionIds.filter(
-          (id) => id === "combos" || sectionsWithProducts.some((s) => s.id === id),
-        );
-        if (availableSections.length > 0) {
-          current = availableSections[availableSections.length - 1];
-        }
-      } else {
-        for (const id of sectionIds) {
-          const el = document.getElementById(`seccion-${id}`);
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            if (rect.top <= triggerOffset) {
-              current = id;
-            }
+      for (const id of sectionIds) {
+        const el = document.getElementById(`seccion-${id}`);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= triggerOffset) {
+            current = id;
           }
         }
       }
@@ -237,7 +245,7 @@ export const Home = ({
       if (current !== activeSectionRef.current) {
         activeSectionRef.current = current;
         setActiveSection(current);
-        if (!isUserScrollingBar.current) {
+        if (!isUserTouchingBar.current) {
           centerChip(current);
         }
       }
@@ -248,7 +256,6 @@ export const Home = ({
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (userBarTimeoutRef.current) clearTimeout(userBarTimeoutRef.current);
     };
   }, [onStickyChange]);
 
@@ -321,13 +328,21 @@ export const Home = ({
       {/* 3. Div Horizontal de Categorías (Debajo del Carrusel, Sticky en Mobile y Oculto en Desktop) */}
       <nav
         ref={categoryBarRef}
-        onScroll={handleCategoryBarScroll}
         onTouchStart={() => {
-          isUserScrollingBar.current = true;
+          isUserTouchingBar.current = true;
+        }}
+        onTouchEnd={() => {
+          isUserTouchingBar.current = false;
+        }}
+        onPointerDown={() => {
+          isUserTouchingBar.current = true;
+        }}
+        onPointerUp={() => {
+          isUserTouchingBar.current = false;
         }}
         aria-label="Categorías de cortes"
         style={{ top: "var(--navbar-height, 96px)" }}
-        className={`md:hidden sticky z-30 bg-white transition-all duration-150 px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth my-3 ${
+        className={`md:hidden sticky z-30 bg-white transition-all duration-150 px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar my-3 ${
           isNavbarFused
             ? "border-b border-slate-200/90 shadow-xs"
             : "border-y border-slate-200/80 shadow-none"
