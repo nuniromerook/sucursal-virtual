@@ -102,8 +102,11 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 Agotado por Hoy
               </span>
             ) : promoInfo ? (
-              <span className="px-2.5 py-1 rounded-lg bg-[#c53030] text-white text-[10px] font-bold shadow-xs flex items-center gap-1 max-w-full">
-                <span>🔥 Llevando {promoInfo.cant} {unidadMedida} o más:</span>
+              <span className="px-2.5 py-1 rounded-lg bg-red-700/80 border border-red-300 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
+                <span>
+                  🔥 Llevando {promoInfo.cant}
+                  {unidadMedida} o más:
+                </span>
                 <strong className="text-amber-200 font-black">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
                 </strong>

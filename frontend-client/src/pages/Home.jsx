@@ -467,7 +467,7 @@ export const Home = ({
             <div
               key={sec.id}
               id={`seccion-${sec.id}`}
-              className="scroll-mt-40 md:scroll-mt-32"
+              className="scroll-mt-40 md:scroll-mt-32 overscroll-contain"
             >
               <CategoryHorizontalShelf
                 title={sec.titulo}

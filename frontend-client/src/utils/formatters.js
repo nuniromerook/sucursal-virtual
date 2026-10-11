@@ -37,7 +37,7 @@ export const formatCantidad = (valor, unidadMedida = "kg") => {
   if (valor === undefined || valor === null || isNaN(valor)) return "1 kg";
   const num = Math.round(Number(valor));
   const unidad = formatUnidadMedida(unidadMedida);
-  return `${num} ${unidad}`;
+  return `${num}${unidad}`;
 };
 
 /**
@@ -45,7 +45,7 @@ export const formatCantidad = (valor, unidadMedida = "kg") => {
  */
 export const formatPrecioPorUnidad = (precio, unidadMedida = "kg") => {
   const unidad = formatUnidadMedida(unidadMedida);
-  return `${formatPrecio(precio)} / ${unidad}`;
+  return `${formatPrecio(precio)} /${unidad}`;
 };
 
 /**
