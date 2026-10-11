@@ -44,7 +44,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 z-40 py-2 px-3 flex items-center justify-around shadow-lg">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/80 z-40 py-2 px-3 flex items-center justify-around shadow-lg">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;

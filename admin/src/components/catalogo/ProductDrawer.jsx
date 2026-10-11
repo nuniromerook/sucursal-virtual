@@ -1,9 +1,44 @@
 // admin/src/components/catalogo/ProductDrawer.jsx
-import React, { useState, useEffect } from "react";
-import { X, Plus, Check, Trash2, Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import { X, Plus, Check, Image as ImageIcon } from "lucide-react";
 
-export default function ProductDrawer({ isOpen, onClose, product, onSave, isSaving }) {
-  const [formData, setFormData] = useState({
+function getInitialFormData(product) {
+  if (product) {
+    const promos = Array.isArray(product.promos) ? product.promos : [];
+    const firstPromo = promos[0] || {};
+
+    return {
+      id: product.id,
+      nombre_producto: product.nombre_producto || "",
+      slug: product.slug || "",
+      categoria: product.categoria || "vacuno",
+      especie: product.especie || product.categoria || "vacuno",
+      unidad_medida: product.unidad_medida || "kg",
+      descripcion: product.descripcion || "",
+      precio: product.precio != null ? String(product.precio) : "",
+      precio_anterior:
+        product.precio_anterior != null ? String(product.precio_anterior) : "0",
+      badge: product.badge || "",
+      rinde_personas: product.rinde_personas || "",
+      metodos_coccion: Array.isArray(product.metodos_coccion)
+        ? product.metodos_coccion
+        : [],
+      opciones_corte: Array.isArray(product.opciones_corte)
+        ? product.opciones_corte
+        : [],
+      sin_stock: Boolean(product.sin_stock),
+      activo: product.activo !== false,
+      imagen_url: product.imagen_url || "",
+      promo_min: firstPromo.cantidad_minima
+        ? String(firstPromo.cantidad_minima)
+        : "",
+      promo_precio: firstPromo.precio_promocional
+        ? String(firstPromo.precio_promocional)
+        : "",
+    };
+  }
+
+  return {
     nombre_producto: "",
     slug: "",
     categoria: "vacuno",
@@ -14,71 +49,20 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
     precio_anterior: "0",
     badge: "",
     rinde_personas: "Rinde 3 a 4 personas",
-    metodos_coccion: [],
-    opciones_corte: [],
+    metodos_coccion: ["Parrilla", "Horno"],
+    opciones_corte: ["Pieza Entera", "Corte Grueso"],
     sin_stock: false,
     activo: true,
-    imagen_url: "",
+    imagen_url:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
     promo_min: "",
     promo_precio: "",
-  });
+  };
+}
 
+function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
+  const [formData, setFormData] = useState(() => getInitialFormData(product));
   const [newCorteInput, setNewCorteInput] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (product) {
-      // Editar existente
-      const promos = Array.isArray(product.promos) ? product.promos : [];
-      const firstPromo = promos[0] || {};
-
-      setFormData({
-        id: product.id,
-        nombre_producto: product.nombre_producto || "",
-        slug: product.slug || "",
-        categoria: product.categoria || "vacuno",
-        especie: product.especie || product.categoria || "vacuno",
-        unidad_medida: product.unidad_medida || "kg",
-        descripcion: product.descripcion || "",
-        precio: product.precio != null ? String(product.precio) : "",
-        precio_anterior: product.precio_anterior != null ? String(product.precio_anterior) : "0",
-        badge: product.badge || "",
-        rinde_personas: product.rinde_personas || "",
-        metodos_coccion: Array.isArray(product.metodos_coccion) ? product.metodos_coccion : [],
-        opciones_corte: Array.isArray(product.opciones_corte) ? product.opciones_corte : [],
-        sin_stock: Boolean(product.sin_stock),
-        activo: product.activo !== false,
-        imagen_url: product.imagen_url || "",
-        promo_min: firstPromo.cantidad_minima ? String(firstPromo.cantidad_minima) : "",
-        promo_precio: firstPromo.precio_promocional ? String(firstPromo.precio_promocional) : "",
-      });
-    } else {
-      // Nuevo producto
-      setFormData({
-        nombre_producto: "",
-        slug: "",
-        categoria: "vacuno",
-        especie: "vacuno",
-        unidad_medida: "kg",
-        descripcion: "",
-        precio: "",
-        precio_anterior: "0",
-        badge: "",
-        rinde_personas: "Rinde 3 a 4 personas",
-        metodos_coccion: ["Parrilla", "Horno"],
-        opciones_corte: ["Pieza Entera", "Corte Grueso"],
-        sin_stock: false,
-        activo: true,
-        imagen_url: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
-        promo_min: "",
-        promo_precio: "",
-      });
-    }
-    setNewCorteInput("");
-  }, [isOpen, product]);
-
-  if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -145,18 +129,19 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
       />
 
       <div className="fixed inset-x-0 bottom-0 lg:inset-y-0 lg:left-auto lg:right-0 w-full lg:max-w-xl max-h-[92vh] lg:max-h-full rounded-t-2xl lg:rounded-none bg-white shadow-2xl flex flex-col z-10 animate-in slide-in-from-bottom lg:slide-in-from-right duration-200">
-        
         {/* Drag Handle móvil */}
         <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2 lg:hidden shrink-0"></div>
 
         {/* Header */}
-        <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 text-slate-900 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-base font-bold tracking-tight">
-              {product ? `Editar: ${product.nombre_producto}` : "Nuevo Corte / Producto"}
+              {product
+                ? `Editar producto: ${product.nombre_producto}`
+                : "Nuevo Producto"}
             </h2>
-            <p className="text-xs text-slate-300">
-              Configuración técnica para venta y preparación de carnicería
+            <p className="text-xs text-slate-500">
+              Configuración técnica de producto para la venta online
             </p>
           </div>
           <button
@@ -169,18 +154,20 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
         </div>
 
         {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
-          
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-6 space-y-6 text-xs"
+        >
           {/* 1. Identificación y Unidad */}
           <div className="space-y-4">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-1">
-              1. Identificación y Unidad
+              1. Descripción del producto
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Nombre Comercial del Corte *
+                  Nombre del Corte *
                 </label>
                 <input
                   type="text"
@@ -228,8 +215,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-slate-300 rounded focus:border-brand-navy outline-none bg-white font-medium"
                 >
-                  <option value="kg">Por Kilogramo (kg) - Pesable en mostrador</option>
-                  <option value="u">Por Unidad (u) - Precio fijo unitario</option>
+                  <option value="kg">Por Kilogramo (kg)</option>
+                  <option value="u">Por Unidad (u)</option>
                 </select>
               </div>
             </div>
@@ -238,11 +225,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block font-semibold text-slate-700">
-                  Descripción Corta (Texto Plano) *
+                  Descripción Corta *
                 </label>
-                <span className="text-[10px] text-slate-400">
-                  Directa, concisa y sin formato enriquecido
-                </span>
               </div>
               <textarea
                 name="descripcion"
@@ -250,7 +234,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
                 value={formData.descripcion}
                 onChange={handleChange}
                 placeholder="ej: Corte clásico con hueso, tierno y con el balance justo de grasa para dorar a la parrilla."
-                className="w-full px-3 py-2 border border-slate-300 rounded focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none text-xs leading-relaxed"
+                className="w-full min-h-35 px-3 py-2 border border-slate-300 rounded focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none text-xs leading-relaxed"
               />
             </div>
           </div>
@@ -362,7 +346,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
                   Opciones de Preparación para el Cliente
                 </label>
                 <span className="text-[10px] text-slate-400">
-                  Si se deja vacío (ej: chorizos), no pedirá preparación en la app
+                  Si se deja vacío (ej: chorizos), no pedirá preparación en la
+                  app
                 </span>
               </div>
 
@@ -370,7 +355,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
               <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-md min-h-[44px] mb-2">
                 {formData.opciones_corte.length === 0 ? (
                   <span className="text-[11px] text-slate-400 italic">
-                    Sin opciones cargadas. El cliente no verá selector de preparación.
+                    Sin opciones cargadas. El cliente no verá selector de
+                    preparación.
                   </span>
                 ) : (
                   formData.opciones_corte.map((tag, idx) => (
@@ -418,7 +404,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
 
               {/* Atajos rápidos táctiles para carnicero */}
               <div className="flex flex-wrap gap-1 mt-2">
-                <span className="text-[10px] font-bold text-slate-400 mr-1 self-center">Atajos:</span>
+                <span className="text-[10px] font-bold text-slate-400 mr-1 self-center">
+                  Atajos:
+                </span>
                 {[
                   "Corte Bandera",
                   "Tiras Gruesas",
@@ -455,7 +443,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
                   {["Parrilla", "Horno", "Cacerola", "Sartén"].map((m) => {
                     const checked = formData.metodos_coccion.includes(m);
                     return (
-                      <label key={m} className="flex items-center gap-1.5 cursor-pointer">
+                      <label
+                        key={m}
+                        className="flex items-center gap-1.5 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={checked}
@@ -497,7 +488,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-800">Disponibilidad en Mostrador</div>
+                  <div className="font-semibold text-slate-800">
+                    Disponibilidad en Mostrador
+                  </div>
                   <div className="text-[11px] text-slate-500">
                     Pausar si el corte se agotó físicamente
                   </div>
@@ -507,7 +500,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
                     type="checkbox"
                     checked={!formData.sin_stock}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, sin_stock: !e.target.checked }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        sin_stock: !e.target.checked,
+                      }))
                     }
                     className="sr-only peer"
                   />
@@ -517,8 +513,12 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-800">Publicado en la Tienda</div>
-                  <div className="text-[11px] text-slate-500">Visibilidad general en catálogo</div>
+                  <div className="font-semibold text-slate-800">
+                    Publicado en la Tienda
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Visibilidad general en catálogo
+                  </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -592,9 +592,28 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave, isSavi
               <span>{isSaving ? "Guardando..." : "Guardar Cambios"}</span>
             </button>
           </div>
-
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ProductDrawer({
+  isOpen,
+  onClose,
+  product,
+  onSave,
+  isSaving,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <ProductDrawerContent
+      key={product?.id ?? "nuevo"}
+      product={product}
+      onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
+    />
   );
 }

@@ -1,6 +1,6 @@
 // admin/src/pages/CatalogoPage.jsx
-import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, RefreshCw, Scissors, Check, AlertTriangle, Layers } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { VITE_API_URL } from "../config/api";
 import { useAdmin } from "../context/AdminContext";
 import { useAuth } from "../context/AuthContext";
@@ -21,18 +21,24 @@ export default function CatalogoPage({ onProductsLoaded }) {
   const { showToast } = useAdmin();
   const { authHeaders } = useAuth();
 
+  const fetchCatalogItems = async () => {
+    const res = await fetch(
+      `${VITE_API_URL}/catalogo?incluir_promos_inactivas=true`,
+    );
+    if (!res.ok) {
+      throw new Error("No se pudo cargar el catálogo.");
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  };
+
+  // Recarga manual desde botón o acción del usuario
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${VITE_API_URL}/catalogo?incluir_promos_inactivas=true`);
-      if (res.ok) {
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : [];
-        setProducts(items);
-        onProductsLoaded?.(items.length);
-      } else {
-        throw new Error("No se pudo cargar el catálogo.");
-      }
+      const items = await fetchCatalogItems();
+      setProducts(items);
+      onProductsLoaded?.(items.length);
     } catch (err) {
       console.error("Error al cargar catálogo:", err);
       showToast("Error de conexión al cargar productos del servidor.", "error");
@@ -42,8 +48,31 @@ export default function CatalogoPage({ onProductsLoaded }) {
   };
 
   useEffect(() => {
-    loadProducts();
-  }, []);
+    let isMounted = true;
+
+    fetchCatalogItems()
+      .then((items) => {
+        if (isMounted) {
+          setProducts(items);
+          onProductsLoaded?.(items.length);
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error("Error al cargar catálogo:", err);
+          showToast("Error de conexión al cargar productos del servidor.", "error");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [onProductsLoaded, showToast]);
 
   // Toggle rápido de stock
   const handleToggleStock = async (product) => {
@@ -51,7 +80,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
 
     // Actualización optimista local
     setProducts((prev) =>
-      prev.map((p) => (p.id === product.id ? { ...p, sin_stock: nextSinStock } : p))
+      prev.map((p) =>
+        p.id === product.id ? { ...p, sin_stock: nextSinStock } : p,
+      ),
     );
 
     try {
@@ -73,7 +104,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
       showToast(
         `${product.nombre_producto} marcado como ${
           nextSinStock ? "AGOTADO (Pausado)" : "DISPONIBLE EN STOCK"
-        }`
+        }`,
       );
     } catch (err) {
       console.error("Error al alternar stock:", err);
@@ -86,7 +117,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
     const nextActivo = !product.activo;
 
     setProducts((prev) =>
-      prev.map((p) => (p.id === product.id ? { ...p, activo: nextActivo } : p))
+      prev.map((p) => (p.id === product.id ? { ...p, activo: nextActivo } : p)),
     );
 
     try {
@@ -97,7 +128,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
       });
 
       showToast(
-        `${product.nombre_producto} ahora está ${nextActivo ? "VISIBLE" : "OCULTO"} en tienda.`
+        `${product.nombre_producto} ahora está ${nextActivo ? "VISIBLE" : "OCULTO"} en tienda.`,
       );
     } catch (err) {
       console.error("Error al cambiar visibilidad:", err);
@@ -109,12 +140,16 @@ export default function CatalogoPage({ onProductsLoaded }) {
     setIsSaving(true);
     try {
       const isEdit = Boolean(formData.id);
-      const url = isEdit ? `${VITE_API_URL}/catalogo/${formData.id}` : `${VITE_API_URL}/catalogo`;
+      const url = isEdit
+        ? `${VITE_API_URL}/catalogo/${formData.id}`
+        : `${VITE_API_URL}/catalogo`;
       const method = isEdit ? "PUT" : "POST";
 
       const payload = {
         nombre_producto: formData.nombre_producto,
-        slug: formData.slug || formData.nombre_producto.toLowerCase().replace(/\s+/g, "-"),
+        slug:
+          formData.slug ||
+          formData.nombre_producto.toLowerCase().replace(/\s+/g, "-"),
         categoria: formData.categoria,
         especie: formData.especie,
         unidad_medida: formData.unidad_medida,
@@ -143,11 +178,18 @@ export default function CatalogoPage({ onProductsLoaded }) {
       const savedData = await res.json();
 
       if (isEdit) {
-        setProducts((prev) => prev.map((p) => (p.id === formData.id ? { ...p, ...payload } : p)));
+        setProducts((prev) =>
+          prev.map((p) => (p.id === formData.id ? { ...p, ...payload } : p)),
+        );
         showToast(`Corte "${formData.nombre_producto}" actualizado con éxito.`);
       } else {
-        setProducts((prev) => [{ ...payload, id: savedData.id || Date.now() }, ...prev]);
-        showToast(`Nuevo corte "${formData.nombre_producto}" agregado al catálogo.`);
+        setProducts((prev) => [
+          { ...payload, id: savedData.id || Date.now() },
+          ...prev,
+        ]);
+        showToast(
+          `Nuevo corte "${formData.nombre_producto}" agregado al catálogo.`,
+        );
       }
 
       setDrawerOpen(false);
@@ -155,7 +197,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
       console.error("Error al guardar producto:", err);
       // Actualización optimista local por si el endpoint requiere auth especial
       if (formData.id) {
-        setProducts((prev) => prev.map((p) => (p.id === formData.id ? { ...p, ...formData } : p)));
+        setProducts((prev) =>
+          prev.map((p) => (p.id === formData.id ? { ...p, ...formData } : p)),
+        );
         showToast(`Producto actualizado localmente.`);
       } else {
         setProducts((prev) => [{ ...formData, id: Date.now() }, ...prev]);
@@ -175,18 +219,15 @@ export default function CatalogoPage({ onProductsLoaded }) {
 
   return (
     <div className="space-y-4">
-      
       {/* Barra de Título y Acción Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             Gestión de Cortes & Catálogo
-            <span className="text-[11px] font-bold px-2.5 py-0.5 bg-slate-200 text-slate-700 rounded-full">
-              Base Central
-            </span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Control directo de precios, stock en mostrador y especificaciones para venta online.
+            Control directo de precios, stock en mostrador y especificaciones
+            para venta online.
           </p>
         </div>
 
@@ -198,7 +239,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
             className="p-2 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shadow-xs"
             title="Recargar catálogo"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-brand-navy" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? "animate-spin text-brand-navy" : ""}`}
+            />
           </button>
 
           <button
@@ -222,10 +265,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
             <div className="text-[11px] font-bold text-slate-500 uppercase">
               Total Catálogo
             </div>
-            <div className="text-lg font-black text-slate-900">{total} cortes</div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
-            🥩
+            <div className="text-lg font-black text-slate-900">
+              {total} cortes
+            </div>
           </div>
         </div>
 
@@ -234,10 +276,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
             <div className="text-[11px] font-bold text-emerald-700 uppercase">
               En Stock Mostrador
             </div>
-            <div className="text-lg font-black text-emerald-700">{enStock} activos</div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">
-            ✓
+            <div className="text-lg font-black text-emerald-700">
+              {enStock} activos
+            </div>
           </div>
         </div>
 
@@ -246,10 +287,9 @@ export default function CatalogoPage({ onProductsLoaded }) {
             <div className="text-[11px] font-bold text-rose-700 uppercase">
               Agotado / Sin Stock
             </div>
-            <div className="text-lg font-black text-rose-700">{sinStock} pausa</div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-bold">
-            ⚠️
+            <div className="text-lg font-black text-rose-700">
+              {sinStock} pausa
+            </div>
           </div>
         </div>
 
@@ -258,17 +298,15 @@ export default function CatalogoPage({ onProductsLoaded }) {
             <div className="text-[11px] font-bold text-sky-700 uppercase">
               Visibles en Tienda
             </div>
-            <div className="text-lg font-black text-sky-700">{activos} publicados</div>
-          </div>
-          <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 font-bold">
-            🌐
+            <div className="text-lg font-black text-sky-700">
+              {activos} publicados
+            </div>
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        
         {/* Buscador Rápido */}
         <div className="relative flex-1 max-w-md">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -336,7 +374,6 @@ export default function CatalogoPage({ onProductsLoaded }) {
         onSave={handleSaveProduct}
         isSaving={isSaving}
       />
-
     </div>
   );
 }
