@@ -13,6 +13,7 @@ import {
   Beef,
   Coins,
   Activity,
+  HandCoins,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -147,7 +148,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
         {/* Cuerpo del Modal con scroll fluido */}
         <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-6">
           {/* 1. Imagen Principal con Badges */}
-          <div className="relative w-full h-52 sm:h-64 bg-slate-100 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="relative w-full aspect-4/3 sm:aspect-auto sm:h-64 bg-slate-100 rounded-2xl overflow-hidden shadow-2xs">
             <img
               src={
                 product.imagen_url ||
@@ -180,43 +181,40 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             </div>
 
             {/* Puntos Club Valette */}
-            <span className="absolute bottom-3 left-3 pl-1.5 pr-2.5 py-1 rounded-xl bg-amber-400 text-slate-900 text-[11px] font-black shadow-xs flex items-center gap-1">
-              <Coins className="size-5.5 stroke-[2.5] text-amber-600 bg-white rounded-full p-1" />
+            <span className="absolute bottom-3 left-3 pl-1 pr-2 py-1 rounded-lg bg-yellow-500/70 border border-amber-400 text-slate-900 text-[11px] font-black shadow-xs flex items-center gap-2">
+              <HandCoins className="size-5.5 stroke-[2.5] text-amber-500 bg-white border border-amber-400 rounded-md p-1" />
               <span>
                 Sumás{" "}
                 <span className="text-amber-900">+{product.puntos || 15}</span>{" "}
-                Puntos Club Valette
+                Puntos
               </span>
             </span>
           </div>
 
           {/* 2. Nombre, Precio Base y Descripción única llamativa */}
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                 {product.nombre}
               </h2>
 
-              <div className="flex items-baseline gap-2 shrink-0">
-                <span className="text-2xl sm:text-3xl font-black text-[#003366] font-num">
+              {/* Tag sutil de precio de lista / referencia por unidad o kilo */}
+              <div className="inline-flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/80 px-2.5 py-1 rounded-xl">
+                <span className="text-[11px] font-bold text-slate-500">
+                  {esUnidad ? "Unidad" : "Por kilo"}
+                </span>
+                <span className="text-sm font-black text-slate-900 font-num">
                   {formatPrecio(product.precio)}
                 </span>
-                <span className="text-xs font-bold text-slate-400">
-                  / {unidadMedida}
-                </span>
-
                 {product.precio_anterior > product.precio && (
-                  <span className="text-xs text-slate-400 line-through ml-1 font-num">
-                    {formatPrecioPorUnidad(
-                      product.precio_anterior,
-                      unidadMedida,
-                    )}
+                  <span className="text-[11px] text-slate-400 line-through font-num ml-0.5">
+                    {formatPrecio(product.precio_anterior)}
                   </span>
                 )}
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-600 mt-4 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed">
               {product.descripcion}
             </p>
           </div>
@@ -224,7 +222,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
           {/* 3. Ficha Técnica Rápida (Rendimiento, Cocción & Información Nutricional de PostgreSQL) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pb-2">
             {product.metodos_coccion && product.metodos_coccion.length > 0 && (
-              <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
+              <div className="flex items-center gap-2.5">
                 <Flame className="size-4 text-orange-500 shrink-0" />
                 <div className="-space-y-0.5 min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
@@ -238,7 +236,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             )}
 
             {product.rinde_personas && (
-              <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
+              <div className="flex items-center gap-2.5">
                 <Users className="size-4 text-slate-500 shrink-0" />
                 <div className="-space-y-0.5 min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
@@ -251,24 +249,8 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
               </div>
             )}
 
-            {/* Calorías de PostgreSQL */}
-            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
-              <Activity className="size-4 text-amber-500 shrink-0" />
-              <div className="-space-y-0.5 min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                  Calorías ~
-                </span>
-                <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
-                  {product.calorias ? `${product.calorias} kcal` : "245 kcal"}{" "}
-                  <span className="text-[10px] font-normal text-slate-400">
-                    / 100g
-                  </span>
-                </span>
-              </div>
-            </div>
-
             {/* Proteínas & Grasas de PostgreSQL */}
-            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
+            <div className="flex items-center gap-2.5">
               <Info className="size-4 text-[#003366] shrink-0" />
               <div className="-space-y-0.5 min-w-0">
                 <span className="text-[10px] font-bold text-slate-400 block uppercase">
@@ -448,25 +430,20 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
         </div>
 
         {/* Footer Fijo con Total y Botón CTA */}
-        <div className="border-t border-slate-100 p-4 sm:p-5 bg-white shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase">
-                Total Estimado
+        <div className="border-t border-slate-100 px-5 py-3.5 sm:px-7 sm:py-4 bg-white shrink-0 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                Total ({selectedKg} {unidadMedida})
               </span>
               {priceInfo.ahorro > 0 && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ml-auto">
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md leading-none">
                   Ahorrás {formatPrecio(priceInfo.ahorro)}
                 </span>
               )}
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight font-num">
-                {formatPrecio(priceInfo.total)}
-              </span>
-              <span className="text-xs font-medium text-slate-400 font-num">
-                ({selectedKg} {unidadMedida})
-              </span>
+            <div className="text-xl sm:text-2xl font-black text-[#003366] font-num leading-tight mt-0.5">
+              {formatPrecio(priceInfo.total)}
             </div>
           </div>
 
@@ -474,7 +451,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className={`px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all cursor-pointer ${
+            className={`px-5 sm:px-7 py-3.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all cursor-pointer shrink-0 ${
               isOutOfStock
                 ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                 : "bg-[#003366] hover:bg-valette-dark text-white"
