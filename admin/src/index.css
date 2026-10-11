@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --color-valette-blue: #1e3b6c;
+  --color-valette-dark: #002244;
+  --color-valette-red: #c53030;
+  --color-valette-bg: #f6f8fa;
+  --color-brand-navy: #002244;
+  --color-brand-dark: #001830;
+  --color-brand-crimson: #c53030;
+  --color-brand-crimson-hover: #991b1b;
+}
+
+body {
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #f6f8fa;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sombras nativas estilo Apple / Uber (idéntico a client) */
+.shadow-native {
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.04),
+    0 12px 28px -6px rgba(15, 23, 42, 0.058);
+}
+
+.shadow-modal {
+  box-shadow: 0 -10px 45px -10px rgba(15, 23, 42, 0.25);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 20px 35px -10px rgba(0, 51, 102, 0.12);
+}
+
+/* Ocultar barra de desplazamiento sin perder funcionalidad */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
