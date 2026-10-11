@@ -1,6 +1,6 @@
 // src/components/products/ProductCard.jsx
 import { useState } from "react";
-import { Heart, Plus, Bell, Minus } from "lucide-react";
+import { Heart, Plus, Bell, Minus, CirclePercent, Percent } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
@@ -102,9 +102,10 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 Agotado por Hoy
               </span>
             ) : promoInfo ? (
-              <span className="px-2.5 py-1 rounded-lg bg-red-700/80 border border-red-300 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
+              <span className="px-2 py-1 rounded-lg bg-red-600/80 border border-red-400 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
+                <Percent className="size-[13.5px] stroke-2" />
                 <span>
-                  🔥 Llevando {promoInfo.cant}
+                  Llevando {promoInfo.cant}
                   {unidadMedida} o más:
                 </span>
                 <strong className="text-amber-200 font-black">
@@ -112,11 +113,11 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 </strong>
               </span>
             ) : product.badge ? (
-              <span className="px-2.5 py-1 rounded-lg bg-[#c53030] text-white text-[10px] font-black uppercase shadow-xs">
+              <span className="px-2.5 py-1 rounded-lg bg-valette-red text-white text-[10px] font-black uppercase shadow-xs">
                 {product.badge}
               </span>
             ) : product.precio_anterior > product.precio ? (
-              <span className="px-2.5 py-1 rounded-lg bg-[#c53030] text-white text-[10px] font-black uppercase shadow-xs">
+              <span className="px-2.5 py-1 rounded-lg bg-valette-red text-white text-[10px] font-black uppercase shadow-xs">
                 Oferta Especial
               </span>
             ) : (
@@ -133,12 +134,12 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
               e.stopPropagation();
               toggleFavorite(product.id, product.nombre);
             }}
-            className={`absolute top-2.5 right-2.5 size-8 rounded-full bg-white flex items-center justify-center transition-colors shadow-xs cursor-pointer ${
-              isFav ? "text-red-500" : "text-slate-400 hover:text-red-500"
+            className={`absolute top-2.5 right-2.5 size-9 rounded-full bg-white flex items-center justify-center transition-colors duration-400 shadow-xs cursor-pointer border border-neutral-100 ${
+              isFav ? "text-red-500" : "text-neutral-400 hover:text-red-500"
             }`}
           >
             <Heart
-              className={`size-4 stroke-[2.2] ${isFav ? "fill-red-500 text-red-500" : ""}`}
+              className={`size-5 stroke-1.1 ${isFav ? "fill-red-500 text-red-500" : ""}`}
             />
           </button>
 

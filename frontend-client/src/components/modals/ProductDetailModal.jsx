@@ -39,13 +39,10 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
 
   const unidadMedida = formatUnidadMedida(product?.unidad_medida);
   const esUnidad = unidadMedida === "u";
+  const hasCutOptions =
+    Array.isArray(product?.opciones_corte) && product.opciones_corte.length > 0;
 
-  const defaultCut =
-    product?.opciones_corte && product.opciones_corte.length > 0
-      ? product.opciones_corte[0]
-      : esUnidad
-        ? "Estándar"
-        : "Corte tradicional";
+  const defaultCut = hasCutOptions ? product.opciones_corte[0] : "";
 
   const [selectedKg, setSelectedKg] = useState(1);
   const [selectedCut, setSelectedCut] = useState(defaultCut);
@@ -78,7 +75,11 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
     if (isOutOfStock) return;
 
     addToCart(product, selectedKg, {
-      corte: selectedCut,
+      corte: hasCutOptions
+        ? selectedCut || defaultCut
+        : esUnidad
+          ? "Estándar"
+          : "Corte tradicional",
       notas,
       unidad_medida: unidadMedida,
     });
@@ -388,7 +389,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
           </div>
 
           {/* 5. Personalización del Carnicero (Cortes y Preparación) */}
-          {product.opciones_corte && product.opciones_corte.length > 0 && (
+          {hasCutOptions && (
             <div>
               <div className="flex items-center justify-between mb-2.5">
                 <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -428,8 +429,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
           {/* 6. Indicaciones / Notas al Cortador o de Entrega */}
           <div>
             <label className="text-xs font-bold text-slate-800 mb-1.5 block">
-              {esUnidad &&
-              (!product.opciones_corte || product.opciones_corte.length === 0)
+              {!hasCutOptions
                 ? "Indicaciones o aclaraciones:"
                 : "Indicaciones especiales para el cortador:"}
             </label>
@@ -438,9 +438,8 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder={
-                esUnidad &&
-                (!product.opciones_corte || product.opciones_corte.length === 0)
-                  ? "Ej: dejar en recepción, envolver para regalo..."
+                !hasCutOptions
+                  ? "Ej: dejar en recepción, empaquetar por separado..."
                   : "Ej: sacar el cuerito, dividir en dos bolsitas, desgrasar..."
               }
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"

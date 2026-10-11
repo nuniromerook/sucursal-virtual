@@ -344,11 +344,6 @@ export const CORTES_MOCK = [
     badge: "Venta x Unidad",
     metodos_coccion: ["Parrilla", "Horno", "Pomarola"],
     rinde_personas: "1 a 2 unidades x persona",
-    opciones_corte: [
-      "En ristra tradicional",
-      "Separados individuales",
-      "Tipo Bombón pequeño",
-    ],
     promos: [
       {
         id: 3,
@@ -622,21 +617,21 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
       (m.slug && m.slug.toLowerCase().trim() === slug) ||
       (m.nombre &&
         dbProduct.nombre_producto &&
-        (m.nombre.toLowerCase().includes(dbProduct.nombre_producto.toLowerCase()) ||
-          dbProduct.nombre_producto.toLowerCase().includes(m.nombre.toLowerCase()))),
+        (m.nombre
+          .toLowerCase()
+          .includes(dbProduct.nombre_producto.toLowerCase()) ||
+          dbProduct.nombre_producto
+            .toLowerCase()
+            .includes(m.nombre.toLowerCase()))),
   );
 
-  const categoria = (
-    dbProduct.categoria ||
-    dbProduct.especie ||
-    "vacuno"
-  ).toLowerCase().trim();
+  const categoria = (dbProduct.categoria || dbProduct.especie || "vacuno")
+    .toLowerCase()
+    .trim();
 
-  const especie = (
-    dbProduct.especie ||
-    dbProduct.categoria ||
-    "vacuno"
-  ).toLowerCase().trim();
+  const especie = (dbProduct.especie || dbProduct.categoria || "vacuno")
+    .toLowerCase()
+    .trim();
 
   const precio = Number(dbProduct.precio) || 0;
   const precioAnterior = Number(dbProduct.precio_anterior || 0);
@@ -692,7 +687,7 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
   // Mapear etiquetas de categoría amigables
   const categoriaLabel =
     categoria === "vacuno"
-      ? "Carne Vacuna"
+      ? "Vacuno"
       : categoria === "cerdo"
         ? "Cerdo"
         : categoria === "pollo"
@@ -707,47 +702,30 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
                   ? "Almacén Parrillero"
                   : "Cortes Seleccionados";
 
-  // Opciones de corte personalizadas para el cortador de mostrador (vacías si es almacén)
-  const opcionesCorte =
-    mockMatch?.opciones_corte !== undefined
+  // Opciones de corte personalizadas: prioridad absoluta a la base de datos PostgreSQL
+  const opcionesCorte = Array.isArray(dbProduct.opciones_corte)
+    ? dbProduct.opciones_corte
+    : Array.isArray(mockMatch?.opciones_corte)
       ? mockMatch.opciones_corte
-      : categoria === "almacen"
-        ? []
-        : categoria === "embutidos" || unidadMedida === "u"
-          ? ["Entero Tradicional", "Atado Parrillero"]
-          : especie === "pollo"
-            ? [
-                "Fileteado para Milanesas",
-                "Pechugas Enteras",
-                "Trozado para Guiso",
-              ]
-            : especie === "cerdo"
-              ? ["Corte Tradicional", "Churrascos Gruesos", "Trozado para Horno"]
-              : [
-                  "Corte Tradicional",
-                  "Bifes Gruesos (2 cm)",
-                  "Bifes Medianos (1.5 cm)",
-                  "Trozado para Horno / Guiso",
-                ];
+      : [];
 
   const metodosCoccion =
-    mockMatch?.metodos_coccion ||
-    (categoria === "embutidos"
-      ? ["Parrilla", "Horno", "Plancha"]
-      : especie === "pollo"
-        ? ["Horno", "Plancha", "Milanesas"]
-        : categoria === "almacen"
-          ? ["Acompañamiento"]
-          : ["Parrilla", "Plancha", "Horno"]);
+    Array.isArray(dbProduct.metodos_coccion) && dbProduct.metodos_coccion.length > 0
+      ? dbProduct.metodos_coccion
+      : Array.isArray(mockMatch?.metodos_coccion)
+        ? mockMatch.metodos_coccion
+        : [];
 
   const rindePersonas =
+    dbProduct.rinde_personas ||
     mockMatch?.rinde_personas ||
     (unidadMedida === "u" ? "Por unidad" : "3 a 4 personas x kg");
 
   const badge =
+    dbProduct.badge ||
     mockMatch?.badge ||
     (promos.length > 0
-      ? `Ahorro x ${promos[0].cantidad_kg} ${unidadMedida}`
+      ? `Ahorro x ${promos[0].cantidad_kg}${unidadMedida}`
       : dbProduct.destacar
         ? "Corte Estrella"
         : null);

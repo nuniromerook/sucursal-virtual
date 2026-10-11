@@ -45,7 +45,7 @@ export const formatCantidad = (valor, unidadMedida = "kg") => {
  */
 export const formatPrecioPorUnidad = (precio, unidadMedida = "kg") => {
   const unidad = formatUnidadMedida(unidadMedida);
-  return `${formatPrecio(precio)} /${unidad}`;
+  return `${formatPrecio(precio)}/${unidad}`;
 };
 
 /**
