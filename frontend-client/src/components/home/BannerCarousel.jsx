@@ -5,7 +5,10 @@ import { useCatalogo } from "@/context/CatalogoContext";
 export const BannerCarousel = ({ onSelectCategory }) => {
   const { banners } = useCatalogo();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const containerRef = useRef(null);
   const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const isHorizontalSwipe = useRef(null);
 
   const bannerList = banners && banners.length > 0 ? banners : [];
 
@@ -15,13 +18,16 @@ export const BannerCarousel = ({ onSelectCategory }) => {
       setCurrentSlide((prev) => (prev + 1) % bannerList.length);
     }, 7000);
     return () => clearInterval(timer);
-  }, [bannerList.length]);
+  }, [bannerList.length, currentSlide]);
 
   if (bannerList.length === 0) return null;
 
   const banner = bannerList[currentSlide] || bannerList[0];
   const tagText = banner.badge_texto || banner.tag || "OFERTA VALETTE";
-  const descText = banner.subtitulo || banner.descripcion || "Carnes seleccionadas directas de frigorífico.";
+  const descText =
+    banner.subtitulo ||
+    banner.descripcion ||
+    "Carnes seleccionadas directas de frigorífico.";
   const btnText = banner.boton_texto || banner.botonTexto || "Ver oferta";
 
   const handleAction = () => {
@@ -38,42 +44,94 @@ export const BannerCarousel = ({ onSelectCategory }) => {
     }
   };
 
-  // Soporte de gesto táctil swipe nativo en celulares
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
+  // Bloqueo direccional nativo: al deslizar horizontalmente se bloquea el scroll vertical de la página
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX;
+    const onTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+      isHorizontalSwipe.current = null;
+    };
 
-    if (Math.abs(diff) > 45) {
-      if (diff > 0) {
-        // Deslizar izquierda -> siguiente
-        setCurrentSlide((prev) => (prev + 1) % bannerList.length);
-      } else {
-        // Deslizar derecha -> anterior
-        setCurrentSlide((prev) => (prev - 1 + bannerList.length) % bannerList.length);
+    const onTouchMove = (e) => {
+      if (touchStartX.current === null || touchStartY.current === null) return;
+
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const diffX = currentX - touchStartX.current;
+      const diffY = currentY - touchStartY.current;
+
+      // Determinamos el eje predominante una vez superado un umbral mínimo (6px)
+      if (isHorizontalSwipe.current === null) {
+        if (Math.abs(diffX) > 6 || Math.abs(diffY) > 6) {
+          isHorizontalSwipe.current = Math.abs(diffX) > Math.abs(diffY);
+        }
       }
-    }
-    touchStartX.current = null;
-  };
+
+      // Si el gesto es horizontal para cambiar banner, bloqueamos el scroll vertical de la ventana
+      if (isHorizontalSwipe.current === true) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const onTouchEnd = (e) => {
+      if (touchStartX.current === null) return;
+      const touchEndX = e.changedTouches[0].clientX;
+      const diff = touchStartX.current - touchEndX;
+
+      if (
+        isHorizontalSwipe.current === true &&
+        Math.abs(diff) > 40 &&
+        bannerList.length > 1
+      ) {
+        if (diff > 0) {
+          // Deslizar izquierda -> siguiente
+          setCurrentSlide((prev) => (prev + 1) % bannerList.length);
+        } else {
+          // Deslizar derecha -> anterior
+          setCurrentSlide(
+            (prev) => (prev - 1 + bannerList.length) % bannerList.length,
+          );
+        }
+      }
+
+      touchStartX.current = null;
+      touchStartY.current = null;
+      isHorizontalSwipe.current = null;
+    };
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [bannerList.length]);
 
   return (
     <div
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-native mb-8 text-white aspect-[4/5] sm:aspect-auto select-none"
+      ref={containerRef}
+      className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-native mb-8 text-white aspect-4/5 sm:aspect-auto select-none"
     >
       <div
-        className={`relative w-full h-full sm:h-auto flex flex-col sm:flex-row-reverse items-center justify-between sm:bg-gradient-to-r ${
-          banner.bgClass || "from-[#002244] via-[#003366] to-slate-900"
+        className={`relative w-full h-full sm:h-auto flex flex-col sm:flex-row-reverse items-center justify-between sm:bg-linear-to-r ${
+          banner.bgClass || "from-valette-dark via-[#003366] to-slate-900"
         } transition-all duration-500`}
       >
         {/* Imagen de Fondo en Mobile (4:5 Post) / Imagen Lateral en Desktop */}
         <img
-          src={banner.imagen_desktop_url || banner.imagenUrl || banner.imagen_mobile_url}
+          src={
+            banner.imagen_desktop_url ||
+            banner.imagenUrl ||
+            banner.imagen_mobile_url
+          }
           alt={banner.titulo}
           fetchPriority="high"
           loading="eager"
@@ -81,7 +139,7 @@ export const BannerCarousel = ({ onSelectCategory }) => {
         />
 
         {/* Gradiente de contraste en Mobile: sin blur para 60fps en celulares */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/65 to-black/25 sm:hidden pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/65 to-black/25 sm:hidden pointer-events-none" />
 
         {/* Contador compacto estilo Instagram en Mobile (arriba a la derecha) */}
         {bannerList.length > 1 && (
