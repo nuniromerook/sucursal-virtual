@@ -360,8 +360,8 @@ export const Home = ({
                 onClick={() => handleCategoryScroll(cat.id)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
                   isCurrentActive
-                    ? "bg-[#c53030] text-white shadow-2xs scale-102"
-                    : "bg-red-50 text-[#c53030] border border-red-200/70 hover:bg-red-100/80"
+                    ? "bg-valette-red text-white shadow-2xs scale-102"
+                    : "bg-red-50 text-valette-red border border-red-200/70 hover:bg-red-100/80"
                 }`}
               >
                 <span>{cat.label}</span>
@@ -370,7 +370,7 @@ export const Home = ({
                     className={`text-[9px] px-1.5 py-0.2 rounded-full font-black uppercase ${
                       isCurrentActive
                         ? "bg-white/20 text-white"
-                        : "bg-red-200/70 text-[#c53030]"
+                        : "bg-red-200/70 text-valette-red"
                     }`}
                   >
                     {cat.tag}
@@ -381,7 +381,7 @@ export const Home = ({
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-num ${
                       isCurrentActive
                         ? "bg-white/20 text-white"
-                        : "bg-red-200/70 text-[#c53030]"
+                        : "bg-red-200/70 text-valette-red"
                     }`}
                   >
                     {cat.count}

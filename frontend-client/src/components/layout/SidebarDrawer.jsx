@@ -183,13 +183,13 @@ export const SidebarDrawer = ({
               <button
                 type="button"
                 onClick={() => handleCategoryNav("asado")}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-50 text-slate-800 hover:text-[#c53030] transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-red-50 text-slate-800 hover:text-valette-red transition-colors cursor-pointer"
               >
                 <span className="flex items-center gap-2.5">
-                  <Flame className="size-4 text-[#c53030]" />
+                  <Flame className="size-4 text-valette-red" />
                   <span className="font-bold">Especial Asado & Parrilla</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-red-100 text-[#c53030] text-[10px] font-black">
+                <span className="px-2 py-0.5 rounded-full bg-red-100 text-valette-red text-[10px] font-black">
                   🔥 Top
                 </span>
               </button>

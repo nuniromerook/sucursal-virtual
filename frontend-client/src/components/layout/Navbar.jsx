@@ -89,7 +89,7 @@ export const Navbar = ({
             title="Menú y Categorías"
           >
             <Menu className="size-5 stroke-[2.2]" />
-            <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+            <span className="absolute -top-1 -right-1 size-5 rounded-full bg-valette-red text-white text-[10px] font-black flex items-center justify-center shadow-xs">
               {categoryCounts.todos || 12}
             </span>
           </button>
@@ -104,7 +104,7 @@ export const Navbar = ({
             >
               <ShoppingCart className="size-5 stroke-[2.2]" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-[#c53030] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-valette-red text-white text-[9px] font-black flex items-center justify-center shadow-xs">
                   {totalItems}
                 </span>
               )}
@@ -118,7 +118,7 @@ export const Navbar = ({
             >
               <Bell className="size-5 stroke-[2.2]" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-[#c53030] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1 -right-1 size-4.5 rounded-full bg-valette-red text-white text-[9px] font-black flex items-center justify-center shadow-xs">
                   {unreadCount}
                 </span>
               )}
@@ -248,7 +248,7 @@ export const Navbar = ({
               >
                 <Bell className="size-5 stroke-[2.2]" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-valette-red text-white text-[10px] font-black flex items-center justify-center shadow-xs">
                     {unreadCount}
                   </span>
                 )}
@@ -263,7 +263,7 @@ export const Navbar = ({
               >
                 <ShoppingCart className="size-5 stroke-[2.2]" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-[#c53030] text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1 -right-1 size-5 rounded-full bg-valette-red text-white text-[10px] font-black flex items-center justify-center shadow-xs">
                     {totalItems}
                   </span>
                 )}
@@ -313,7 +313,7 @@ export const Navbar = ({
                   >
                     <span>{cat.label}</span>
                     {cat.special && (
-                      <span className="text-[10px] font-bold bg-red-100 text-[#c53030] px-1.5 py-0.2 rounded-full">
+                      <span className="text-[10px] font-bold bg-red-100 text-valette-red px-1.5 py-0.2 rounded-full">
                         Promo
                       </span>
                     )}

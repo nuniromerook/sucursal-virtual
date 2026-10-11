@@ -40,17 +40,13 @@ export const NotificationsModal = ({
   onOpenProfileModal,
 }) => {
   const navigate = useNavigate();
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
 
   const [filter, setFilter] = useState("todas"); // "todas" | "no_leidas"
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose
+    onClose,
   );
 
   if (!isOpen) return null;
@@ -74,7 +70,7 @@ export const NotificationsModal = ({
       navigate(
         notif.categoria
           ? `/productos?categoria=${notif.categoria}`
-          : "/productos"
+          : "/productos",
       );
     }
   };
@@ -112,7 +108,7 @@ export const NotificationsModal = ({
                 Notificaciones
               </h3>
               {unreadCount > 0 && (
-                <span className="size-5 rounded-full bg-[#c53030] text-white text-[11px] font-black flex items-center justify-center shadow-xs">
+                <span className="size-5 rounded-full bg-valette-red text-white text-[11px] font-black flex items-center justify-center shadow-xs">
                   {unreadCount}
                 </span>
               )}
@@ -176,10 +172,12 @@ export const NotificationsModal = ({
                 <Bell className="size-7 stroke-1" />
               </div>
               <h4 className="font-bold text-slate-800 text-sm">
-                No hay notificaciones {filter === "no_leidas" ? "pendientes" : ""}
+                No hay notificaciones{" "}
+                {filter === "no_leidas" ? "pendientes" : ""}
               </h4>
               <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                Te avisaremos sobre el estado de tus cortes, promociones exclusivas y puntos acumulados.
+                Te avisaremos sobre el estado de tus cortes, promociones
+                exclusivas y puntos acumulados.
               </p>
             </div>
           ) : (
@@ -202,8 +200,8 @@ export const NotificationsModal = ({
                       notif.tipo === "pedido_estado"
                         ? "bg-blue-100 text-[#003366]"
                         : notif.tipo === "puntos"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-red-100 text-[#c53030]"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-red-100 text-valette-red"
                     }`}
                   >
                     {notif.tipo === "pedido_estado" ? (

@@ -71,7 +71,7 @@ export const MobileDock = ({ onOpenTrackingModal, onOpenProfileModal }) => {
       >
         <ShoppingCart className="size-5 stroke-[2]" />
         {totalItems > 0 && (
-          <span className="absolute -top-1 -right-1 size-3.5 rounded-full bg-[#c53030] text-white text-[8px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 size-3.5 rounded-full bg-valette-red text-white text-[8px] font-black flex items-center justify-center">
             {totalItems}
           </span>
         )}

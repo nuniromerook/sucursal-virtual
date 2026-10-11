@@ -19,7 +19,7 @@ export const COMBOS = [
     nombre: "Combo Asado Parrillero Tradición (5 kg)",
     slug: "combo-asado-parrillero",
     badge: "🔥 Parrilla Tradición",
-    tagColor: "bg-red-50 text-[#c53030] border-red-200/80",
+    tagColor: "bg-red-50 text-valette-red border-red-200/80",
     kilos: 5,
     rinde: "6 a 8 personas",
     ahorro: 5900,
@@ -203,7 +203,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
             <h2 className="text-xl font-black text-slate-900 leading-tight">
               Combos esenciales
             </h2>
-            <span className="text-[11px] font-bold ml-auto lg:ml-0 text-[#c53030] bg-red-50 border border-red-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap shadow-2xs">
+            <span className="text-[11px] font-bold ml-auto lg:ml-0 text-valette-red bg-red-50 border border-red-200/80 px-2 py-0.5 rounded-full font-num whitespace-nowrap shadow-2xs">
               {filteredCombos.length} combos
             </span>
           </div>
@@ -388,7 +388,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
                         {formatPrecio(combo.precioAnterior)}
                       </span>
                     </div>
-                    <span className="text-[10px] font-black text-[#c53030] block">
+                    <span className="text-[10px] font-black text-valette-red block">
                       Ahorrás {formatPrecio(combo.ahorro)}
                     </span>
                   </div>

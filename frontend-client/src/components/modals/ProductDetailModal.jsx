@@ -103,7 +103,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
         {/* Zona táctil de arrastre (barra + header superior) */}
         <div {...dragHandleProps} className="touch-none select-none shrink-0">
           {/* Barra táctil para deslizar en celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab" />
 
           {/* Header Superior del Modal */}
           <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100">
@@ -166,7 +166,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   Agotado por hoy
                 </span>
               ) : product.badge ? (
-                <span className="px-3 py-1 rounded-xl bg-[#c53030] text-white text-[11px] font-black uppercase shadow-xs">
+                <span className="px-3 py-1 rounded-xl bg-valette-red text-white text-[11px] font-black uppercase shadow-xs">
                   {product.badge}
                 </span>
               ) : null}
@@ -306,7 +306,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                 >
                   <Minus className="size-4 stroke-[2.5]" />
                 </button>
-                <span className="text-sm font-black text-slate-900 min-w-[50px] text-center font-num">
+                <span className="text-sm font-black text-slate-900 min-w-12.5 text-center font-num">
                   {selectedKg} {unidadMedida}
                 </span>
                 <button
@@ -417,7 +417,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                     >
                       <span>{opc}</span>
                       {isSelected && (
-                        <Check className="size-3.5 text-[#003366] stroke-[3]" />
+                        <Check className="size-3.5 text-[#003366] stroke-3" />
                       )}
                     </button>
                   );
@@ -442,7 +442,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   ? "Ej: dejar en recepción, empaquetar por separado..."
                   : "Ej: sacar el cuerito, dividir en dos bolsitas, desgrasar..."
               }
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs focus:ring-1 focus:ring-[#003366]/20 transition-all outline-none"
             />
           </div>
         </div>

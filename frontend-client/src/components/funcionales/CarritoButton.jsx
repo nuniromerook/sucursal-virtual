@@ -14,7 +14,7 @@ const CarritoButton = () => {
       <div className="relative">
         <ShoppingCart className="size-5 stroke-[2.2]" />
         {totalItems > 0 && (
-          <span className="absolute -top-1.5 -right-2 size-4 rounded-full bg-[#c53030] text-white text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-2 size-4 rounded-full bg-valette-red text-white text-[9px] font-black flex items-center justify-center">
             {totalItems}
           </span>
         )}
