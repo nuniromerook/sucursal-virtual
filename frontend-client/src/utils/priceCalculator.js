@@ -20,8 +20,8 @@ export const calculateItemPrice = (item) => {
   // Encontrar la mejor escala alcanzada por la cantidad seleccionada
   const promoAplicable = activePromos.find((p) => kg >= parseFloat(p.cantidad_kg));
 
-  let total = 0;
-  let precioUnitarioEfectivo = precioBase;
+  let total;
+  let precioUnitarioEfectivo;
 
   if (promoAplicable) {
     const promoCant = parseFloat(promoAplicable.cantidad_kg);

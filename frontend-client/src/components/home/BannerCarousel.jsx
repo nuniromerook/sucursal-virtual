@@ -20,30 +20,6 @@ export const BannerCarousel = ({ onSelectCategory }) => {
     return () => clearInterval(timer);
   }, [bannerList.length, currentSlide]);
 
-  if (bannerList.length === 0) return null;
-
-  const banner = bannerList[currentSlide] || bannerList[0];
-  const tagText = banner.badge_texto || banner.tag || "OFERTA VALETTE";
-  const descText =
-    banner.subtitulo ||
-    banner.descripcion ||
-    "Carnes seleccionadas directas de frigorífico.";
-  const btnText = banner.boton_texto || banner.botonTexto || "Ver oferta";
-
-  const handleAction = () => {
-    if (onSelectCategory) {
-      if (banner.categoria) {
-        onSelectCategory(banner.categoria);
-      } else if (banner.enlace_url && banner.enlace_url.includes("asado")) {
-        onSelectCategory("asado");
-      } else if (banner.enlace_url && banner.enlace_url.includes("vacuno")) {
-        onSelectCategory("vacuno");
-      } else {
-        onSelectCategory("todos");
-      }
-    }
-  };
-
   // Bloqueo direccional nativo: al deslizar horizontalmente se bloquea el scroll vertical de la página
   useEffect(() => {
     const container = containerRef.current;
@@ -114,6 +90,30 @@ export const BannerCarousel = ({ onSelectCategory }) => {
       container.removeEventListener("touchend", onTouchEnd);
     };
   }, [bannerList.length]);
+
+  if (bannerList.length === 0) return null;
+
+  const banner = bannerList[currentSlide] || bannerList[0];
+  const tagText = banner.badge_texto || banner.tag || "OFERTA VALETTE";
+  const descText =
+    banner.subtitulo ||
+    banner.descripcion ||
+    "Carnes seleccionadas directas de frigorífico.";
+  const btnText = banner.boton_texto || banner.botonTexto || "Ver oferta";
+
+  const handleAction = () => {
+    if (onSelectCategory) {
+      if (banner.categoria) {
+        onSelectCategory(banner.categoria);
+      } else if (banner.enlace_url && banner.enlace_url.includes("asado")) {
+        onSelectCategory("asado");
+      } else if (banner.enlace_url && banner.enlace_url.includes("vacuno")) {
+        onSelectCategory("vacuno");
+      } else {
+        onSelectCategory("todos");
+      }
+    }
+  };
 
   return (
     <div
