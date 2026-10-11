@@ -1,6 +1,7 @@
 // admin/src/components/catalogo/ProductDrawer.jsx
 import { useState } from "react";
 import { X, Plus, Check, Image as ImageIcon } from "lucide-react";
+import { useModalBehavior } from "../../hooks/useModalBehavior";
 
 function getInitialFormData(product) {
   if (product) {
@@ -120,43 +121,51 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
     onSave(formData);
   };
 
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    true,
+    onClose
+  );
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+    <div
+      className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
+      onClick={handleBackdropClick}
+    >
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      >
+        {/* Zona táctil de arrastre (barra + header superior) */}
+        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+          {/* Barra táctil para deslizar en celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-      <div className="fixed inset-x-0 bottom-0 lg:inset-y-0 lg:left-auto lg:right-0 w-full lg:max-w-xl max-h-[92vh] lg:max-h-full rounded-t-2xl lg:rounded-none bg-white shadow-2xl flex flex-col z-10 animate-in slide-in-from-bottom lg:slide-in-from-right duration-200">
-        {/* Drag Handle móvil */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2 lg:hidden shrink-0"></div>
+          {/* Header Superior del Modal */}
+          <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-white">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {product ? "Editor de Catálogo" : "Nuevo Ingreso"}
+              </span>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                {product ? product.nombre_producto : "Nuevo Producto / Corte"}
+              </h2>
+            </div>
 
-        {/* Header */}
-        <div className="px-5 py-3.5 text-slate-900 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-base font-bold tracking-tight">
-              {product
-                ? `Editar producto: ${product.nombre_producto}`
-                : "Nuevo Producto"}
-            </h2>
-            <p className="text-xs text-slate-500">
-              Configuración técnica de producto para la venta online
-            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              title="Cerrar"
+              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Scrollable Form Body */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-6 space-y-6 text-xs"
+          className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 text-xs"
         >
           {/* 1. Identificación y Unidad */}
           <div className="space-y-4">
@@ -572,13 +581,13 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
             </div>
           </div>
 
-          {/* Footer del Drawer */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between shrink-0">
+          {/* Footer del Modal */}
+          <div className="pt-4 border-t border-slate-100 bg-slate-50/50 -mx-5 -mb-5 sm:-mx-7 sm:-mb-7 p-4 sm:p-5 flex items-center justify-between shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 text-slate-600 hover:text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              className="px-4 py-2.5 text-slate-500 hover:text-slate-800 font-bold text-xs rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
@@ -586,9 +595,9 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
             <button
               type="submit"
               disabled={isSaving}
-              className="px-5 py-2.5 bg-[#c53030] hover:bg-[#a82525] text-white rounded-xl font-bold shadow-xs flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+              className="px-6 py-2.5 bg-[#c53030] hover:bg-[#a82525] text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
             >
-              <Check className="w-4 h-4" />
+              <Check className="size-4 stroke-[2.5]" />
               <span>{isSaving ? "Guardando..." : "Guardar Cambios"}</span>
             </button>
           </div>

@@ -24,31 +24,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-navy flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#002244] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="w-12 h-12 rounded-lg bg-brand-crimson mx-auto flex items-center justify-center font-bold text-white text-xl tracking-wider shadow-lg">
-          AV
-        </div>
-        <h2 className="mt-4 text-xl font-bold tracking-tight text-white">
+        <img
+          src="/favicon.svg"
+          alt="Abastecedora Valette"
+          className="h-20 w-auto mx-auto object-contain drop-shadow-md"
+        />
+        <h2 className="mt-3 text-2xl font-black tracking-tight text-white">
           Abastecedora Valette
         </h2>
-        <p className="mt-1 text-xs text-slate-300">
+        <p className="mt-1 text-xs font-semibold text-slate-300">
           Panel de Administración & Mesa de Corte
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-lg sm:px-10 border border-slate-200 text-xs">
+        <div className="bg-white py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-slate-100 text-xs">
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded text-rose-700 flex items-center gap-2">
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span className="font-semibold">{error}</span>
             </div>
           )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Correo Electrónico
               </label>
               <div className="relative">
@@ -61,13 +63,13 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@abastecedoravalette.com"
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#002244] outline-none font-medium text-slate-900 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label className="block font-bold text-slate-700 mb-1">
                 Contraseña
               </label>
               <div className="relative">
@@ -80,7 +82,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#002244] outline-none font-medium text-slate-900 transition-colors"
                 />
               </div>
             </div>
@@ -89,7 +91,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-md shadow-xs font-semibold text-white bg-brand-crimson hover:bg-brand-crimson-hover transition-colors disabled:opacity-60 cursor-pointer text-xs"
+                className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl shadow-md font-black text-white bg-[#c53030] hover:bg-[#a82525] transition-all active:scale-95 disabled:opacity-60 cursor-pointer text-xs"
               >
                 <span>{isLoading ? "Ingresando..." : "Ingresar al Panel"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -97,7 +99,7 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-500">
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-400 font-medium">
             <span>Uso exclusivo para personal de mostrador y administración.</span>
           </div>
         </div>

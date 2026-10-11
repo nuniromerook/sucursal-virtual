@@ -1,24 +1,35 @@
-// admin/src/components/kds/PesajeModal.jsx
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Scale } from "lucide-react";
 import { formatMoney } from "../../utils/formatters";
+import { useModalBehavior } from "../../hooks/useModalBehavior";
 
-export default function PesajeModal({ isOpen, onClose, pedido, onConfirmarPesaje, isSaving }) {
-  const [pesos, setPesos] = useState({});
+function getInitialPesos(pedido) {
+  const initial = {};
+  const items = Array.isArray(pedido?.items) ? pedido.items : [];
+  items.forEach((it) => {
+    const val =
+      it.peso_real != null
+        ? it.peso_real
+        : it.cantidad_kg_solicitada ||
+          it.cantidad_kg ||
+          it.cantidad_pedida ||
+          1;
+    initial[it.id] = String(val);
+  });
+  return initial;
+}
 
-  useEffect(() => {
-    if (!isOpen || !pedido) return;
-
-    const initial = {};
-    const items = Array.isArray(pedido.items) ? pedido.items : [];
-    items.forEach((it) => {
-      const val = it.peso_real != null ? it.peso_real : it.cantidad_kg_solicitada || it.cantidad_kg || it.cantidad_pedida || 1;
-      initial[it.id] = String(val);
-    });
-    setPesos(initial);
-  }, [isOpen, pedido]);
-
-  if (!isOpen || !pedido) return null;
+function PesajeModalContent({
+  pedido,
+  onClose,
+  onConfirmarPesaje,
+  isSaving,
+}) {
+  const [pesos, setPesos] = useState(() => getInitialPesos(pedido));
+  const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
+    true,
+    onClose,
+  );
 
   const handlePesoChange = (itemId, val) => {
     let clean = val.replace(",", ".");
@@ -34,7 +45,9 @@ export default function PesajeModal({ isOpen, onClose, pedido, onConfirmarPesaje
   items.forEach((it) => {
     const rawPeso = parseFloat(pesos[it.id]);
     const peso = !isNaN(rawPeso) && rawPeso > 0 ? rawPeso : 0;
-    const precioUnit = Number(it.precio_unitario || it.precio_unit || it.precio || 0);
+    const precioUnit = Number(
+      it.precio_unitario || it.precio_unit || it.precio || 0,
+    );
     totalRecalculado += peso * precioUnit;
   });
 
@@ -44,45 +57,55 @@ export default function PesajeModal({ isOpen, onClose, pedido, onConfirmarPesaje
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-xs transition-all duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
+      onClick={handleBackdropClick}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[88vh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 border border-slate-200/80">
-        
-        {/* Barra táctil móvil */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+      <div
+        ref={modalRef}
+        className="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-3xl shadow-2xl h-[85vh] sm:h-auto sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 border border-slate-200/80"
+      >
+        {/* Zona táctil de arrastre (barra + header superior) */}
+        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+          {/* Barra táctil para deslizar en celulares */}
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-        {/* Cabecera */}
-        <div className="bg-[#002244] px-5 py-3.5 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
-              <Scale className="w-4 h-4 text-rose-400" />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-slate-300 font-bold">
-                Carga de Balanza Real
+          {/* Cabecera Superior del Modal */}
+          <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 border-b border-slate-100 bg-white">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                <Scale className="size-4.5 stroke-[2.2]" />
               </div>
-              <div className="text-sm font-extrabold leading-tight">
-                Pedido #{pedido.id} - {pedido.nombre_cliente || pedido.cliente}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Carga de Balanza (peso neto)
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                  Pedido #{pedido.id} •{" "}
+                  {pedido.nombre_cliente || pedido.cliente}
+                </h3>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              title="Cerrar"
+              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
-        {/* Lista de Items */}
+        {/* Lista de Items Scrollable */}
         <div className="p-4 sm:p-5 space-y-2.5 text-xs flex-1 overflow-y-auto">
           {items.map((it) => {
             const unit = it.unidad_medida || it.unidad || "kg";
-            const cantOriginal = it.cantidad_kg_solicitada || it.cantidad_kg || it.cantidad_pedida || 1;
+            const cantOriginal =
+              it.cantidad_kg_solicitada ||
+              it.cantidad_kg ||
+              it.cantidad_pedida ||
+              1;
 
             return (
               <div
@@ -119,20 +142,22 @@ export default function PesajeModal({ isOpen, onClose, pedido, onConfirmarPesaje
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs">
-            <span className="text-slate-500 font-medium">Nuevo Total:</span>
-            <span className="font-black text-slate-900 text-sm ml-1.5 font-mono">
+            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+              Total Recalculado
+            </span>
+            <span className="font-black text-slate-900 text-base font-num">
               {formatMoney(totalRecalculado)}
             </span>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-3.5 py-2 text-slate-600 hover:text-slate-900 text-xs font-bold cursor-pointer rounded-xl hover:bg-slate-200 transition-colors"
+              className="px-4 py-2.5 text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer rounded-xl hover:bg-slate-100 transition-colors"
             >
               Cancelar
             </button>
@@ -140,14 +165,33 @@ export default function PesajeModal({ isOpen, onClose, pedido, onConfirmarPesaje
               type="button"
               onClick={handleConfirm}
               disabled={isSaving}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
             >
-              {isSaving ? "Guardando..." : "Confirmar y Guardar Ticket"}
+              {isSaving ? "Guardando..." : "Confirmar"}
             </button>
           </div>
         </div>
-
       </div>
     </div>
+  );
+}
+
+export default function PesajeModal({
+  isOpen,
+  onClose,
+  pedido,
+  onConfirmarPesaje,
+  isSaving,
+}) {
+  if (!isOpen || !pedido) return null;
+
+  return (
+    <PesajeModalContent
+      key={pedido.id}
+      pedido={pedido}
+      onClose={onClose}
+      onConfirmarPesaje={onConfirmarPesaje}
+      isSaving={isSaving}
+    />
   );
 }
