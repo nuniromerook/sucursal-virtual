@@ -1,8 +1,9 @@
 // src/components/home/CombosSection.jsx
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
+import { API_URL } from "@/config/api";
 import {
   Scale,
   ShoppingCart,
@@ -13,32 +14,33 @@ import {
 } from "lucide-react";
 import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 
+// Fallback inicial por si no hay conexión de red
 export const COMBOS = [
   {
-    id: 101,
+    id: 1,
     nombre: "Combo Asado Parrillero Tradición (5 kg)",
     slug: "combo-asado-parrillero",
     badge: "🔥 Parrilla Tradición",
     tagColor: "bg-red-50 text-valette-red border-red-200/80",
     kilos: 5,
     rinde: "6 a 8 personas",
-    ahorro: 5900,
+    ahorro: 5400,
     puntos: 50,
-    precio: 45900,
-    precioAnterior: 51800,
+    precio: 37900,
+    precioAnterior: 43300,
     descripcion:
       "La selección parrillera definitiva con novillito seleccionado, cerdo crocante y chorizo puro cerdo. Todo lo indispensable para lucirse frente a las brasas.",
     items: [
       {
-        nombre: "Asado Criollo de Centro",
+        nombre: "Asado",
         peso: "2 kg",
         descripcion:
           "Costillar de novillito con hueso plano y veteado parejo. Clásico para hacer a la cruz o sobre brasas lentas.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685051/nqtxmos2sbshqtvip3yq.webp",
       },
       {
-        nombre: "Pechito de Cerdo con Manta",
+        nombre: "Pechito de Cerdo",
         peso: "2 kg",
         descripcion:
           "Costillar porcino con abundante manta de carne y hueso fino. Dorado parejo y textura crocante al fuego.",
@@ -46,17 +48,17 @@ export const COMBOS = [
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788424319/e94tqmvv5ouclrbwh6vr.jpg",
       },
       {
-        nombre: "Chorizo Artesanal Puro Cerdo",
+        nombre: "Chorizo",
         peso: "1 kg (6 u.)",
         descripcion:
           "Embutido parrillero fresco elaborado con receta tradicional en tripa natural. Jugoso y especiado en su punto exacto.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422712/cmtm6r0ahmlpfni0hp2t.jpg",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685191/qygthxwjvw6t8w4ra4j1.jpg",
       },
     ],
   },
   {
-    id: 102,
+    id: 2,
     nombre: "Combo Familiar Semanal (6 kg)",
     slug: "combo-familiar-semanal",
     badge: "📦 Rinde 20+ Comidas",
@@ -71,33 +73,33 @@ export const COMBOS = [
       "Paquete completo y versátil para resolver las comidas cotidianas con proteínas magras y cortes rendidores: supremas frescas, roast beef y hamburguesas caseras de pollo.",
     items: [
       {
-        nombre: "Supremas de Pollo Desgrasadas",
+        nombre: "Supremas",
         peso: "2 kg",
         descripcion:
           "Pechuga de pollo desgrasada y sin piel, 100% pulpa limpia. Proteína magra lista para la plancha o rebozar.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788423106/g5fm0mszttcxua4lohoh.jpg",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685232/dffz5ux606ealcpkzffz.webp",
       },
       {
-        nombre: "Roast Beef Seleccionado",
+        nombre: "Roast Beef",
         peso: "2 kg",
         descripcion:
           "Corte vacuno sabroso con vetas de colágeno que funden en guisos, empanadas al cuchillo o estofados.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422116/jlpysradtx1tkv5ulvi1.png",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685357/caklpusrn5thu9u8kgoi.webp",
       },
       {
-        nombre: "Hamburguesas Caseras de Pollo",
+        nombre: "Hamburguesas de Pollo",
         peso: "2 kg",
         descripcion:
           "Medallones caseros elaborados con pechuga de pollo magra y hierbas seleccionadas, listos para cocinar.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526554/vnyy97p93eg6hncyux34.jpg",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685476/sb35jibeojseltwvgcd5.webp",
       },
     ],
   },
   {
-    id: 103,
+    id: 3,
     nombre: "Combo Cortes Especiales & Cerdo (5 kg)",
     slug: "combo-cortes-especiales-cerdo",
     badge: "🥩 Selección Gourmet",
@@ -112,15 +114,15 @@ export const COMBOS = [
       "Cortes tiernos y selectos para los amantes del buen comer: bifes anchos con ojo de bife veteado, bondiola jugosa de cerdo y matambre vacuno tierno.",
     items: [
       {
-        nombre: "Bife Ancho Seleccionado",
+        nombre: "Bife Ancho",
         peso: "2 kg",
         descripcion:
           "Corte vacuno con el clásico ojo central y veteado parrillero. Jugosidad intensa y sellado perfecto a la plancha o a las brasas.",
         imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526517/iuxf6wqw6cybgob7n4jf.jpg",
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685112/fb7oorariii16nelsew8.webp",
       },
       {
-        nombre: "Bondiola Fresca de Cerdo",
+        nombre: "Bondiola",
         peso: "2 kg",
         descripcion:
           "Corte de cerdo premium con grasa intramuscular. Se dora crocante por fuera y queda tierna y jugosa al brasear o en bifes.",
@@ -128,7 +130,7 @@ export const COMBOS = [
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1788422423/nwcd2bvbh1gcfkbehsv5.webp",
       },
       {
-        nombre: "Matambre Vacuno Tierno",
+        nombre: "Matambre",
         peso: "1 kg",
         descripcion:
           "Corte delgado y tierno entre el cuero y el costillar. Clásico para tiernizar a la pizza, arrollar o hacer a la parrilla.",
@@ -139,22 +141,58 @@ export const COMBOS = [
   },
 ];
 
+const getTagColor = (badge = "") => {
+  if (/parrilla/i.test(badge)) return "bg-red-50 text-valette-red border-red-200/80";
+  if (/familiar|comida|semanal/i.test(badge)) return "bg-emerald-50 text-emerald-800 border-emerald-200/80";
+  if (/gourmet|especial/i.test(badge)) return "bg-amber-50 text-amber-900 border-amber-200/80";
+  return "bg-red-50 text-valette-red border-red-200/80";
+};
+
 export const CombosSection = ({ searchQuery = "" }) => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const [combos, setCombos] = useState(COMBOS);
   const [selectedCombo, setSelectedCombo] = useState(null);
   const scrollRef = useRef(null);
 
+  // Cargar combos reales desde la API / PostgreSQL
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCombos = async () => {
+      try {
+        const res = await fetch(`${API_URL}/combos`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0 && isMounted) {
+            setCombos(data);
+          }
+        }
+      } catch (err) {
+        console.warn("Utilizando combos de reserva:", err);
+      }
+    };
+
+    fetchCombos();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredCombos = useMemo(() => {
-    if (!searchQuery.trim()) return COMBOS;
+    if (!searchQuery.trim()) return combos;
     const q = searchQuery.toLowerCase().trim();
-    return COMBOS.filter(
+    return combos.filter(
       (c) =>
-        c.nombre.toLowerCase().includes(q) ||
-        c.descripcion.toLowerCase().includes(q) ||
-        c.items.some((it) => it.nombre.toLowerCase().includes(q)),
+        c.nombre?.toLowerCase().includes(q) ||
+        c.descripcion?.toLowerCase().includes(q) ||
+        (Array.isArray(c.items) &&
+          c.items.some(
+            (it) =>
+              it.nombre?.toLowerCase().includes(q) ||
+              it.categoria?.toLowerCase().includes(q)
+          ))
     );
-  }, [searchQuery]);
+  }, [combos, searchQuery]);
 
   if (filteredCombos.length === 0) return null;
 
@@ -169,26 +207,30 @@ export const CombosSection = ({ searchQuery = "" }) => {
   };
 
   const handleAddCombo = (combo) => {
+    const items = Array.isArray(combo.items) ? combo.items : [];
+    const firstImg =
+      items[0]?.imagen_url ||
+      items[0]?.imagenUrl ||
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
+
     addToCart(
       {
         id: combo.id,
         nombre: combo.nombre,
         slug: combo.slug,
-        precio: combo.precio,
-        puntos: combo.puntos,
-        imagen_url:
-          combo.items[0]?.imagenUrl ||
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
+        precio: Number(combo.precio) || 0,
+        puntos: Number(combo.puntos) || 50,
+        imagen_url: firstImg,
       },
       1,
       {
         corte: "Combo preparado de cortes surtidos",
         envasado: "Envasado con cadena de frío",
-        kilos: combo.kilos,
-        items_combo: combo.items
-          .map((i) => `${i.peso} de ${i.nombre}`)
+        kilos: Number(combo.kilos) || 0,
+        items_combo: items
+          .map((i) => `${i.cantidad_o_peso || i.peso} de ${i.nombre}`)
           .join(", "),
-      },
+      }
     );
     showToast(`Sumaste ${combo.nombre} al pedido 🥩`);
   };
@@ -242,8 +284,21 @@ export const CombosSection = ({ searchQuery = "" }) => {
         className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-1 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
       >
         {filteredCombos.map((combo) => {
-          const totalCortes = combo.items.length;
+          const items = Array.isArray(combo.items) ? combo.items : [];
+          const totalCortes = items.length;
           const extraCortes = Math.max(0, totalCortes - 2);
+          const tagColorClass = combo.tagColor || getTagColor(combo.badge);
+
+          const precio = Number(combo.precio) || 0;
+          const precioAnterior =
+            Number(combo.precio_anterior) ||
+            Number(combo.precioAnterior) ||
+            Number(combo.precio_regular_calculado) ||
+            precio;
+          const ahorro =
+            Number(combo.ahorro) > 0
+              ? Number(combo.ahorro)
+              : Math.max(0, precioAnterior - precio);
 
           return (
             <div
@@ -255,7 +310,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
                 className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
               >
                 <div>
-                  {/* 1. Tira de 3 Miniaturas de los Cortes del Combo */}
+                  {/* 1. Tira de Miniaturas de los Cortes del Combo (1, 2, 3 o +3 cortes) */}
                   <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
                     {/* Badge flotante de Kilos Totales sobre las fotos */}
                     <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
@@ -273,60 +328,61 @@ export const CombosSection = ({ searchQuery = "" }) => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 w-full aspect-16/7 divide-x divide-white/80">
-                      {/* Miniatura 1 */}
-                      <div className="relative h-full w-full overflow-hidden">
-                        <img
-                          src={combo.items[0]?.imagenUrl}
-                          alt={combo.items[0]?.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      </div>
+                    <div
+                      className={`grid w-full aspect-16/7 divide-x divide-white/80 ${
+                        totalCortes === 1
+                          ? "grid-cols-1"
+                          : totalCortes === 2
+                          ? "grid-cols-2"
+                          : "grid-cols-3"
+                      }`}
+                    >
+                      {items.slice(0, 3).map((item, idx) => {
+                        const isThird = idx === 2;
+                        const imgSrc =
+                          item.imagen_url ||
+                          item.imagenUrl ||
+                          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
 
-                      {/* Miniatura 2 */}
-                      <div className="relative h-full w-full overflow-hidden">
-                        <img
-                          src={combo.items[1]?.imagenUrl}
-                          alt={combo.items[1]?.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      </div>
+                        return (
+                          <div
+                            key={idx}
+                            className="relative h-full w-full overflow-hidden bg-slate-200"
+                          >
+                            <img
+                              src={imgSrc}
+                              alt={item.nombre}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                            />
 
-                      {/* Miniatura 3 */}
-                      <div className="relative h-full w-full overflow-hidden">
-                        <img
-                          src={combo.items[2]?.imagenUrl}
-                          alt={combo.items[2]?.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-
-                        {totalCortes > 3 && (
-                          <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
-                            <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
-                              +{extraCortes}
-                            </span>
-                            <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
-                              cortes
-                            </span>
+                            {/* Badge sobre el 3er corte si hay más de 3 cortes */}
+                            {isThird && totalCortes > 3 && (
+                              <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
+                                <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
+                                  +{extraCortes}
+                                </span>
+                                <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
+                                  cortes
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* 2. Badges de Ahorro y Puntos */}
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${combo.tagColor}`}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${tagColorClass}`}
                     >
-                      {combo.badge}
+                      {combo.badge || "🔥 Combo Ahorro"}
                     </span>
                     <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
                       <Sparkles className="size-2.5 text-amber-600" />+
-                      {combo.puntos} pts Club
+                      {combo.puntos || 50} pts Club
                     </span>
                   </div>
 
@@ -336,7 +392,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
                     <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                    Rinde estimado: {combo.rinde}
+                    Rinde estimado: {combo.rinde || "6 a 8 personas"}
                   </p>
 
                   {/* 4. Desglose Escaneable de Cortes Incluidos */}
@@ -349,7 +405,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
                     </div>
 
                     <div className="space-y-1">
-                      {combo.items.map((item, idx) => (
+                      {items.map((item, idx) => (
                         <div
                           key={idx}
                           className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 group-hover:bg-slate-100/70 transition-colors"
@@ -361,7 +417,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
                             </span>
                           </div>
                           <span className="font-black text-[#003366] text-[10px] sm:text-[11px] bg-white px-2 py-0.5 rounded-md border border-slate-200 shrink-0 ml-2 shadow-2xs font-num">
-                            {item.peso}
+                            {item.cantidad_o_peso || item.peso}
                           </span>
                         </div>
                       ))}
@@ -382,15 +438,19 @@ export const CombosSection = ({ searchQuery = "" }) => {
                   <div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-xl font-black text-slate-900 font-num">
-                        {formatPrecio(combo.precio)}
+                        {formatPrecio(precio)}
                       </span>
-                      <span className="text-[11px] text-slate-400 line-through font-num">
-                        {formatPrecio(combo.precioAnterior)}
-                      </span>
+                      {precioAnterior > precio && (
+                        <span className="text-[11px] text-slate-400 line-through font-num">
+                          {formatPrecio(precioAnterior)}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[10px] font-black text-valette-red block">
-                      Ahorrás {formatPrecio(combo.ahorro)}
-                    </span>
+                    {ahorro > 0 && (
+                      <span className="text-[10px] font-black text-valette-red block">
+                        Ahorrás {formatPrecio(ahorro)}
+                      </span>
+                    )}
                   </div>
 
                   <button

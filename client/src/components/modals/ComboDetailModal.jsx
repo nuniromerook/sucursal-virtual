@@ -8,7 +8,6 @@ import {
   Scale,
   Users,
   Sparkles,
-  ShieldCheck,
   Check,
   Flame,
 } from "lucide-react";
@@ -32,6 +31,26 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
 
   if (!isOpen || !combo) return null;
 
+  const items = Array.isArray(combo.items) ? combo.items : [];
+  const precioUnitario = Number(combo.precio) || 0;
+  const precioAnteriorUnitario =
+    Number(combo.precio_anterior) ||
+    Number(combo.precioAnterior) ||
+    Number(combo.precio_regular_calculado) ||
+    precioUnitario;
+  const ahorroUnitario =
+    Number(combo.ahorro) > 0
+      ? Number(combo.ahorro)
+      : Math.max(0, precioAnteriorUnitario - precioUnitario);
+  const kilosUnitario = Number(combo.kilos) || 0;
+  const puntosUnitario = Number(combo.puntos) || 50;
+
+  const totalPrecio = precioUnitario * cantidad;
+  const totalAnterior = precioAnteriorUnitario * cantidad;
+  const totalAhorro = ahorroUnitario * cantidad;
+  const totalKilos = kilosUnitario * cantidad;
+  const totalPuntos = puntosUnitario * cantidad;
+
   const handleIncrement = () => {
     setCantidad((prev) => prev + 1);
   };
@@ -41,24 +60,27 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
   };
 
   const handleAddToCart = () => {
+    const firstImg =
+      items[0]?.imagen_url ||
+      items[0]?.imagenUrl ||
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
+
     addToCart(
       {
         id: combo.id,
         nombre: combo.nombre,
         slug: combo.slug,
-        precio: combo.precio,
-        puntos: combo.puntos,
-        imagen_url:
-          combo.items[0]?.imagenUrl ||
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526423/uyz2flzrr4d0g97jveqn.avif",
+        precio: precioUnitario,
+        puntos: puntosUnitario,
+        imagen_url: firstImg,
       },
       cantidad,
       {
         corte: "Combo preparado de cortes surtidos",
         envasado: "Envasado con cadena de frío",
-        kilos: combo.kilos * cantidad,
-        items_combo: combo.items
-          .map((i) => `${i.peso} de ${i.nombre}`)
+        kilos: totalKilos,
+        items_combo: items
+          .map((i) => `${i.cantidad_o_peso || i.peso} de ${i.nombre}`)
           .join(", "),
         notas: notas.trim() || undefined,
       },
@@ -71,12 +93,6 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
     );
     onClose();
   };
-
-  const totalPrecio = combo.precio * cantidad;
-  const totalAnterior = (combo.precioAnterior || combo.precio) * cantidad;
-  const totalAhorro = (combo.ahorro || 0) * cantidad;
-  const totalKilos = combo.kilos * cantidad;
-  const totalPuntos = (combo.puntos || 0) * cantidad;
 
   return (
     <div
@@ -126,12 +142,14 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
             <div className="relative z-10 flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2.5 py-1 rounded-lg bg-white/15 text-white border border-white/20 text-[11px] font-black uppercase tracking-wide">
-                  {combo.badge}
+                  {combo.badge || "🔥 Combo Ahorro"}
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-extrabold flex items-center gap-1">
-                  <Flame className="size-3 text-emerald-400" />
-                  Ahorrás {formatPrecio(combo.ahorro)}
-                </span>
+                {ahorroUnitario > 0 && (
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-extrabold flex items-center gap-1">
+                    <Flame className="size-3 text-emerald-400" />
+                    Ahorrás {formatPrecio(ahorroUnitario)}
+                  </span>
+                )}
               </div>
 
               <div>
@@ -157,7 +175,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                       Peso Total
                     </span>
                     <span className="text-xs font-black text-white font-num">
-                      {combo.kilos} kg carne
+                      {kilosUnitario} kg carne
                     </span>
                   </div>
                 </div>
@@ -169,7 +187,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                       Rinde Aprox.
                     </span>
                     <span className="text-xs font-black text-white">
-                      {combo.rinde}
+                      {combo.rinde || "6 a 8 personas"}
                     </span>
                   </div>
                 </div>
@@ -181,7 +199,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                       Club Valette
                     </span>
                     <span className="text-xs font-black text-amber-300 font-num">
-                      +{combo.puntos} puntos
+                      +{puntosUnitario} puntos
                     </span>
                   </div>
                 </div>
@@ -203,60 +221,68 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                 </p>
               </div>
               <span className="text-[11px] font-black text-[#003366] bg-[#003366]/5 px-2.5 py-1 rounded-lg border border-[#003366]/10 self-start sm:self-auto font-num">
-                {combo.items.length} variedades ({combo.kilos} kg)
+                {items.length} variedades ({kilosUnitario} kg)
               </span>
             </div>
 
             {/* Grilla de Cortes con Foto Individual */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {combo.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-white border border-slate-200/90 rounded-2xl p-3 flex gap-3 items-center hover:border-slate-300 hover:shadow-2xs transition-all group"
-                >
-                  {/* Fotografía del corte */}
-                  <div className="relative size-20 sm:size-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
-                    <img
-                      src={item.imagenUrl}
-                      alt={item.nombre}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <div className="absolute bottom-1 right-1">
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-black font-num shadow-xs">
-                        {item.peso}
-                      </span>
-                    </div>
-                  </div>
+              {items.map((item, index) => {
+                const cutImg =
+                  item.imagen_url ||
+                  item.imagenUrl ||
+                  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
 
-                  {/* Descripción y Especificación del corte */}
-                  <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
-                        <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug group-hover:text-[#003366] transition-colors truncate">
-                          {item.nombre}
-                        </h4>
+                return (
+                  <div
+                    key={index}
+                    className="bg-white border border-slate-200/90 rounded-2xl p-3 flex gap-3 items-center hover:border-slate-300 hover:shadow-2xs transition-all group"
+                  >
+                    {/* Fotografía del corte */}
+                    <div className="relative size-20 sm:size-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
+                      <img
+                        src={cutImg}
+                        alt={item.nombre}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div className="absolute bottom-1 right-1">
+                        <span className="px-1.5 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-black font-num shadow-xs">
+                          {item.cantidad_o_peso || item.peso}
+                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                        {item.descripcion ||
-                          "Corte fresco seleccionado fraccionado en el día con cadena de frío."}
-                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
-                        <Check className="size-2.5 stroke-[3]" />
-                        <span>Sellado con cadena de frío</span>
-                      </span>
+                    {/* Descripción y Especificación del corte */}
+                    <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
+                          <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug group-hover:text-[#003366] transition-colors truncate">
+                            {item.nombre}
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {item.descripcion_item ||
+                            item.descripcion ||
+                            "Corte fresco seleccionado fraccionado en el día con cadena de frío."}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+                          <Check className="size-2.5 stroke-[3]" />
+                          <span>Sellado con cadena de frío</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* 4. Indicaciones / Notas al Cortador */}
+          {/* 3. Indicaciones / Notas al Cortador */}
           <div>
             <label className="text-xs font-bold text-slate-800 mb-1.5 block">
               Indicaciones especiales para el cortador (opcional):
@@ -266,7 +292,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Ej: marcar vacío parrillero, separar chorizos en dos bolsitas..."
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none font-medium"
             />
           </div>
         </div>
@@ -306,7 +332,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                   Total ({totalKilos} kg)
                 </span>
                 {totalAhorro > 0 && (
-                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 font-num">
                     Ahorrás {formatPrecio(totalAhorro)}
                   </span>
                 )}

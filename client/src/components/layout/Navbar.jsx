@@ -154,7 +154,7 @@ export const Navbar = ({
           <button
             type="button"
             onClick={onOpenFiltersModal}
-            className={`p-2 rounded-xl border flex items-center justify-center transition-colors cursor-pointer shrink-0 relative ${
+            className={`p-2 rounded-xl border flex items-center gap-2 text-xs font-medium justify-center transition-colors cursor-pointer shrink-0 relative ${
               hasActiveFilters
                 ? "bg-[#003366] text-white border-[#003366] shadow-xs"
                 : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -165,6 +165,7 @@ export const Navbar = ({
             {hasActiveFilters && (
               <span className="absolute -top-1 -right-1 size-2 rounded-full bg-emerald-500 animate-pulse" />
             )}
+            Filtros
           </button>
         </div>
       </div>

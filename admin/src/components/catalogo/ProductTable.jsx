@@ -1,11 +1,12 @@
 // admin/src/components/catalogo/ProductTable.jsx
 import React, { useMemo } from "react";
-import { Edit2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import { formatMoney } from "../../utils/formatters";
 
 export default function ProductTable({
   products,
   onEditProduct,
+  onDeleteProduct,
   onToggleStock,
   onToggleActivo,
   searchTerm,
@@ -43,25 +44,30 @@ export default function ProductTable({
 
   return (
     <div className="space-y-2.5">
-      
       {/* VISTA MÓVIL: CARDS SIMPLES Y NATIVAS (< md) */}
       <div className="md:hidden space-y-2.5">
         {filteredProducts.map((p) => {
           const hasDiscount =
-            Number(p.precio_anterior) > 0 && Number(p.precio_anterior) > Number(p.precio);
+            Number(p.precio_anterior) > 0 &&
+            Number(p.precio_anterior) > Number(p.precio);
 
           return (
             <div
               key={p.id}
               className={`bg-white p-3.5 rounded-2xl border shadow-xs flex flex-col gap-2.5 transition-colors ${
-                p.sin_stock ? "border-rose-200/90 bg-rose-50/20" : "border-slate-200/80"
+                p.sin_stock
+                  ? "border-rose-200/90 bg-rose-50/20"
+                  : "border-slate-200/80"
               }`}
             >
               <div className="flex items-start gap-3 min-w-0">
                 {/* Foto Cuadrada */}
                 <div className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200/80 overflow-hidden shrink-0 relative">
                   <img
-                    src={p.imagen_url || "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400"}
+                    src={
+                      p.imagen_url ||
+                      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400"
+                    }
                     alt={p.nombre_producto}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -126,14 +132,27 @@ export default function ProductTable({
                   <span>{!p.sin_stock ? "En Stock" : "Agotado"}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => onEditProduct(p)}
-                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
-                >
-                  <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Editar</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onEditProduct(p)}
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Editar</span>
+                  </button>
+
+                  {onDeleteProduct && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProduct(p)}
+                      title="Eliminar producto"
+                      className="size-8 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -157,7 +176,8 @@ export default function ProductTable({
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((p) => {
                 const hasDiscount =
-                  Number(p.precio_anterior) > 0 && Number(p.precio_anterior) > Number(p.precio);
+                  Number(p.precio_anterior) > 0 &&
+                  Number(p.precio_anterior) > Number(p.precio);
 
                 return (
                   <tr
@@ -170,7 +190,10 @@ export default function ProductTable({
                     <td className="py-3 px-4 text-center">
                       <div className="w-11 h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 mx-auto">
                         <img
-                          src={p.imagen_url || "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400"}
+                          src={
+                            p.imagen_url ||
+                            "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400"
+                          }
                           alt={p.nombre_producto}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -236,7 +259,11 @@ export default function ProductTable({
                       <button
                         type="button"
                         onClick={() => onToggleActivo(p)}
-                        title={p.activo ? "Visible en la tienda" : "Oculto de la tienda"}
+                        title={
+                          p.activo
+                            ? "Visible en la tienda"
+                            : "Oculto de la tienda"
+                        }
                         className="inline-flex items-center justify-center p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer active:scale-95"
                       >
                         <span
@@ -249,14 +276,27 @@ export default function ProductTable({
 
                     {/* Acciones */}
                     <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onEditProduct(p)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Editar</span>
-                      </button>
+                      <div className="inline-flex items-center gap-1.5 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => onEditProduct(p)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Editar</span>
+                        </button>
+
+                        {onDeleteProduct && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteProduct(p)}
+                            title="Eliminar corte"
+                            className="size-8 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -272,7 +312,6 @@ export default function ProductTable({
           </div>
         </div>
       </div>
-
     </div>
   );
 }

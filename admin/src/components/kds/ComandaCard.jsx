@@ -1,14 +1,10 @@
 // admin/src/components/kds/ComandaCard.jsx
-import React from "react";
 import {
   Scissors,
   Scale,
   CheckCircle2,
-  Clock,
   Truck,
   Store,
-  Phone,
-  MessageCircle,
   ArrowRight,
 } from "lucide-react";
 import { formatMoney, formatWeight, formatDate } from "../../utils/formatters";
@@ -16,9 +12,10 @@ import { formatMoney, formatWeight, formatDate } from "../../utils/formatters";
 export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
   const estado = pedido.estado || "solicitado";
   const items = Array.isArray(pedido.items) ? pedido.items : [];
-  const isRetiro = pedido.tipo_entrega === "retiro" || pedido.tipo === "Retiro en Sucursal";
+  const isRetiro =
+    pedido.tipo_entrega === "retiro" || pedido.tipo === "Retiro en Sucursal";
 
-  let statusBadge = null;
+  let statusBadge;
   if (estado === "solicitado") {
     statusBadge = (
       <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
@@ -51,8 +48,8 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
         estado === "solicitado"
           ? "border-amber-300 ring-2 ring-amber-300/40"
           : estado === "en_corte"
-          ? "border-blue-300 ring-1 ring-blue-300/50"
-          : "border-slate-200/80"
+            ? "border-blue-300 ring-1 ring-blue-300/50"
+            : "border-slate-200/80"
       }`}
     >
       {/* Cabecera de Comanda */}
@@ -62,9 +59,11 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
             <span className="font-mono font-bold text-slate-900 text-sm">
               #{pedido.id}
             </span>
-            <span className="text-xs text-slate-500">
-              • {formatDate(pedido.creado_en || pedido.fecha || Date.now())}
-            </span>
+            {(pedido.creado_en || pedido.fecha) && (
+              <span className="text-xs text-slate-500">
+                • {formatDate(pedido.creado_en || pedido.fecha)}
+              </span>
+            )}
           </div>
           <div className="font-semibold text-slate-800 text-xs mt-0.5">
             {pedido.nombre_cliente || pedido.cliente || "Cliente Mostrador"}
@@ -80,10 +79,15 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
         </div>
 
         {items.map((it, idx) => {
-          const prep = it.opcion_corte || it.preparacion_seleccionada || it.corte;
+          const prep =
+            it.opcion_corte || it.preparacion_seleccionada || it.corte;
           const nota = it.notas || it.nota_cliente || it.observaciones;
           const unit = it.unidad_medida || it.unidad || "kg";
-          const cant = it.cantidad_kg_solicitada || it.cantidad_kg || it.cantidad_pedida || 1;
+          const cant =
+            it.cantidad_kg_solicitada ||
+            it.cantidad_kg ||
+            it.cantidad_pedida ||
+            1;
           const pesoReal = it.peso_real;
 
           return (
@@ -114,20 +118,22 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
               {/* Nota del cliente */}
               {nota ? (
                 <div className="text-[11px] text-slate-700 bg-amber-50/70 p-1.5 rounded border border-amber-200/60">
-                  <span className="font-semibold text-amber-900">Nota del cliente:</span>{" "}
+                  <span className="font-semibold text-amber-900">
+                    Nota del cliente:
+                  </span>{" "}
                   "{nota}"
                 </div>
               ) : null}
 
               {/* Peso balanza */}
               <div className="flex items-center justify-between text-[11px] pt-1 text-slate-500">
-                <span>Peso balanza registrado:</span>
+                <span>Peso neto en balanza:</span>
                 <span
                   className={`font-mono font-bold ${
-                    pesoReal ? "text-emerald-700" : "text-slate-400"
+                    pesoReal ? "text-emerald-700" : "text-red-500"
                   }`}
                 >
-                  {pesoReal ? formatWeight(pesoReal, unit) : "Pendiente de pesaje"}
+                  {pesoReal ? formatWeight(pesoReal, unit) : "Pendiente"}
                 </span>
               </div>
             </div>
@@ -136,7 +142,11 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
 
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between font-semibold text-slate-700">
           <span className="flex items-center gap-1">
-            {isRetiro ? <Store className="w-3.5 h-3.5 text-slate-500" /> : <Truck className="w-3.5 h-3.5 text-slate-500" />}
+            {isRetiro ? (
+              <Store className="w-3.5 h-3.5 text-slate-500" />
+            ) : (
+              <Truck className="w-3.5 h-3.5 text-slate-500" />
+            )}
             {isRetiro ? "Retiro en Mostrador" : "Envío a Domicilio"}
           </span>
           <span className="text-slate-900 font-bold font-mono">
