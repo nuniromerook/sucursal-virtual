@@ -95,7 +95,8 @@ export const CategoryHorizontalShelf = ({
 
   const handleScroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 340;
+      // 2 tarjetas completas de 240px + gap-4 (16px) = 512px
+      const scrollAmount = 512;
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",

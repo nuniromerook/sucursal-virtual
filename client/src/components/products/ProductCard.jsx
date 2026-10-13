@@ -1,6 +1,12 @@
 // src/components/products/ProductCard.jsx
-import { useState } from "react";
-import { Heart, Plus, Bell, Minus, CirclePercent, Percent } from "lucide-react";
+import {
+  Heart,
+  Plus,
+  Bell,
+  Minus,
+  Percent,
+  ShoppingBasket,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useToast } from "@/context/ToastContext";
@@ -8,24 +14,31 @@ import {
   formatPrecio,
   formatUnidadMedida,
   formatPrecioPorUnidad,
-  formatCantidad,
 } from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 
 export const ProductCard = ({ product, onOpenCustomizer }) => {
   const unidadMedida = formatUnidadMedida(product.unidad_medida);
-  const [selectedKg, setSelectedKg] = useState(1);
-  const { addToCart } = useCart();
+  const { cartItems, addToCart, updateItemCantidad, removeFromCart } =
+    useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
 
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
+  const productName = product.nombre || product.nombre_producto || "Corte";
 
-  // Cálculo reactivo de precio según cantidad seleccionada (sin tope máximo)
+  // Cantidad derivada directamente del carrito (sin useEffect ni desfase de estado)
+  const cartItem = cartItems.find((item) => item.id === product.id);
+  const currentQty = cartItem
+    ? Number(cartItem.cantidad_kg || cartItem.cantidad || 0)
+    : 0;
+
+  // Cálculo reactivo de precio según cantidad seleccionada (o 1 unidad si aún está en 0)
+  const displayKg = currentQty > 0 ? currentQty : 1;
   const priceInfo = calculateItemPrice({
     ...product,
-    cantidad_kg: selectedKg,
+    cantidad_kg: displayKg,
   });
 
   const primaryPromo =
@@ -51,18 +64,44 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
       })()
     : null;
 
-  const handleAdd = (e) => {
+  // Manejo de suma directa al carrito con el botón (+)
+  const handleIncrement = (e) => {
     e?.stopPropagation();
     if (isOutOfStock) return;
-    addToCart(product, selectedKg, {
-      corte:
+
+    if (currentQty === 0) {
+      const defaultCorte =
         product.opciones_corte?.[0] ||
-        (unidadMedida === "u" ? "Estándar" : "Corte tradicional"),
-      unidad_medida: unidadMedida,
-    });
-    showToast(
-      `Sumaste ${formatCantidad(selectedKg, unidadMedida)} de ${product.nombre} al pedido`,
-    );
+        (unidadMedida === "u" ? "Estándar" : "Corte tradicional");
+
+      addToCart(product, 1, {
+        corte: defaultCorte,
+        unidad_medida: unidadMedida,
+      });
+
+      showToast(`Sumaste 1 ${unidadMedida} de ${productName} al pedido 🥩`);
+    } else {
+      updateItemCantidad(product.id, currentQty + 1);
+      showToast(
+        `Actualizaste a ${currentQty + 1} ${unidadMedida} de ${productName}`,
+      );
+    }
+  };
+
+  // Manejo de resta o eliminación del carrito con el botón (-)
+  const handleDecrement = (e) => {
+    e?.stopPropagation();
+    if (isOutOfStock || currentQty <= 0) return;
+
+    if (currentQty === 1) {
+      removeFromCart(product.id);
+      showToast(`Quitaste ${productName} del pedido`, "info");
+    } else {
+      updateItemCantidad(product.id, currentQty - 1);
+      showToast(
+        `Actualizaste a ${currentQty - 1} ${unidadMedida} de ${productName}`,
+      );
+    }
   };
 
   const handleOpenDetail = () => {
@@ -90,25 +129,25 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
               product.imagen_url ||
               "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800"
             }
-            alt={product.nombre}
+            alt={productName}
             className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
             loading="lazy"
           />
 
           {/* Badges superiores */}
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start max-w-[calc(100%-3.25rem)]">
+          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start max-w-18/20">
             {isOutOfStock ? (
               <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black uppercase shadow-xs">
                 Agotado por Hoy
               </span>
             ) : promoInfo ? (
-              <span className="px-2 py-1 rounded-lg bg-red-600/80 border border-red-400 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
-                <Percent className="size-[13.5px] stroke-2" />
-                <span>
-                  Llevando {promoInfo.cant}
-                  {unidadMedida} o más:
+              <span className="p-1 rounded-lg bg-red-600/80 border border-red-400 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
+                <Percent className="size-5 stroke-2 bg-white rounded-sm text-red-700 p-1" />
+                <span className="pl-1">
+                  Llevás {promoInfo.cant}
+                  {unidadMedida} o más por
                 </span>
-                <strong className="text-amber-200 font-black">
+                <strong className="text-amber-200 font-black pr-1">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
                 </strong>
               </span>
@@ -132,9 +171,9 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              toggleFavorite(product.id, product.nombre);
+              toggleFavorite(product.id, productName);
             }}
-            className={`absolute top-2.5 right-2.5 size-9 rounded-full bg-white flex items-center justify-center transition-colors duration-400 shadow-xs cursor-pointer border border-neutral-100 ${
+            className={`absolute bottom-2.5 right-2.5 size-9 rounded-full bg-white flex items-center justify-center transition-colors duration-400 shadow-xs cursor-pointer border border-neutral-100 ${
               isFav ? "text-red-500" : "text-neutral-400 hover:text-red-500"
             }`}
           >
@@ -168,23 +207,25 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             onClick={handleOpenDetail}
             className="text-base font-extrabold text-slate-900 leading-snug cursor-pointer hover:text-[#003366] transition-colors"
           >
-            {product.nombre}
+            {productName}
           </h3>
 
           {/* Descripción llamativa expuesta en la card */}
-          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-            {product.descripcion}
-          </p>
+          {product.descripcion && (
+            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+              {product.descripcion}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Bottom: Precio y Acciones Duales con Stepper de unidades/kg enteros */}
+      {/* Bottom: Precio y Stepper directo */}
       <div className="py-3 px-4 border-t border-slate-100 mt-3 flex items-center justify-between gap-3">
-        <div>
-          <span className="text-xl font-black text-slate-900 font-num">
+        <div className="flex flex-col -space-y-0.5">
+          <span className="text-lg font-black text-slate-900 font-num">
             {formatPrecio(priceInfo.total)}
           </span>
-          <span className="text-xs text-slate-400 flex items-center gap-1 font-num">
+          <span className="text-[11px] text-slate-400 flex items-center">
             {priceInfo.tienePromo ? (
               <div className="flex flex-col">
                 <span className="text-emerald-700 font-bold">
@@ -198,7 +239,9 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 </span>
               </div>
             ) : (
-              <span>{formatPrecioPorUnidad(product.precio, unidadMedida)}</span>
+              <span>
+                {formatPrecioPorUnidad(product.precio, unidadMedida)}{" "}
+              </span>
             )}
           </span>
         </div>
@@ -218,45 +261,46 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             <span>Avisarme</span>
           </button>
         ) : (
-          <div className="flex items-center gap-1.5">
-            {/* Stepper en unidades o kg enteros (1, 2, 3...) sin tope máximo */}
-            <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80 whitespace-nowrap">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedKg((prev) => Math.max(1, prev - 1));
-                }}
-                disabled={selectedKg <= 1}
-                className="size-7 rounded-lg bg-white hover:bg-slate-200 disabled:opacity-30 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                title={`Restar 1 ${unidadMedida}`}
-              >
-                <Minus className="size-3.5 stroke-[2.5]" />
-              </button>
-              <span className="text-sm font-black text-slate-800 px-2 min-w-15 text-center font-num">
-                {selectedKg} {unidadMedida}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedKg((prev) => prev + 1);
-                }}
-                className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-transform shadow-2xs cursor-pointer"
-                title={`Sumar 1 ${unidadMedida}`}
-              >
-                <Plus className="size-3.5 stroke-[2.5]" />
-              </button>
-            </div>
-
-            {/* Botón rápido para sumar al changuito */}
+          /* Stepper dinámico: botón (-) deshabilitado en 0, 'Sumar' en el centro, botón (+) que agrega directo al carrito */
+          <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80 whitespace-nowrap shadow-2xs">
             <button
               type="button"
-              onClick={handleAdd}
-              className="size-8.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer"
-              title="Agregar al carrito"
+              onClick={handleDecrement}
+              disabled={currentQty === 0}
+              className="size-7 rounded-lg bg-white hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-white text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-all shadow-2xs cursor-pointer disabled:cursor-not-allowed"
+              title={
+                currentQty > 0 ? `Restar 1 ${unidadMedida}` : "Sin unidades"
+              }
+              aria-label="Restar 1"
             >
-              <Plus className="size-4 stroke-[3]" />
+              <Minus className="size-3.5 stroke-[2.5]" />
+            </button>
+
+            <span
+              onClick={(e) => {
+                if (currentQty === 0) handleIncrement(e);
+              }}
+              className={`px-2 min-w-[60px] text-center select-none transition-colors ${
+                currentQty === 0
+                  ? "text-xs font-black text-slate-700 hover:text-[#003366] cursor-pointer"
+                  : "text-sm font-black text-slate-900 font-num"
+              }`}
+            >
+              {currentQty === 0 ? (
+                <ShoppingBasket className="size-5 mx-auto shrink-0" />
+              ) : (
+                `${currentQty} ${unidadMedida}`
+              )}
+            </span>
+
+            <button
+              type="button"
+              onClick={handleIncrement}
+              className="size-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold active:scale-95 transition-all shadow-2xs cursor-pointer"
+              title={`Sumar 1 ${unidadMedida}`}
+              aria-label="Sumar 1"
+            >
+              <Plus className="size-3.5 stroke-[2.5]" />
             </button>
           </div>
         )}

@@ -358,7 +358,7 @@ export const Home = ({
                 ref={(el) => (chipRefs.current[cat.id] = el)}
                 type="button"
                 onClick={() => handleCategoryScroll(cat.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
                   isCurrentActive
                     ? "bg-valette-red text-white shadow-2xs scale-102"
                     : "bg-red-50 text-valette-red border border-red-200/70 hover:bg-red-100/80"
@@ -397,7 +397,7 @@ export const Home = ({
               ref={(el) => (chipRefs.current[cat.id] = el)}
               type="button"
               onClick={() => handleCategoryScroll(cat.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
                 isCurrentActive
                   ? "bg-[#003366] text-white shadow-2xs scale-102"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/70"
@@ -435,7 +435,7 @@ export const Home = ({
                 <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
                 <div className="flex gap-4 overflow-x-hidden">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-[80vw] sm:w-75 shrink-0">
+                    <div key={i} className="w-[220px] sm:w-[240px] shrink-0">
                       <ProductCardSkeleton />
                     </div>
                   ))}
@@ -478,7 +478,7 @@ export const Home = ({
                 {sec.products.map((prod) => (
                   <div
                     key={prod.id}
-                    className="w-[80vw] sm:w-75 shrink-0 flex flex-col snap-start last:snap-end pb-4"
+                    className="w-65 shrink-0 flex flex-col snap-start last:snap-end pb-4"
                   >
                     <ProductCard
                       product={prod}
