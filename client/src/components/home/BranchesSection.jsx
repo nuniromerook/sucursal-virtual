@@ -49,7 +49,7 @@ export const BranchesSection = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-[#003366] uppercase tracking-wide">
-                  {branch.id === 1 ? "Casa Central" : "Sucursal Oeste"}
+                  {branch.id === 1 ? "Zona Sur" : "Zona Oeste"}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                   ● Abierto Ahora
