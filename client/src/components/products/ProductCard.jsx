@@ -145,7 +145,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 <Percent className="size-5 stroke-2 bg-white rounded-sm text-red-700 p-1" />
                 <span className="pl-1">
                   Llevás {promoInfo.cant}
-                  {unidadMedida} o más por
+                  {unidadMedida} o mas por
                 </span>
                 <strong className="text-amber-200 font-black pr-1">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
