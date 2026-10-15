@@ -142,9 +142,12 @@ export const COMBOS = [
 ];
 
 const getTagColor = (badge = "") => {
-  if (/parrilla/i.test(badge)) return "bg-red-50 text-valette-red border-red-200/80";
-  if (/familiar|comida|semanal/i.test(badge)) return "bg-emerald-50 text-emerald-800 border-emerald-200/80";
-  if (/gourmet|especial/i.test(badge)) return "bg-amber-50 text-amber-900 border-amber-200/80";
+  if (/parrilla/i.test(badge))
+    return "bg-red-50 text-valette-red border-red-200/80";
+  if (/familiar|comida|semanal/i.test(badge))
+    return "bg-emerald-50 text-emerald-800 border-emerald-200/80";
+  if (/gourmet|especial/i.test(badge))
+    return "bg-amber-50 text-amber-900 border-amber-200/80";
   return "bg-red-50 text-valette-red border-red-200/80";
 };
 
@@ -189,8 +192,8 @@ export const CombosSection = ({ searchQuery = "" }) => {
           c.items.some(
             (it) =>
               it.nombre?.toLowerCase().includes(q) ||
-              it.categoria?.toLowerCase().includes(q)
-          ))
+              it.categoria?.toLowerCase().includes(q),
+          )),
     );
   }, [combos, searchQuery]);
 
@@ -230,7 +233,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
         items_combo: items
           .map((i) => `${i.cantidad_o_peso || i.peso} de ${i.nombre}`)
           .join(", "),
-      }
+      },
     );
     showToast(`Sumaste ${combo.nombre} al pedido 🥩`);
   };
@@ -303,7 +306,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
           return (
             <div
               key={combo.id}
-              className="w-[85vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
+              className="w-[70vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
             >
               <div
                 onClick={() => setSelectedCombo(combo)}
@@ -333,8 +336,8 @@ export const CombosSection = ({ searchQuery = "" }) => {
                         totalCortes === 1
                           ? "grid-cols-1"
                           : totalCortes === 2
-                          ? "grid-cols-2"
-                          : "grid-cols-3"
+                            ? "grid-cols-2"
+                            : "grid-cols-3"
                       }`}
                     >
                       {items.slice(0, 3).map((item, idx) => {
