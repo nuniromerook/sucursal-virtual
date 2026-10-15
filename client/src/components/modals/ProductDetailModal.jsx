@@ -273,7 +273,7 @@ export const ProductDetailModal = ({ isOpen, onClose, product }) => {
                   Cantidad
                 </label>
                 <span className="text-[11px] text-slate-500">
-                  {esUnidad ? "Venta por unidad" : "Venta por kilogramo entero"}
+                  {esUnidad ? "Venta por unidad" : "Venta por kg"}
                 </span>
               </div>
 
