@@ -24,7 +24,7 @@ const formatTiempoRelativo = (fechaStr) => {
   const fecha = new Date(fechaStr);
   const diffSegundos = Math.floor((ahora - fecha) / 1000);
 
-  if (diffSegundos < 60) return "Hace un momento";
+  if (diffSegundos < 60) return "Ahora";
   const diffMinutos = Math.floor(diffSegundos / 60);
   if (diffMinutos < 60) return `Hace ${diffMinutos} min`;
   const diffHoras = Math.floor(diffMinutos / 60);
@@ -61,7 +61,11 @@ export const NotificationsModal = ({
   const handleNotificationClick = (notif) => {
     markAsRead(notif.id);
 
-    if (notif.tipo === "pedido" || notif.tipo === "pedido_estado" || notif.pedido_id) {
+    if (
+      notif.tipo === "pedido" ||
+      notif.tipo === "pedido_estado" ||
+      notif.pedido_id
+    ) {
       if (notif.pedido_id) {
         setActiveOrderId(notif.pedido_id);
       }
@@ -209,7 +213,8 @@ export const NotificationsModal = ({
                           : "bg-red-100 text-valette-red"
                     }`}
                   >
-                    {notif.tipo === "pedido" || notif.tipo === "pedido_estado" ? (
+                    {notif.tipo === "pedido" ||
+                    notif.tipo === "pedido_estado" ? (
                       <Package className="size-5" />
                     ) : notif.tipo === "puntos" ? (
                       <Sparkles className="size-5" />

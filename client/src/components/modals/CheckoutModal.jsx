@@ -57,7 +57,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
 
   const [cliente, setCliente] = useState(getInitialCustomer);
   const [direccion, setDireccion] = useState(
-    customerAddress || "Av. Luciano Valette 1696, Luis Guillon"
+    customerAddress || "Av. Luciano Valette 1696, Luis Guillon",
   );
   const [notas, setNotas] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("Hoy 12:00 - 14:30");
@@ -76,7 +76,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
 
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    handleCloseModal
+    handleCloseModal,
   );
 
   if (!isOpen) return null;
@@ -95,7 +95,9 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
     if (isSubmitting) return;
 
     if (!cliente.nombre.trim() || !cliente.telefono.trim()) {
-      setSubmitError("Completá tu nombre y teléfono / WhatsApp para continuar.");
+      setSubmitError(
+        "Completá tu nombre y teléfono / WhatsApp para continuar.",
+      );
       return;
     }
 
@@ -163,7 +165,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(
-          data.error || data.detalles || "No se pudo registrar el pedido."
+          data.error || data.detalles || "No se pudo registrar el pedido.",
         );
       }
 
@@ -175,7 +177,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
             nombre: cliente.nombre.trim(),
             telefono: cliente.telefono.trim(),
             email: cliente.email || "",
-          })
+          }),
         );
       } catch {}
 
@@ -191,12 +193,13 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
       onClose();
       onOrderConfirmed(data.pedido);
       showToast(
-        `¡Pedido #${data.pedido?.id || ""} confirmado! Enviado al mostrador de corte 🥩`
+        `¡Pedido #${data.pedido?.id || ""} confirmado! Enviado al mostrador de corte 🥩`,
       );
     } catch (err) {
       console.error("Error al confirmar pedido:", err);
       setSubmitError(
-        err.message || "Error de conexión al enviar el pedido. Intentá de nuevo."
+        err.message ||
+          "Error de conexión al enviar el pedido. Intentá de nuevo.",
       );
     } finally {
       setIsSubmitting(false);
@@ -218,10 +221,10 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Caja Segura Valette • Luis Guillón
+                Pago seguro - Abastecedora Valette
               </span>
               <h3 className="text-lg font-black text-slate-900 leading-tight">
-                Confirmar Pedido
+                Confirmá tu Pedido
               </h3>
             </div>
             <button
@@ -246,7 +249,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
           {/* Paso 1: Datos Personales */}
           <div onFocus={() => markStep("checkout_datos")}>
             <span className="font-bold text-slate-800 uppercase text-[11px] block mb-2">
-              1. Datos del Comprador
+              1. Datos de cliente
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
@@ -318,7 +321,8 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
                   📍 {CASA_CENTRAL_BRANCH.nombre}
                 </span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">
-                  {CASA_CENTRAL_BRANCH.direccion} ({CASA_CENTRAL_BRANCH.horario})
+                  {CASA_CENTRAL_BRANCH.direccion} ({CASA_CENTRAL_BRANCH.horario}
+                  )
                 </span>
               </div>
             ) : (

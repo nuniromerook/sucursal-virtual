@@ -19,7 +19,7 @@ function getStepIndex(estadoRaw) {
 
 function getHeroStatusInfo(pedido) {
   const est = String(
-    pedido?.estado_local || pedido?.estado || "solicitado"
+    pedido?.estado_local || pedido?.estado || "solicitado",
   ).toLowerCase();
   const isPickup = pedido?.tipo_entrega === "retiro_sucursal";
 
@@ -33,14 +33,14 @@ function getHeroStatusInfo(pedido) {
   if (est.includes("entregado") || est.includes("completado")) {
     return {
       emoji: "🎉",
-      title: "¡Tu pedido fue entregado!",
+      title: "Tu pedido fue entregado!",
       bg: "bg-emerald-50 border-emerald-200/80",
     };
   }
   if (est.includes("camino")) {
     return {
       emoji: "🛵",
-      title: "¡Tu pedido está en camino!",
+      title: "Tu pedido está en camino!",
       bg: "bg-amber-50 border-amber-200/80",
     };
   }
@@ -48,21 +48,21 @@ function getHeroStatusInfo(pedido) {
     return {
       emoji: "📦",
       title: isPickup
-        ? "¡Listo para retirar en Luis Guillón!"
-        : "¡Pesado y listo para despachar!",
+        ? "Listo para retirar en sucursal!"
+        : "Listo para despachar!",
       bg: "bg-emerald-50 border-emerald-200/80",
     };
   }
   if (est.includes("corte") || est.includes("preparacion")) {
     return {
       emoji: "🔪",
-      title: "En preparación en mostrador y balanza",
+      title: "Pedido en preparación",
       bg: "bg-amber-50 border-amber-200/80",
     };
   }
   return {
     emoji: "🥩",
-    title: "Solicitud recibida en mostrador",
+    title: "Recibimos tu pedido!",
     bg: "bg-blue-50 border-blue-200/80",
   };
 }
@@ -72,7 +72,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
   const { activeOrderId, setActiveOrderId } = useCart();
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose
+    onClose,
   );
 
   const [pedido, setPedido] = useState(null);
@@ -91,7 +91,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
           if (showNotification) {
             showToast(
               `Comanda #${data.id} sincronizada en tiempo real`,
-              "info"
+              "info",
             );
           }
         } else if (showNotification) {
@@ -105,7 +105,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
         setIsLoading(false);
       }
     },
-    [showToast]
+    [showToast],
   );
 
   // Cargar pedido activo al abrir el modal y conectar Socket.io en tiempo real
@@ -133,11 +133,15 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
     });
 
     socket.on("pedido_actualizado", (updated) => {
-      if (isMounted && updated && Number(updated.id) === Number(activeOrderId)) {
+      if (
+        isMounted &&
+        updated &&
+        Number(updated.id) === Number(activeOrderId)
+      ) {
         setPedido(updated);
         showToast(
           `¡Tu pedido #${updated.id} actualizó su estado en vivo! 🥩`,
-          "info"
+          "info",
         );
       }
     });
@@ -182,14 +186,14 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
     ? new Date(pedido.creado_en).toLocaleTimeString("es-AR", {
         hour: "2-digit",
         minute: "2-digit",
-      }) + " hs"
+      })
     : "Recibido";
 
   const horaActualizacion = pedido?.actualizado_en
     ? new Date(pedido.actualizado_en).toLocaleTimeString("es-AR", {
         hour: "2-digit",
         minute: "2-digit",
-      }) + " hs"
+      })
     : "En curso";
 
   const steps = [
@@ -205,8 +209,8 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
         currentStep > 2
           ? horaActualizacion
           : currentStep === 2
-          ? "Ahora"
-          : "Pendiente",
+            ? "Ahora"
+            : "Pendiente",
     },
     {
       num: 3,
@@ -217,8 +221,8 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
         currentStep > 3
           ? horaActualizacion
           : currentStep === 3
-          ? "Ahora"
-          : "Pendiente",
+            ? "Ahora"
+            : "Pendiente",
     },
     {
       num: 4,
@@ -256,8 +260,8 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
               {pedido?.id
                 ? `Seguimiento #${String(pedido.id).padStart(4, "0")}`
                 : activeOrderId
-                ? `Seguimiento #${String(activeOrderId).padStart(4, "0")}`
-                : "Seguimiento en Vivo"}
+                  ? `Seguimiento #${String(activeOrderId).padStart(4, "0")}`
+                  : "Seguimiento en Vivo"}
             </span>
             <div className="flex items-center gap-1 mr-6">
               <button
@@ -361,7 +365,8 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
                 </span>
 
                 {steps.map((step) => {
-                  const isCompleted = currentStep > step.num || currentStep === 4;
+                  const isCompleted =
+                    currentStep > step.num || currentStep === 4;
                   const isCurrent =
                     currentStep === step.num && currentStep !== 4;
                   const isPending = currentStep < step.num;
@@ -426,18 +431,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
               <div className="p-6 text-xs space-y-2 border-t border-slate-100">
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-[11px] text-slate-800 block">
-                    Ticket de Pesaje en Balanza:
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      hasRealWeight
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}
-                  >
-                    {hasRealWeight
-                      ? "⚖️ Pesaje final confirmado"
-                      : "⏳ Sujeto a pesaje en mostrador"}
+                    Tus productos:
                   </span>
                 </div>
 
@@ -445,7 +439,7 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
                   {items.map((item, idx) => {
                     const pesoReal = Number(item.peso_real);
                     const cantSolicitada = Number(
-                      item.cantidad_kg_solicitada || item.cantidad_kg || 1
+                      item.cantidad_kg_solicitada || item.cantidad_kg || 1,
                     );
                     const unidad = item.unidad_medida || "kg";
                     const pesoMostrar =
@@ -459,8 +453,8 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
                               Number(
                                 item.precio_por_kg_congelado ||
                                   item.precio_al_agregar ||
-                                  0
-                              )
+                                  0,
+                              ),
                           );
 
                     return (
