@@ -49,6 +49,7 @@ const DEFAULT_PROFILE = {
 
 export const ProfileModal = ({
   isOpen,
+  initialView = "main",
   onClose,
   onOpenTrackingModal,
   onOpenBranchModal,
@@ -63,7 +64,7 @@ export const ProfileModal = ({
   const { unreadCount } = useNotifications();
 
   // Vista interna del modal: "main" | "edit-profile" | "points" | "favorites" | "security" | "support"
-  const [activeView, setActiveView] = useState("main");
+  const [activeView, setActiveView] = useState(initialView);
 
   const [profile, setProfile] = useState(() => {
     try {
@@ -508,7 +509,7 @@ export const ProfileModal = ({
                     <span className="flex items-center gap-3">
                       <HelpCircle className="size-[18px] text-slate-600 stroke-[1.75]" />
                       <span className="text-[13px] font-semibold text-slate-800">
-                        Centro de Ayuda y Reclamos
+                        Ayuda y Reclamos
                       </span>
                     </span>
                     <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
@@ -532,12 +533,7 @@ export const ProfileModal = ({
                         WhatsApp Sucursal {selectedBranch?.nombre || "Guillón"}
                       </span>
                     </span>
-                    <span className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[10px] font-extrabold">
-                        En línea
-                      </span>
-                      <ChevronRight className="size-4 text-slate-400" />
-                    </span>
+                    <ChevronRight className="size-4 text-slate-400" />
                   </button>
                 </div>
               </div>

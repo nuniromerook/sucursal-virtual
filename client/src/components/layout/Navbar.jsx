@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export const CATEGORIES = [
-  { id: "combos", label: "Combos Ahorro", special: true },
+  { id: "combos", label: "Combos", special: true },
   { id: "asado", label: "Especial Asado 🔥" },
   { id: "vacuno", label: "Vacuno" },
   { id: "cerdo", label: "Cerdo" },

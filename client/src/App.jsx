@@ -85,9 +85,15 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileInitialView, setProfileInitialView] = useState("main");
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isNavbarFused, setIsNavbarFused] = useState(false);
+
+  const handleOpenProfileModal = (view = "main") => {
+    setProfileInitialView(typeof view === "string" ? view : "main");
+    setIsProfileModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
@@ -121,16 +127,17 @@ function AppContent() {
       {/* 3. Dock Inferior Mobile */}
       <MobileDock
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={handleOpenProfileModal}
       />
 
       {/* 4. Sidebar Drawer Estratégica (Menú Lateral) */}
       <SidebarDrawer
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={handleOpenProfileModal}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
 
       {/* 5. Modal / Bottom Sheet de Notificaciones */}
@@ -138,7 +145,7 @@ function AppContent() {
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={handleOpenProfileModal}
       />
 
       {/* 6. Modal / Bottom Sheet de Detalle de Producto Sincronizado con URL */}
@@ -168,8 +175,13 @@ function AppContent() {
       />
 
       <ProfileModal
+        key={`profile-modal-${isProfileModalOpen ? profileInitialView : "closed"}`}
         isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
+        initialView={profileInitialView}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setProfileInitialView("main");
+        }}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}

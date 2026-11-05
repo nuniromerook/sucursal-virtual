@@ -143,26 +143,18 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             ) : promoInfo ? (
               <span className="rounded-lg text-valette-blue text-[12px] font-bold flex items-center max-w-full">
                 <span className="pr-1">
-                  Llevando {promoInfo.cant}
-                  {unidadMedida} o más:
+                  Llevando + {promoInfo.cant}
+                  {unidadMedida}:
                 </span>
                 <strong className="text-amber-600 font-black pr-1">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
                 </strong>
               </span>
-            ) : product.badge ? (
-              <span className="px-2.5 py-1 rounded-lg bg-valette-red text-white text-[10px] font-black uppercase shadow-xs">
-                {product.badge}
-              </span>
             ) : product.precio_anterior > product.precio ? (
               <span className="px-2.5 py-1 rounded-lg bg-valette-red text-white text-[10px] font-black uppercase shadow-xs">
                 Oferta Especial
               </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-lg bg-[#003366] text-white text-[10px] font-black uppercase shadow-xs">
-                Corte Tradición
-              </span>
-            )}
+            ) : null}
           </div>
 
           {/* Botón Favorito reactivo */}

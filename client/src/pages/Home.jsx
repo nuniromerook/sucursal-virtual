@@ -101,7 +101,7 @@ export const Home = ({
   const stickyCategories = useMemo(
     () =>
       [
-        { id: "combos", label: "Combos Ahorro", tag: "Promo", special: true },
+        { id: "combos", label: "Combos", special: true },
         {
           id: "asado",
           label: "Sector Asado 🔥",
@@ -367,7 +367,7 @@ export const Home = ({
                 <span>{cat.label}</span>
                 {cat.tag && (
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-black uppercase ${
+                    className={`text-[9px] px-1.5 py-0.5 flex items-center rounded-md font-black uppercase ${
                       isCurrentActive
                         ? "bg-white/20 text-white"
                         : "bg-red-200/70 text-valette-red"
