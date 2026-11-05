@@ -82,6 +82,14 @@ const initSocket = (httpServer) => {
       console.log(`👤 Socket ${socket.id} se unió a sala privada ${room}`);
     });
 
+    // 3b. Unirse a la sala de seguimiento de un pedido específico
+    socket.on("join_pedido", (pedidoId) => {
+      if (!pedidoId) return;
+      const room = `sala_pedido_${pedidoId}`;
+      socket.join(room);
+      console.log(`🧾 Socket ${socket.id} se unió a ${room}`);
+    });
+
     // 4. Unirse a la sala global de stock / catálogo
     socket.on("join_stock", () => {
       socket.join("sala_stock");
@@ -136,6 +144,11 @@ const emitirActualizacionPedido = (clienteId, sucursalId, pedido) => {
     io.to(roomCliente).emit("pedido_actualizado", pedido);
   }
 
+  if (pedido && pedido.id) {
+    const roomPedido = `sala_pedido_${pedido.id}`;
+    io.to(roomPedido).emit("pedido_actualizado", pedido);
+  }
+
   if (sucursalId) {
     const roomSucursal = `sala_sucursal_${sucursalId}`;
     io.to(roomSucursal).emit("pedido_actualizado", pedido);
@@ -172,13 +185,20 @@ const emitirNotificacion = (notificacion) => {
     const roomCliente = `sala_cliente_${notificacion.cliente_id}`;
     console.log(`📢 Emitiendo 'nueva_notificacion' a ${roomCliente}`);
     io.to(roomCliente).emit("nueva_notificacion", notificacion);
-  } else if (notificacion.sucursal_id) {
-    const roomSucursal = `sala_sucursal_${notificacion.sucursal_id}`;
-    console.log(`📢 Emitiendo 'nueva_notificacion' a ${roomSucursal}`);
-    io.to(roomSucursal).emit("nueva_notificacion", notificacion);
-  } else {
-    console.log("📢 Emitiendo 'nueva_notificacion' global (broadcast)");
-    io.emit("nueva_notificacion", notificacion);
+  }
+  if (notificacion.pedido_id) {
+    const roomPedido = `sala_pedido_${notificacion.pedido_id}`;
+    io.to(roomPedido).emit("nueva_notificacion", notificacion);
+  }
+  if (!notificacion.cliente_id && !notificacion.pedido_id) {
+    if (notificacion.sucursal_id) {
+      const roomSucursal = `sala_sucursal_${notificacion.sucursal_id}`;
+      console.log(`📢 Emitiendo 'nueva_notificacion' a ${roomSucursal}`);
+      io.to(roomSucursal).emit("nueva_notificacion", notificacion);
+    } else {
+      console.log("📢 Emitiendo 'nueva_notificacion' global (broadcast)");
+      io.emit("nueva_notificacion", notificacion);
+    }
   }
 };
 

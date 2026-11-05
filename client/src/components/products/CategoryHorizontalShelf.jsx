@@ -25,7 +25,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "vacuno",
-    titulo: "🥩 Vacuno",
+    titulo: "Vacuno",
     descripcion:
       "Cortes vacunos directos de nuestra hacienda seleccionada, frescos y rendidores.",
     badge: "Novillito Premium",
@@ -33,7 +33,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "cerdo",
-    titulo: "🥓 Cerdo",
+    titulo: "Cerdo",
     descripcion:
       "Todo en Cerdo de genética! Cortes frescos, directo de nuestra producción a tu mesa.",
     badge: "100% Fresco",
@@ -41,7 +41,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "pollo",
-    titulo: "🍗 Pollo & Granja 🥚",
+    titulo: "Pollo & Granja",
     descripcion:
       "Cortes y productos frescos de campo seleccionados por terneza, versatilidad diaria y máximo rinde.",
     badge: "Granja Fresca",
@@ -49,7 +49,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "embutidos",
-    titulo: "🌭 Embutidos Artesanales",
+    titulo: "Embutidos Artesanales",
     descripcion:
       "Elaboración diaria con tripa natural y carne fresca pura sin conservantes.",
     badge: "Elaboración Diaria",
@@ -57,7 +57,7 @@ export const CATEGORY_SECTIONS = [
   },
   {
     id: "preparados",
-    titulo: "🫓 Preparados",
+    titulo: "Preparados",
     descripcion:
       "Milanesas, hamburguesas y medallones del día listos para cocinar en pocos minutos.",
     badge: "Listos para Cocinar",

@@ -2,71 +2,61 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { fetchSucursales } from "@/services/catalogo.service";
 
-const SUCURSALES_DEFAULT = [
-  {
-    id: 1,
-    nombre: "Luis Guillón",
-    direccion: "Av. Luciano Valette 1696",
-    ciudad: "Luis Guillón",
-    horario: "Lun a Sáb 07:00 a 15:00 hs",
-    telefono: "1135534033",
-    activa: true,
-  },
-  {
-    id: 2,
-    nombre: "Moreno",
-    direccion: "Av. del Libertador 4200",
-    ciudad: "Moreno",
-    horario: "Lun a Sáb 06:00 a 15:00 hs",
-    telefono: "1130531313",
-    activa: true,
-  },
-];
+export const CASA_CENTRAL_BRANCH = {
+  id: 1,
+  nombre: "Luis Guillón (Casa Central)",
+  slug: "luis-guillon",
+  direccion: "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires",
+  ciudad: "Luis Guillón",
+  horario: "Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs",
+  telefono: "1135534033",
+  telefono_whatsapp: "5491162166222",
+  activa: true,
+};
+
+const SUCURSALES_DEFAULT = [CASA_CENTRAL_BRANCH];
 
 const LocationContext = createContext(null);
 
 export const LocationProvider = ({ children }) => {
-  const [sucursales, setSucursales] = useState(() => {
-    try {
-      const cached = localStorage.getItem("valette_sucursales_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return SUCURSALES_DEFAULT;
-  });
+  const [sucursales, setSucursales] = useState(SUCURSALES_DEFAULT);
 
   const [deliveryMode, setDeliveryMode] = useState(() => {
     return localStorage.getItem("valette_delivery_mode") || "delivery";
   });
 
-  const [selectedBranch, setSelectedBranch] = useState(() => {
-    const saved = localStorage.getItem("valette_branch_id");
-    const found = sucursales.find((s) => s.id === Number(saved));
-    return found || sucursales[0] || SUCURSALES_DEFAULT[0];
-  });
+  const [selectedBranch, setSelectedBranch] = useState(CASA_CENTRAL_BRANCH);
 
   const [customerAddress, setCustomerAddress] = useState(() => {
-    return localStorage.getItem("valette_address") || "J. Tarulli 1474 (Guillón)";
+    const saved = localStorage.getItem("valette_address");
+    if (saved && !saved.toLowerCase().includes("moreno")) {
+      return saved;
+    }
+    return "Av. Luciano Valette 1696, Luis Guillon";
   });
 
-  // Cargar sucursales en vivo desde la base de datos PostgreSQL
+  // Cargar datos de la sucursal única desde PostgreSQL
   useEffect(() => {
     let isMounted = true;
     const loadSucursales = async () => {
       const data = await fetchSucursales();
       if (isMounted && Array.isArray(data) && data.length > 0) {
-        setSucursales(data);
+        const central = data.find((s) => s.id === 1) || data[0];
+        const normalized = {
+          ...CASA_CENTRAL_BRANCH,
+          ...central,
+          id: 1,
+          nombre: central.nombre || CASA_CENTRAL_BRANCH.nombre,
+          direccion: central.direccion || CASA_CENTRAL_BRANCH.direccion,
+          ciudad: central.ciudad || CASA_CENTRAL_BRANCH.ciudad,
+          horario: central.horario || CASA_CENTRAL_BRANCH.horario,
+        };
+        setSucursales([normalized]);
+        setSelectedBranch(normalized);
         try {
-          localStorage.setItem("valette_sucursales_cache", JSON.stringify(data));
+          localStorage.setItem("valette_sucursales_cache", JSON.stringify([normalized]));
+          localStorage.setItem("valette_branch_id", "1");
         } catch {}
-
-        // Sincronizar sucursal seleccionada si existe en la lista oficial
-        setSelectedBranch((prev) => {
-          const match = data.find((s) => s.id === prev?.id);
-          return match || data[0];
-        });
       }
     };
 
@@ -82,12 +72,12 @@ export const LocationProvider = ({ children }) => {
 
   useEffect(() => {
     if (selectedBranch) {
-      localStorage.setItem("valette_branch_id", selectedBranch.id.toString());
+      localStorage.setItem("valette_branch_id", "1");
     }
   }, [selectedBranch]);
 
   const selectBranch = (branch) => {
-    setSelectedBranch(branch);
+    setSelectedBranch(branch || CASA_CENTRAL_BRANCH);
   };
 
   const updateCustomerAddress = (addr) => {

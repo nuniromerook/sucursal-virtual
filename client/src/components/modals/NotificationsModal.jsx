@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { useNotifications } from "@/context/NotificationContext";
+import { useCart } from "@/context/CartContext";
 
 // Helper para formato de tiempo relativo en español
 const formatTiempoRelativo = (fechaStr) => {
@@ -42,6 +43,7 @@ export const NotificationsModal = ({
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
+  const { setActiveOrderId } = useCart();
 
   const [filter, setFilter] = useState("todas"); // "todas" | "no_leidas"
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
@@ -59,12 +61,15 @@ export const NotificationsModal = ({
   const handleNotificationClick = (notif) => {
     markAsRead(notif.id);
 
-    if (notif.tipo === "pedido_estado") {
+    if (notif.tipo === "pedido" || notif.tipo === "pedido_estado" || notif.pedido_id) {
+      if (notif.pedido_id) {
+        setActiveOrderId(notif.pedido_id);
+      }
       onClose();
       if (onOpenTrackingModal) onOpenTrackingModal();
     } else if (notif.tipo === "puntos") {
       onClose();
-      if (onOpenProfileModal) onOpenProfileModal();
+      if (onOpenProfileModal) onOpenProfileModal("points");
     } else if (notif.tipo === "promo") {
       onClose();
       navigate(
@@ -197,14 +202,14 @@ export const NotificationsModal = ({
                   {/* Icono temático */}
                   <div
                     className={`size-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs font-bold ${
-                      notif.tipo === "pedido_estado"
+                      notif.tipo === "pedido" || notif.tipo === "pedido_estado"
                         ? "bg-blue-100 text-[#003366]"
                         : notif.tipo === "puntos"
                           ? "bg-amber-100 text-amber-800"
                           : "bg-red-100 text-valette-red"
                     }`}
                   >
-                    {notif.tipo === "pedido_estado" ? (
+                    {notif.tipo === "pedido" || notif.tipo === "pedido_estado" ? (
                       <Package className="size-5" />
                     ) : notif.tipo === "puntos" ? (
                       <Sparkles className="size-5" />
@@ -227,7 +232,7 @@ export const NotificationsModal = ({
                       </h4>
                       <span className="text-[10px] text-slate-400 shrink-0 flex items-center gap-1 font-medium">
                         <Clock className="size-2.5" />
-                        {formatTiempoRelativo(notif.fecha)}
+                        {formatTiempoRelativo(notif.creada_en || notif.fecha)}
                       </span>
                     </div>
 

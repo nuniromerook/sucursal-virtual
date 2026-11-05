@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useNotifications } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
 import {
   Bell,
   Menu,
@@ -42,7 +43,21 @@ export const Navbar = ({
   const { deliveryMode, selectedBranch, customerAddress } = useLocation();
   const { categoryCounts } = useCatalogo();
   const { unreadCount } = useNotifications();
+  const { user, isAuthenticated } = useAuth();
   const navbarRef = useRef(null);
+
+  const displayFirstName = isAuthenticated && user?.nombre
+    ? user.nombre.split(" ")[0]
+    : "Ingresar";
+  const displayInitials = isAuthenticated && user?.nombre
+    ? user.nombre
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((n) => n[0]?.toUpperCase())
+        .join("")
+    : "CV";
+  const displayPoints = isAuthenticated ? Number(user?.puntos || 0) : 0;
 
   // Medir dinámicamente el alto exacto de la navbar para alinear la barra sticky al píxel
   useEffect(() => {
@@ -89,9 +104,6 @@ export const Navbar = ({
             title="Menú y Categorías"
           >
             <Menu className="size-5 stroke-[2.2]" />
-            <span className="absolute -top-1 -right-1 size-5 rounded-full bg-valette-red text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-              {categoryCounts.todos || 12}
-            </span>
           </button>
 
           {/* Acciones: Carrito y Notificaciones */}
@@ -136,7 +148,7 @@ export const Navbar = ({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              placeholder="Buscar vacío, asado, pollo, bondiola..."
+              placeholder="Qué queres comer hoy?"
               className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#F1F4F8] border border-slate-200/60 text-xs font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
             />
             {searchQuery && (
@@ -198,7 +210,7 @@ export const Navbar = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => onSearchChange?.(e.target.value)}
-                  placeholder="Buscar vacío, asado, milanesas, pechuga, matambre, combos..."
+                  placeholder="¿Qué querés comer hoy?"
                   className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-[#F1F4F8] border border-slate-200/60 text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
                 />
                 {searchQuery && (
@@ -234,10 +246,14 @@ export const Navbar = ({
               <button
                 type="button"
                 onClick={onOpenProfileModal}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold hover:bg-amber-100/80 transition-colors cursor-pointer"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold hover:bg-amber-100/80 transition-colors cursor-pointer font-num"
               >
                 <span className="text-amber-500">⭐</span>
-                <span>140 pts</span>
+                <span>
+                  {isAuthenticated
+                    ? `${displayPoints.toLocaleString("es-AR")} pts`
+                    : "Club Valette"}
+                </span>
               </button>
 
               {/* Botón de Notificaciones Desktop con Badge */}
@@ -278,10 +294,10 @@ export const Navbar = ({
                 className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-slate-100 border border-slate-200 hover:bg-slate-200/80 transition-colors cursor-pointer"
               >
                 <span className="text-xs font-bold text-slate-700 hidden sm:inline">
-                  Juan P.
+                  {displayFirstName}
                 </span>
                 <div className="size-7 rounded-full bg-[#003366] text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">
-                  JP
+                  {displayInitials}
                 </div>
               </button>
             </div>

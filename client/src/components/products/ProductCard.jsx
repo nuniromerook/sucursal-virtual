@@ -79,12 +79,10 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
         unidad_medida: unidadMedida,
       });
 
-      showToast(`Sumaste 1 ${unidadMedida} de ${productName} al pedido 🥩`);
+      showToast(`Sumaste 1 ${unidadMedida} de ${productName} al pedido`);
     } else {
       updateItemCantidad(product.id, currentQty + 1);
-      showToast(
-        `Actualizaste a ${currentQty + 1} ${unidadMedida} de ${productName}`,
-      );
+      showToast(`Llevas ${currentQty + 1} ${unidadMedida} de ${productName}`);
     }
   };
 
@@ -95,12 +93,10 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
 
     if (currentQty === 1) {
       removeFromCart(product.id);
-      showToast(`Quitaste ${productName} del pedido`, "info");
+      showToast(`Eliminaste ${productName} del carrito`, "info");
     } else {
       updateItemCantidad(product.id, currentQty - 1);
-      showToast(
-        `Actualizaste a ${currentQty - 1} ${unidadMedida} de ${productName}`,
-      );
+      showToast(`Llevas ${currentQty - 1} ${unidadMedida} de ${productName}`);
     }
   };
 

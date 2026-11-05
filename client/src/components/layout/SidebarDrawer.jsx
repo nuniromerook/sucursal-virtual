@@ -21,12 +21,12 @@ import { useCatalogo } from "@/context/CatalogoContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { useTabNavigation } from "@/context/TabNavigationContext";
-
-const PROFILE_STORAGE_KEY = "valette_user_profile";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 
 const DEFAULT_SIDEBAR_USER = {
-  nombre: "Juan Pérez",
-  email: "juan.perez@gmail.com",
+  nombre: "Iniciar Sesión",
+  email: "Accedé al Club Valette",
 };
 
 export const SidebarDrawer = ({
@@ -41,24 +41,19 @@ export const SidebarDrawer = ({
   const { favorites } = useFavorites();
   const { unreadCount } = useNotifications();
   const { goToHome, goToCatalogo } = useTabNavigation();
+  const { user, isAuthenticated } = useAuth();
+  const { activeOrderId } = useCart();
 
   const { handleBackdropClick, modalRef } = useModalBehavior(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  let userProfile = DEFAULT_SIDEBAR_USER;
-  try {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      userProfile = {
-        nombre: parsed.nombre || DEFAULT_SIDEBAR_USER.nombre,
-        email: parsed.email || DEFAULT_SIDEBAR_USER.email,
-      };
-    }
-  } catch {
-    // Fallback silencioso a datos por defecto
-  }
+  const userProfile = isAuthenticated && user
+    ? {
+        nombre: user.nombre || "Cliente Valette",
+        email: user.email || user.telefono || "Club Valette",
+      }
+    : DEFAULT_SIDEBAR_USER;
 
   const handleNav = (action) => {
     onClose();
@@ -112,7 +107,7 @@ export const SidebarDrawer = ({
       id: "combos",
       label: "Combos",
       icon: Package,
-      badge: 4,
+      badge: 3,
       action: () => handleCategoryNav("combos"),
     },
     {
@@ -129,12 +124,12 @@ export const SidebarDrawer = ({
       id: "pedidos",
       label: "Pedidos",
       icon: Truck,
-      badge: 1,
+      badge: activeOrderId ? 1 : null,
       action: () => handleNav(onOpenTrackingModal),
     },
     {
-      id: "sucursales",
-      label: "Sucursales",
+      id: "sucursal",
+      label: "Sucursal",
       icon: MapPin,
       action: () => handleNav(onOpenBranchModal),
     },

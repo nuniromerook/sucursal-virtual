@@ -1,5 +1,5 @@
 // admin/src/pages/CombosPage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -9,17 +9,17 @@ import {
   Scale,
   Sparkles,
   Layers,
-  AlertCircle,
   AlertTriangle,
   X,
-  CheckCircle2,
-  Check,
 } from "lucide-react";
 import { VITE_API_URL } from "../config/api";
 import { useAdmin } from "../context/AdminContext";
 import { useAuth } from "../context/AuthContext";
 import { formatMoney } from "../utils/formatters";
 import ComboModal from "../components/combos/ComboModal";
+
+const DEFAULT_COMBO_IMAGE =
+  "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop";
 
 export default function CombosPage() {
   const { showToast } = useAdmin();
@@ -30,7 +30,7 @@ export default function CombosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos"); // 'todos' | 'activos' | 'pausados'
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   // Modal de Creación / Edición
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,32 +41,22 @@ export default function CombosPage() {
   const [deletingCombo, setDeletingCombo] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Cargar productos del catálogo (para abastecer el selector del modal)
-  const loadCatalog = async () => {
-    try {
-      const res = await fetch(`${VITE_API_URL}/catalogo?incluir_promos_inactivas=true`);
-      if (res.ok) {
-        const data = await res.json();
-        setCatalogProducts(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error("Error al cargar productos del catálogo:", err);
+  const fetchCombosList = useCallback(async () => {
+    const res = await fetch(`${VITE_API_URL}/combos?incluir_inactivos=true`);
+    if (!res.ok) {
+      throw new Error("No se pudo cargar la lista de combos.");
     }
-  };
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }, []);
 
-  // Cargar combos desde la base de datos (incluyendo inactivos para gestión admin)
   const loadCombos = async (silent = false) => {
     if (!silent) setIsLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const res = await fetch(`${VITE_API_URL}/combos?incluir_inactivos=true`);
-      if (res.ok) {
-        const data = await res.json();
-        setCombos(Array.isArray(data) ? data : []);
-      } else {
-        throw new Error("No se pudo cargar la lista de combos.");
-      }
+      const items = await fetchCombosList();
+      setCombos(items);
     } catch (err) {
       console.error("Error al obtener combos:", err);
       showToast("Error de conexión al cargar combos del servidor.", "error");
@@ -77,33 +67,60 @@ export default function CombosPage() {
   };
 
   useEffect(() => {
-    loadCatalog();
-    loadCombos();
-  }, []);
+    let isMounted = true;
+
+    Promise.all([
+      fetch(`${VITE_API_URL}/catalogo?incluir_promos_inactivas=true`).then((r) =>
+        r.ok ? r.json() : [],
+      ),
+      fetchCombosList(),
+    ])
+      .then(([catData, combosData]) => {
+        if (!isMounted) return;
+        setCatalogProducts(Array.isArray(catData) ? catData : []);
+        setCombos(combosData);
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error("Error inicializando CombosPage:", err);
+          showToast("Error de conexión al cargar combos.", "error");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchCombosList, showToast]);
 
   // Filtrado de combos por búsqueda y estado
   const filteredCombos = useMemo(() => {
     return combos.filter((c) => {
-      // Filtro de estado
       if (statusFilter === "activos" && !c.activo) return false;
       if (statusFilter === "pausados" && c.activo) return false;
 
-      // Filtro de búsqueda
       if (!searchTerm.trim()) return true;
       const q = searchTerm.toLowerCase().trim();
 
       const matchNombre = c.nombre?.toLowerCase().includes(q);
       const matchBadge = c.badge?.toLowerCase().includes(q);
       const matchDesc = c.descripcion?.toLowerCase().includes(q);
-      const matchItems = Array.isArray(c.items) && c.items.some(
-        (it) => it.nombre?.toLowerCase().includes(q) || it.categoria?.toLowerCase().includes(q)
-      );
+      const matchItems =
+        Array.isArray(c.items) &&
+        c.items.some(
+          (it) =>
+            it.nombre?.toLowerCase().includes(q) ||
+            it.categoria?.toLowerCase().includes(q),
+        );
 
       return matchNombre || matchBadge || matchDesc || matchItems;
     });
   }, [combos, searchTerm, statusFilter]);
 
-  // Contadores de estado
   const counts = useMemo(() => {
     let activos = 0;
     let pausados = 0;
@@ -114,26 +131,22 @@ export default function CombosPage() {
     return { todos: combos.length, activos, pausados };
   }, [combos]);
 
-  // Abrir modal para crear
   const handleOpenCreate = () => {
     setEditingCombo(null);
     setModalOpen(true);
   };
 
-  // Abrir modal para editar
   const handleOpenEdit = (combo) => {
     setEditingCombo(combo);
     setModalOpen(true);
   };
 
-  // Cerrar modal
   const handleCloseModal = () => {
     if (isSaving) return;
     setModalOpen(false);
     setEditingCombo(null);
   };
 
-  // Guardar (Crear o Actualizar)
   const handleSaveCombo = async (payload) => {
     setIsSaving(true);
     const isEditing = Boolean(payload.id);
@@ -160,7 +173,7 @@ export default function CombosPage() {
       showToast(
         isEditing
           ? `Combo "${payload.nombre}" actualizado con éxito.`
-          : `Combo "${payload.nombre}" creado exitosamente.`
+          : `Combo "${payload.nombre}" creado exitosamente.`,
       );
 
       setModalOpen(false);
@@ -174,13 +187,11 @@ export default function CombosPage() {
     }
   };
 
-  // Alternar Activo / Pausado
   const handleToggleActivo = async (combo) => {
     const nextEstado = !combo.activo;
 
-    // Actualización optimista local
     setCombos((prev) =>
-      prev.map((c) => (c.id === combo.id ? { ...c, activo: nextEstado } : c))
+      prev.map((c) => (c.id === combo.id ? { ...c, activo: nextEstado } : c)),
     );
 
     try {
@@ -200,19 +211,19 @@ export default function CombosPage() {
       showToast(
         nextEstado
           ? `Combo "${combo.nombre}" activado en la tienda online.`
-          : `Combo "${combo.nombre}" pausado de la tienda.`
+          : `Combo "${combo.nombre}" pausado de la tienda.`,
       );
     } catch (err) {
       console.error("Error al alternar estado:", err);
-      // Revertir optimismo
       setCombos((prev) =>
-        prev.map((c) => (c.id === combo.id ? { ...c, activo: combo.activo } : c))
+        prev.map((c) =>
+          c.id === combo.id ? { ...c, activo: combo.activo } : c,
+        ),
       );
       showToast("Error al cambiar estado del combo.", "error");
     }
   };
 
-  // Confirmar eliminación
   const handleConfirmDelete = async () => {
     if (!deletingCombo) return;
     setIsDeleting(true);
@@ -254,7 +265,8 @@ export default function CombosPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Paquetes armados con descuento global. Los cortes, fotos y categorías se vinculan en vivo con el catálogo.
+            Cada tarjeta muestra su imagen custom principal y vincula sus cortes
+            en vivo con el catálogo.
           </p>
         </div>
 
@@ -266,7 +278,9 @@ export default function CombosPage() {
             className="p-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
             title="Recargar combos"
           >
-            <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
           </button>
 
           <button
@@ -282,7 +296,6 @@ export default function CombosPage() {
 
       {/* 2. Barra de Búsqueda y Filtros de Estado */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-        {/* Input de Búsqueda */}
         <div className="relative flex-1">
           <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -303,7 +316,6 @@ export default function CombosPage() {
           )}
         </div>
 
-        {/* Píldoras de Filtro de Estado */}
         <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto no-scrollbar">
           <button
             type="button"
@@ -347,7 +359,9 @@ export default function CombosPage() {
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 space-y-3">
           <RefreshCw className="size-8 animate-spin text-[#002244]" />
-          <span className="text-xs font-bold">Cargando paquetes y cortes del catálogo...</span>
+          <span className="text-xs font-bold">
+            Cargando paquetes y cortes del catálogo...
+          </span>
         </div>
       ) : filteredCombos.length === 0 ? (
         <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-3">
@@ -378,10 +392,11 @@ export default function CombosPage() {
           {filteredCombos.map((c) => {
             const items = Array.isArray(c.items) ? c.items : [];
             const totalCortes = items.length;
-            const extraCortes = Math.max(0, totalCortes - 2);
+            const comboImg =
+              c.imagen_url || c.imagenUrl || DEFAULT_COMBO_IMAGE;
 
             return (
-              <div
+              <article
                 key={c.id}
                 className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
                   c.activo
@@ -390,9 +405,8 @@ export default function CombosPage() {
                 }`}
               >
                 <div>
-                  {/* Banner Superior con Collage Dinámico de Fotos de los Cortes */}
-                  <div className="relative w-full aspect-16/8 bg-slate-100 overflow-hidden border-b border-slate-100 group">
-                    {/* Badge flotante de Peso Total */}
+                  {/* Imagen Única Custom del Combo */}
+                  <div className="relative w-full bg-slate-100 overflow-hidden border-b border-slate-100 group">
                     <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
                         <Scale className="size-3" />
@@ -400,72 +414,26 @@ export default function CombosPage() {
                       </span>
                     </div>
 
-                    {/* Badge flotante de Ahorro */}
                     {c.ahorro > 0 && (
                       <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
                         Ahorro: {formatMoney(c.ahorro)}
                       </span>
                     )}
 
-                    {/* Collage de 1, 2, 3 o más cortes vinculados en vivo */}
-                    {items.length === 0 ? (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold">
-                        Sin cortes asignados
-                      </div>
-                    ) : (
-                      <div
-                        className={`grid w-full h-full divide-x divide-white/80 ${
-                          items.length === 1
-                            ? "grid-cols-1"
-                            : items.length === 2
-                            ? "grid-cols-2"
-                            : "grid-cols-3"
-                        }`}
-                      >
-                        {items.slice(0, 3).map((it, idx) => {
-                          const isThird = idx === 2;
-
-                          return (
-                            <div
-                              key={it.id || idx}
-                              className="relative h-full w-full overflow-hidden bg-slate-200"
-                            >
-                              <img
-                                src={
-                                  it.imagen_url ||
-                                  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400"
-                                }
-                                alt={it.nombre}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                              />
-
-                              {/* Overlay de categoría */}
-                              <span className="absolute bottom-1 inset-x-1 bg-slate-900/70 text-[8px] font-black text-white text-center py-0.5 rounded truncate uppercase">
-                                {it.categoria || it.nombre}
-                              </span>
-
-                              {/* Indicador de más de 3 cortes */}
-                              {isThird && totalCortes > 3 && (
-                                <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white p-1 text-center">
-                                  <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
-                                    +{extraCortes}
-                                  </span>
-                                  <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
-                                    cortes
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <img
+                      src={comboImg}
+                      alt={c.nombre}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = DEFAULT_COMBO_IMAGE;
+                      }}
+                      className="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
                   </div>
 
                   {/* Contenido de la Tarjeta */}
                   <div className="p-4 space-y-3">
-                    {/* Badges de Atributos */}
                     <div className="flex items-center justify-between gap-2">
                       <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-red-50 text-valette-red border border-red-200/80">
                         {c.badge || "🔥 Combo Ahorro"}
@@ -476,7 +444,6 @@ export default function CombosPage() {
                       </span>
                     </div>
 
-                    {/* Nombre y Rinde */}
                     <div>
                       <h3 className="font-black text-slate-900 text-sm leading-snug">
                         {c.nombre}
@@ -527,7 +494,9 @@ export default function CombosPage() {
                           Suma por separado:
                         </span>
                         <span className="text-slate-400 line-through font-medium font-num">
-                          {formatMoney(c.precio_regular_calculado || c.precio_anterior)}
+                          {formatMoney(
+                            c.precio_regular_calculado || c.precio_anterior,
+                          )}
                         </span>
                       </div>
 
@@ -553,7 +522,7 @@ export default function CombosPage() {
                 </div>
 
                 {/* Footer de la Tarjeta: Estado y Acciones */}
-                <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                <footer className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => handleToggleActivo(c)}
@@ -590,8 +559,8 @@ export default function CombosPage() {
                       <Trash2 className="size-4" />
                     </button>
                   </div>
-                </div>
-              </div>
+                </footer>
+              </article>
             );
           })}
         </div>
@@ -599,6 +568,7 @@ export default function CombosPage() {
 
       {/* Modal / Bottom Sheet para Armar / Editar Combo */}
       <ComboModal
+        key={editingCombo?.id || (modalOpen ? "new-combo" : "closed-combo")}
         isOpen={modalOpen}
         onClose={handleCloseModal}
         combo={editingCombo}
@@ -630,7 +600,8 @@ export default function CombosPage() {
                 <span className="font-black text-slate-800">
                   "{deletingCombo.nombre}"
                 </span>
-                . Esta acción quitará el paquete de la tienda de forma permanente.
+                . Esta acción quitará el paquete de la tienda de forma
+                permanente.
               </p>
             </div>
 

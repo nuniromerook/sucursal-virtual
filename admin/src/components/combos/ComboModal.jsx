@@ -1,21 +1,78 @@
 // admin/src/components/combos/ComboModal.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   X,
   Plus,
   Trash2,
   Check,
-  Scale,
   Sparkles,
   Layers,
-  DollarSign,
   AlertCircle,
+  Image as ImageIcon,
+  UploadCloud,
+  Loader2,
 } from "lucide-react";
 import { formatMoney } from "../../utils/formatters";
 import { useModalBehavior } from "../../hooks/useModalBehavior";
+import { uploadImageToCloudinary } from "../../utils/cloudinary";
 
-export default function ComboModal({
-  isOpen,
+const DEFAULT_COMBO_IMAGE =
+  "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop";
+
+function getInitialComboState(combo, catalogProducts) {
+  if (combo) {
+    const comboItems = Array.isArray(combo.items) ? combo.items : [];
+    return {
+      nombre: combo.nombre || "",
+      badge: combo.badge || "🔥 Combo Ahorro",
+      rinde: combo.rinde || "6 a 8 personas",
+      descripcion: combo.descripcion || "",
+      imagen_url: combo.imagen_url || combo.imagenUrl || "",
+      precio: combo.precio != null ? String(combo.precio) : "",
+      puntos: combo.puntos != null ? combo.puntos : 50,
+      activo: combo.activo !== false,
+      items: comboItems.map((it, idx) => ({
+        tempId: it.id || `item-${idx + 1}`,
+        catalogo_id: it.catalogo_id || (it.id ? it.id : ""),
+        cantidad_o_peso: it.cantidad_o_peso || `${it.peso_kg || 1} kg`,
+        peso_kg: it.peso_kg != null ? Number(it.peso_kg) : 1,
+        descripcion_item: it.descripcion_item || "",
+      })),
+    };
+  }
+
+  const defaultP1 = catalogProducts[0]?.id || "";
+  const defaultP2 = catalogProducts[1]?.id || "";
+
+  return {
+    nombre: "",
+    badge: "🔥 Combo Ahorro",
+    rinde: "6 a 8 personas",
+    descripcion: "",
+    imagen_url: DEFAULT_COMBO_IMAGE,
+    precio: "",
+    puntos: 50,
+    activo: true,
+    items: [
+      {
+        tempId: "item-init-1",
+        catalogo_id: defaultP1,
+        cantidad_o_peso: "2 kg",
+        peso_kg: 2,
+        descripcion_item: "",
+      },
+      {
+        tempId: "item-init-2",
+        catalogo_id: defaultP2,
+        cantidad_o_peso: "2 kg",
+        peso_kg: 2,
+        descripcion_item: "",
+      },
+    ],
+  };
+}
+
+function ComboModalContent({
   onClose,
   combo,
   catalogProducts = [],
@@ -23,74 +80,30 @@ export default function ComboModal({
   isSaving,
 }) {
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
-    isOpen,
+    true,
     onClose
   );
 
-  const [nombre, setNombre] = useState("");
-  const [badge, setBadge] = useState("🔥 Parrilla Tradición");
-  const [rinde, setRinde] = useState("6 a 8 personas");
-  const [descripcion, setDescripcion] = useState("");
-  const [precio, setPrecio] = useState("");
-  const [puntos, setPuntos] = useState(50);
-  const [activo, setActivo] = useState(true);
-  const [items, setItems] = useState([]);
+  const initial = useMemo(
+    () => getInitialComboState(combo, catalogProducts),
+    [combo, catalogProducts]
+  );
+
+  const [nombre, setNombre] = useState(initial.nombre);
+  const [badge, setBadge] = useState(initial.badge);
+  const [rinde, setRinde] = useState(initial.rinde);
+  const [descripcion, setDescripcion] = useState(initial.descripcion);
+  const [imagenUrl, setImagenUrl] = useState(initial.imagen_url);
+  const [precio, setPrecio] = useState(initial.precio);
+  const [puntos, setPuntos] = useState(initial.puntos);
+  const [activo, setActivo] = useState(initial.activo);
+  const [items, setItems] = useState(initial.items);
   const [errorValidation, setErrorValidation] = useState(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setErrorValidation(null);
-
-    if (combo) {
-      setNombre(combo.nombre || "");
-      setBadge(combo.badge || "🔥 Combo Ahorro");
-      setRinde(combo.rinde || "6 a 8 personas");
-      setDescripcion(combo.descripcion || "");
-      setPrecio(combo.precio != null ? String(combo.precio) : "");
-      setPuntos(combo.puntos != null ? combo.puntos : 50);
-      setActivo(combo.activo !== false);
-
-      const comboItems = Array.isArray(combo.items) ? combo.items : [];
-      setItems(
-        comboItems.map((it, idx) => ({
-          tempId: it.id || `item-${Date.now()}-${idx}`,
-          catalogo_id: it.catalogo_id || (it.id ? it.id : ""),
-          cantidad_o_peso: it.cantidad_o_peso || `${it.peso_kg || 1} kg`,
-          peso_kg: it.peso_kg != null ? Number(it.peso_kg) : 1,
-          descripcion_item: it.descripcion_item || "",
-        }))
-      );
-    } else {
-      // Nuevo Combo: precargar con 2 cortes iniciales del catálogo si existen
-      const defaultP1 = catalogProducts[0]?.id || "";
-      const defaultP2 = catalogProducts[1]?.id || "";
-
-      setNombre("");
-      setBadge("🔥 Combo Ahorro");
-      setRinde("6 a 8 personas");
-      setDescripcion("");
-      setPrecio("");
-      setPuntos(50);
-      setActivo(true);
-      setItems([
-        {
-          tempId: `item-${Date.now()}-1`,
-          catalogo_id: defaultP1,
-          cantidad_o_peso: "2 kg",
-          peso_kg: 2,
-          descripcion_item: "",
-        },
-        {
-          tempId: `item-${Date.now()}-2`,
-          catalogo_id: defaultP2,
-          cantidad_o_peso: "2 kg",
-          peso_kg: 2,
-          descripcion_item: "",
-        },
-      ]);
-    }
-  }, [isOpen, combo, catalogProducts]);
+  // Estados de Drag & Drop y Subida de Imagen a Cloudinary
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState(null);
 
   // Mapa de productos de catálogo por id para acceso instantáneo
   const productMap = useMemo(() => {
@@ -127,12 +140,68 @@ export default function ComboModal({
     };
   }, [items, productMap, precio]);
 
-  if (!isOpen) return null;
+  // Manejo de subida de imagen custom del combo a Cloudinary
+  const processImageFile = async (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("El archivo debe ser una imagen válida (PNG, JPG, WEBP).");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageError(null);
+
+    try {
+      const optimizedUrl = await uploadImageToCloudinary(file);
+      setImagenUrl(optimizedUrl);
+    } catch (err) {
+      console.error("Error al subir imagen del combo:", err);
+      setImageError(err.message || "Error al subir la imagen a Cloudinary.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processImageFile(file);
+    }
+  };
+
+  const handleFileInputChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await processImageFile(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagenUrl("");
+    setImageError(null);
+  };
 
   const handleAddItem = () => {
-    const nextProd = catalogProducts.find(
-      (p) => !items.some((it) => Number(it.catalogo_id) === Number(p.id))
-    ) || catalogProducts[0];
+    const nextProd =
+      catalogProducts.find(
+        (p) => !items.some((it) => Number(it.catalogo_id) === Number(p.id))
+      ) || catalogProducts[0];
 
     setItems((prev) => [
       ...prev,
@@ -161,7 +230,6 @@ export default function ComboModal({
         if (idx !== index) return it;
         const updated = { ...it, [field]: value };
 
-        // Si cambia el peso numérico, sugerir formato en texto si coincide
         if (field === "peso_kg") {
           const num = Number(value);
           if (!isNaN(num) && num > 0) {
@@ -193,10 +261,11 @@ export default function ComboModal({
       return;
     }
 
-    // Validar que todos los items tengan un corte seleccionado
     const invalidItem = items.find((it) => !it.catalogo_id);
     if (invalidItem) {
-      setErrorValidation("Seleccioná un producto del catálogo para cada corte del combo.");
+      setErrorValidation(
+        "Seleccioná un producto del catálogo para cada corte del combo."
+      );
       return;
     }
 
@@ -208,6 +277,7 @@ export default function ComboModal({
       badge: badge.trim(),
       rinde: rinde.trim(),
       descripcion: descripcion.trim(),
+      imagen_url: imagenUrl.trim() || DEFAULT_COMBO_IMAGE,
       precio: Number(precio),
       precio_anterior: precioRegularTotal,
       kilos: totalKilosCalc,
@@ -236,10 +306,8 @@ export default function ComboModal({
       >
         {/* Zona táctil de arrastre (barra + header superior) */}
         <div {...dragHandleProps} className="touch-none select-none shrink-0">
-          {/* Barra táctil para deslizar en celulares */}
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-          {/* Header Superior del Modal */}
           <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-white">
             <div className="flex items-center gap-3">
               <div className="size-9 rounded-2xl bg-red-50 text-valette-red flex items-center justify-center shrink-0">
@@ -341,14 +409,147 @@ export default function ComboModal({
               </div>
             </div>
 
-            {/* 2. Contenedor Dinámico de Cortes Incluidos */}
+            {/* 2. Fotografía Custom del Combo (1 Imagen por Card) */}
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    2. Imagen Custom del Combo (Portada de la Card)
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Imagen única que muestra lo que contiene el combo en la tarjeta
+                  </span>
+                </div>
+                {imagenUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-[11px] text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="size-3" />
+                    <span>Quitar foto</span>
+                  </button>
+                )}
+              </div>
+
+              {imageError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center gap-2 font-medium">
+                  <AlertCircle className="size-4 shrink-0" />
+                  <span>{imageError}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-stretch gap-3.5">
+                <label
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center transition-all cursor-pointer select-none min-h-[125px] ${
+                    isDragging
+                      ? "border-[#002244] bg-blue-50/70 ring-4 ring-[#002244]/10 scale-[1.01]"
+                      : "border-slate-300 hover:border-[#002244]/60 hover:bg-slate-50/80 bg-slate-50/50"
+                  } ${
+                    isUploadingImage || isSaving
+                      ? "pointer-events-none opacity-60"
+                      : ""
+                  }`}
+                >
+                  {isUploadingImage ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="size-6 text-[#002244] animate-spin" />
+                      <span className="text-xs font-bold text-slate-800">
+                        Subiendo imagen del combo a Cloudinary...
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`size-9 rounded-xl flex items-center justify-center transition-colors ${
+                          isDragging
+                            ? "bg-[#002244] text-white"
+                            : "bg-white text-slate-600 border border-slate-200 shadow-2xs"
+                        }`}
+                      >
+                        <UploadCloud className="size-4.5" />
+                      </div>
+                      <span className="mt-0.5 text-xs font-bold text-slate-800">
+                        {isDragging
+                          ? "¡Soltá la imagen del combo acá!"
+                          : "Arrastrá la imagen custom del combo o hacé clic"}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        Formatos recomendados: 16:9 / 4:3 en PNG, JPG o WEBP
+                      </span>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleFileInputChange}
+                    disabled={isUploadingImage || isSaving}
+                  />
+                </label>
+
+                {/* Vista previa 16:9 de la imagen del combo */}
+                {imagenUrl ? (
+                  <div className="relative w-full sm:w-48 aspect-video shrink-0 rounded-2xl border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs group self-center">
+                    <img
+                      src={imagenUrl}
+                      alt="Vista previa del combo"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = DEFAULT_COMBO_IMAGE;
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2">
+                      <span className="text-[10px] font-bold text-white bg-black/60 px-2 py-0.5 rounded-md">
+                        Imagen del combo
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="text-[10px] font-black text-rose-300 hover:text-white cursor-pointer"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full sm:w-48 aspect-video shrink-0 rounded-2xl border border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-300 gap-1 self-center">
+                    <ImageIcon className="size-6 stroke-[1.5]" />
+                    <span className="text-[10px] font-medium text-slate-400">
+                      Usará imagen de prueba
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  O ingresá la URL directa de la imagen del combo
+                </label>
+                <input
+                  type="text"
+                  value={imagenUrl}
+                  onChange={(e) => setImagenUrl(e.target.value)}
+                  placeholder={DEFAULT_COMBO_IMAGE}
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-700 text-xs font-mono focus:bg-white focus:border-[#002244] transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* 3. Contenedor Dinámico de Cortes Incluidos */}
             <div className="space-y-3.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-1">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  2. Cortes que Componen el Combo ({items.length})
+                  3. Cortes que Componen el Combo ({items.length})
                 </div>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  Las fotos y datos se vinculan en vivo al catálogo
+                  Se muestran al abrir el detalle del combo
                 </span>
               </div>
 
@@ -361,7 +562,6 @@ export default function ComboModal({
                       key={item.tempId}
                       className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-colors"
                     >
-                      {/* Miniatura en vivo del corte */}
                       <div className="size-14 rounded-xl bg-slate-200 border border-slate-300/80 overflow-hidden shrink-0 relative">
                         {prod?.imagen_url ? (
                           <img
@@ -379,7 +579,6 @@ export default function ComboModal({
                         </span>
                       </div>
 
-                      {/* Selector de Producto del Catálogo */}
                       <div className="flex-1 min-w-0 w-full sm:w-auto">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
                           Corte #{idx + 1}
@@ -394,13 +593,13 @@ export default function ComboModal({
                           <option value="">-- Seleccionar corte --</option>
                           {catalogProducts.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.nombre_producto} ({p.categoria}) - {formatMoney(p.precio)}/{p.unidad_medida || "kg"}
+                              {p.nombre_producto} ({p.categoria}) -{" "}
+                              {formatMoney(p.precio)}/{p.unidad_medida || "kg"}
                             </option>
                           ))}
                         </select>
                       </div>
 
-                      {/* Cantidad / Peso para el cliente */}
                       <div className="w-full sm:w-32">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
                           Detalle visible
@@ -409,14 +608,17 @@ export default function ComboModal({
                           type="text"
                           value={item.cantidad_o_peso}
                           onChange={(e) =>
-                            handleItemChange(idx, "cantidad_o_peso", e.target.value)
+                            handleItemChange(
+                              idx,
+                              "cantidad_o_peso",
+                              e.target.value
+                            )
                           }
                           placeholder="ej: 2 kg"
                           className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-900 outline-none focus:border-[#002244]"
                         />
                       </div>
 
-                      {/* Peso en KG (para cálculo financiero de ahorro) */}
                       <div className="w-full sm:w-24">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
                           Peso (kg)
@@ -433,7 +635,6 @@ export default function ComboModal({
                         />
                       </div>
 
-                      {/* Botón Eliminar Corte */}
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(idx)}
@@ -457,10 +658,10 @@ export default function ComboModal({
               </button>
             </div>
 
-            {/* 3. Fijación Manual de Precio y Calculadora de Ahorro */}
+            {/* 4. Fijación Manual de Precio y Calculadora de Ahorro */}
             <div className="space-y-3.5">
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">
-                3. Precio Final y Cálculo de Ahorro
+                4. Precio Final y Cálculo de Ahorro
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -506,7 +707,6 @@ export default function ComboModal({
                 </div>
               </div>
 
-              {/* Caja Inteligente de Análisis Financiero en Vivo */}
               <div className="bg-gradient-to-br from-slate-50 to-emerald-50/40 p-4 rounded-2xl border border-slate-200/80 space-y-2.5">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center justify-between">
                   <span>Balance Financiero en Tiempo Real</span>
@@ -560,7 +760,7 @@ export default function ComboModal({
               </div>
             </div>
 
-            {/* 4. Estado de Publicación */}
+            {/* 5. Estado de Publicación */}
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
               <div>
                 <div className="font-bold text-slate-900">
@@ -588,7 +788,7 @@ export default function ComboModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={isSaving}
+              disabled={isSaving || isUploadingImage}
               className="px-4 py-2.5 text-slate-500 hover:text-slate-800 font-bold text-xs rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Cancelar
@@ -596,7 +796,7 @@ export default function ComboModal({
 
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isUploadingImage}
               className="px-6 py-2.5 bg-[#c53030] hover:bg-[#a82525] text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
             >
               <Check className="size-4 stroke-[2.5]" />
@@ -606,5 +806,27 @@ export default function ComboModal({
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ComboModal({
+  isOpen,
+  onClose,
+  combo,
+  catalogProducts = [],
+  onSave,
+  isSaving,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <ComboModalContent
+      key={combo?.id ?? "nuevo-combo"}
+      onClose={onClose}
+      combo={combo}
+      catalogProducts={catalogProducts}
+      onSave={onSave}
+      isSaving={isSaving}
+    />
   );
 }

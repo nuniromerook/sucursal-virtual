@@ -6,25 +6,26 @@ const {
   getCarrito,
   updateItemCarrito,
   clearCarritoDB,
+  registrarPasoCarrito,
+  getCarritosActivos,
 } = require("../controllers/carritos.controller");
-const { requireAuth } = require("../utils/auth");
 
-// Todas las rutas requieren JWT de cliente autenticado
+// Sincronizar carrito local con DB (por sesion_id de dispositivo y/o JWT de cliente)
+router.post("/carritos/sincronizar", sincronizarCarrito);
 
-// Sincronizar carrito local con DB (al login o al montar la app)
-router.post("/carritos/sincronizar", requireAuth, sincronizarCarrito);
+// Registrar avance o abandono en el embudo de compra (funnel tracking)
+router.post("/carritos/paso", registrarPasoCarrito);
 
-// Obtener carrito activo del cliente desde DB
-router.get("/carritos/mi-carrito", requireAuth, getCarrito);
+// Obtener carrito activo (por sesion_id o JWT)
+router.get("/carritos/mi-carrito", getCarrito);
 
-// Actualizar cantidad de un ítem (también sirve para agregar si no existe)
-router.patch(
-  "/carritos/mi-carrito/item/:catalogoId",
-  requireAuth,
-  updateItemCarrito
-);
+// Obtener carritos activos y embudo de abandono para inspección administrativa
+router.get("/carritos/activos", getCarritosActivos);
 
-// Vaciar el carrito (logout / clearCart)
-router.delete("/carritos/mi-carrito", requireAuth, clearCarritoDB);
+// Actualizar cantidad de un ítem
+router.patch("/carritos/mi-carrito/item/:catalogoId", updateItemCarrito);
+
+// Vaciar el carrito
+router.delete("/carritos/mi-carrito", clearCarritoDB);
 
 module.exports = router;

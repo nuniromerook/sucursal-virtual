@@ -60,19 +60,25 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
   };
 
   const handleAddToCart = () => {
-    const firstImg =
+    const mainImg =
+      combo.imagen_url ||
+      combo.imagenUrl ||
       items[0]?.imagen_url ||
       items[0]?.imagenUrl ||
-      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop";
 
     addToCart(
       {
-        id: combo.id,
+        id: `combo-${combo.id}`,
+        catalogo_id: items[0]?.catalogo_id || combo.id,
+        es_combo: true,
+        combo_id: combo.id,
         nombre: combo.nombre,
         slug: combo.slug,
         precio: precioUnitario,
+        unidad_medida: "u",
         puntos: puntosUnitario,
-        imagen_url: firstImg,
+        imagen_url: mainImg,
       },
       cantidad,
       {
@@ -117,7 +123,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                Combo Especial Frigorífico Valette
+                Combos especiales
               </span>
             </div>
 
@@ -133,7 +139,7 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
         </div>
 
         {/* Cuerpo del Modal con scroll fluido */}
-        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-6">
+        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-8">
           {/* 1. Hero Card con Datos Clave del Combo */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#002244] to-[#003366] text-white p-5 sm:p-6 shadow-md">
             {/* Adorno de fondo */}
@@ -208,21 +214,17 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
           </div>
 
           {/* 2. Visualización Detallada de Cada Corte con Imagen */}
-          <div className="space-y-3">
+          <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div>
                 <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
                   <span>Cortes incluidos en este combo</span>
-                  <span className="size-2 rounded-full bg-[#003366]" />
                 </h3>
                 <p className="text-xs text-slate-500">
                   Inspeccioná las fotos reales y cantidades de cada producto del
                   combo:
                 </p>
               </div>
-              <span className="text-[11px] font-black text-[#003366] bg-[#003366]/5 px-2.5 py-1 rounded-lg border border-[#003366]/10 self-start sm:self-auto font-num">
-                {items.length} variedades ({kilosUnitario} kg)
-              </span>
             </div>
 
             {/* Grilla de Cortes con Foto Individual */}
@@ -267,13 +269,6 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
                             item.descripcion ||
                             "Corte fresco seleccionado fraccionado en el día con cadena de frío."}
                         </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
-                          <Check className="size-2.5 stroke-[3]" />
-                          <span>Sellado con cadena de frío</span>
-                        </span>
                       </div>
                     </div>
                   </div>

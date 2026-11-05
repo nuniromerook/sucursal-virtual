@@ -10,7 +10,7 @@ const SearchInput = () => {
         </div>
         <input
           type="text"
-          placeholder="Buscar vacío, asado, milanesas, pechuga, matambre..."
+          placeholder="Qué queres comer hoy?"
           className="w-full pl-10 pr-24 py-3 rounded-2xl bg-[#F1F4F8] border-none text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
         />
         <button

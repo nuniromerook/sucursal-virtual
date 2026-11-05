@@ -82,6 +82,12 @@ const getButcherShopSchema = (sucursal) => {
         "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         "opens": "07:00",
         "closes": "15:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Sunday"],
+        "opens": "08:00",
+        "closes": "13:00"
       }
     ]
   };
@@ -244,15 +250,10 @@ const renderSeoHtml = async (req, res) => {
   </p>
   <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
   <div style="display: flex; gap: 16px; text-align: left; justify-content: center; flex-wrap: wrap;">
-    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 220px; background: #f8fafc;">
-      <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Sucursal Luis Guillón</h3>
-      <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. Luciano Valette 1696</p>
-      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 07:00 a 15:00 hs</p>
-    </div>
-    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 220px; background: #f8fafc;">
-      <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Sucursal Moreno</h3>
-      <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. del Libertador 4200</p>
-      <p style="margin: 0; font-size: 12px; color: #64748b;">Lun. a Sáb. de 06:00 a 15:00 hs</p>
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; flex: 1; min-width: 260px; background: #f8fafc;">
+      <h3 style="font-size: 12px; color: #003366; text-transform: uppercase; margin: 0 0 6px 0;">Casa Central · Luis Guillón</h3>
+      <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires</p>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs</p>
     </div>
   </div>
 </body>
@@ -434,7 +435,7 @@ const renderSeoHtml = async (req, res) => {
           </div>
         </main>
         <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #64748b;">
-          <p><strong>Abastecedora Valette</strong> — Sucursal Luis Guillón: Av. Luciano Valette 1696 (Horarios: Lun a Sáb de 07:00 a 15:00 hs).</p>
+          <p><strong>Abastecedora Valette</strong> — Casa Central Luis Guillón: Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires (Horarios: Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs).</p>
           <p>Envíos refrigerados directos en Luis Guillón, Esteban Echeverría y Zona Sur.</p>
         </footer>
       `;

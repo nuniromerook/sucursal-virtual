@@ -99,6 +99,41 @@ const getResumenAnalytics = async (req, res) => {
     const cli = Number(bData.total_clics);
     const ctr = imp > 0 ? ((cli / imp) * 100).toFixed(1) : 0;
 
+    // 4. Eventos de interacción principales (metricas_eventos)
+    const eventosRes = await pool.query(
+      `SELECT
+         tipo_evento,
+         COUNT(id) AS total
+       FROM metricas_eventos
+       WHERE ${timeFilter}
+       GROUP BY tipo_evento
+       ORDER BY total DESC
+       LIMIT 10`
+    );
+
+    // 5. Embudo de conversión y abandono de carritos en la nube (carritos)
+    const carritosTimeFilter = timeFilter.replace("creado_en", "actualizado_en");
+    const embudoRes = await pool.query(
+      `SELECT
+         COALESCE(ultimo_paso, 'catalogo') AS paso,
+         COUNT(id) AS cantidad
+       FROM carritos
+       WHERE ${carritosTimeFilter}
+       GROUP BY COALESCE(ultimo_paso, 'catalogo')
+       ORDER BY cantidad DESC`
+    );
+
+    const motivosAbandonoRes = await pool.query(
+      `SELECT
+         motivo_abandono,
+         COUNT(id) AS cantidad
+       FROM carritos
+       WHERE ${carritosTimeFilter} AND motivo_abandono IS NOT NULL
+       GROUP BY motivo_abandono
+       ORDER BY cantidad DESC
+       LIMIT 6`
+    );
+
     res.json({
       rango,
       total_visitas: Number(vData.total_visitas),
@@ -114,6 +149,20 @@ const getResumenAnalytics = async (req, res) => {
         ruta: p.ruta,
         visitas: Number(p.visitas),
       })),
+      eventos_top: eventosRes.rows.map((e) => ({
+        tipo_evento: e.tipo_evento,
+        total: Number(e.total),
+      })),
+      embudo_carritos: {
+        por_paso: embudoRes.rows.map((r) => ({
+          paso: r.paso,
+          cantidad: Number(r.cantidad),
+        })),
+        motivos_abandono: motivosAbandonoRes.rows.map((m) => ({
+          motivo: m.motivo_abandono,
+          cantidad: Number(m.cantidad),
+        })),
+      },
       publicidad: {
         impresiones: imp,
         clics: cli,

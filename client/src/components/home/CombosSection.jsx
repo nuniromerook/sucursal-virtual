@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import { ComboDetailModal } from "@/components/modals/ComboDetailModal";
 
-// Fallback inicial por si no hay conexión de red
+const DEFAULT_COMBO_IMAGE =
+  "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop";
+
+// Fallback inicial con 1 imagen custom de prueba por combo hasta subir las definitivas
 export const COMBOS = [
   {
     id: 1,
@@ -27,6 +30,11 @@ export const COMBOS = [
     ahorro: 5400,
     puntos: 50,
     precio: 37900,
+    precio_anterior: 43300,
+    imagen_url:
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop",
+    imagenUrl:
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop",
     descripcion:
       "La selección parrillera definitiva con novillito seleccionado, cerdo crocante y chorizo puro cerdo. Todo lo indispensable para lucirse frente a las brasas.",
     items: [
@@ -54,22 +62,6 @@ export const COMBOS = [
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685191/qygthxwjvw6t8w4ra4j1.jpg",
       },
-      {
-        nombre: "Vacío",
-        peso: "1.5 kg",
-        descripcion:
-          "Corte vacuno parrillero por excelencia con fina cobertura grasa y carne tierna y fibrosa.",
-        imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685051/nqtxmos2sbshqtvip3yq.webp",
-      },
-      {
-        nombre: "Morcilla",
-        peso: "0.5 kg",
-        descripcion:
-          "Morcilla bombón artesanal con suave textura y especias tradicionales.",
-        imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526373/geg0ezk3acs5xrhd0jmf.webp",
-      },
     ],
   },
   {
@@ -83,7 +75,11 @@ export const COMBOS = [
     ahorro: 6700,
     puntos: 60,
     precio: 52900,
-    precioAnterior: 59600,
+    precio_anterior: 59600,
+    imagen_url:
+      "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=1000&auto=format&fit=crop",
+    imagenUrl:
+      "https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=1000&auto=format&fit=crop",
     descripcion:
       "Paquete completo y versátil para resolver las comidas cotidianas con proteínas magras y cortes rendidores: supremas frescas, roast beef y hamburguesas caseras de pollo.",
     items: [
@@ -111,14 +107,6 @@ export const COMBOS = [
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685476/sb35jibeojseltwvgcd5.webp",
       },
-      {
-        nombre: "Milanesas de Carne",
-        peso: "1.5 kg",
-        descripcion:
-          "Elaboradas con pulpa tierna de ternera y rebozadas en pan rallado casero del día.",
-        imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685232/dffz5ux606ealcpkzffz.webp",
-      },
     ],
   },
   {
@@ -132,7 +120,11 @@ export const COMBOS = [
     ahorro: 7000,
     puntos: 55,
     precio: 52500,
-    precioAnterior: 59500,
+    precio_anterior: 59500,
+    imagen_url:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop",
+    imagenUrl:
+      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop",
     descripcion:
       "Cortes tiernos y selectos para los amantes del buen comer: bifes anchos con ojo de bife veteado, bondiola jugosa de cerdo y matambre vacuno tierno.",
     items: [
@@ -159,22 +151,6 @@ export const COMBOS = [
           "Corte delgado y tierno entre el cuero y el costillar. Clásico para tiernizar a la pizza, arrollar o hacer a la parrilla.",
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526373/geg0ezk3acs5xrhd0jmf.webp",
-      },
-      {
-        nombre: "Entraña",
-        peso: "1 kg",
-        descripcion:
-          "Corte con membrana crocante al fuego y textura sumamente tierna y sabrosa.",
-        imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685112/fb7oorariii16nelsew8.webp",
-      },
-      {
-        nombre: "Chinchulines",
-        peso: "1 kg",
-        descripcion:
-          "Achura crocante por fuera y suave por dentro, limpia y lista para la parrilla.",
-        imagenUrl:
-          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685191/qygthxwjvw6t8w4ra4j1.jpg",
       },
     ],
   },
@@ -250,19 +226,25 @@ export const CombosSection = ({ searchQuery = "" }) => {
 
   const handleAddCombo = (combo) => {
     const items = Array.isArray(combo.items) ? combo.items : [];
-    const firstImg =
+    const mainImg =
+      combo.imagen_url ||
+      combo.imagenUrl ||
       items[0]?.imagen_url ||
       items[0]?.imagenUrl ||
-      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
+      DEFAULT_COMBO_IMAGE;
 
     addToCart(
       {
-        id: combo.id,
+        id: `combo-${combo.id}`,
+        catalogo_id: items[0]?.catalogo_id || combo.id,
+        es_combo: true,
+        combo_id: combo.id,
         nombre: combo.nombre,
         slug: combo.slug,
         precio: Number(combo.precio) || 0,
+        unidad_medida: "u",
         puntos: Number(combo.puntos) || 50,
-        imagen_url: firstImg,
+        imagen_url: mainImg,
       },
       1,
       {
@@ -283,7 +265,6 @@ export const CombosSection = ({ searchQuery = "" }) => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3 px-4 sm:px-6">
         <div>
           <div className="flex items-center gap-2 mt-4 sm:mt-6">
-            <span className="text-xl">📦</span>
             <h2 className="text-xl font-black text-slate-900 leading-tight">
               Combos esenciales
             </h2>
@@ -292,8 +273,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Paquetes armados por nuestros carniceros con descuentos por volumen
-            y más puntos.
+            Paquetes armados para cada gusto y necesidad.
           </p>
         </div>
 
@@ -326,9 +306,6 @@ export const CombosSection = ({ searchQuery = "" }) => {
         className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-1 px-4 sm:px-6 snap-x snap-mandatory scroll-pl-4 scroll-pr-4 sm:scroll-pl-6 sm:scroll-pr-6"
       >
         {filteredCombos.map((combo) => {
-          const items = Array.isArray(combo.items) ? combo.items : [];
-          const totalCortes = items.length;
-          const extraCortes = Math.max(0, totalCortes - 4);
           const tagColorClass = combo.tagColor || getTagColor(combo.badge);
 
           const precio = Number(combo.precio) || 0;
@@ -337,131 +314,93 @@ export const CombosSection = ({ searchQuery = "" }) => {
             Number(combo.precioAnterior) ||
             Number(combo.precio_regular_calculado) ||
             precio;
-          const ahorro =
-            Number(combo.ahorro) > 0
-              ? Number(combo.ahorro)
-              : Math.max(0, precioAnterior - precio);
 
-          // Si el combo tiene menos de 4 cortes, completar hasta 4 repitiendo cortes para mantener el grid 2x2 simétrico
-          const displayItems =
-            totalCortes >= 4
-              ? items.slice(0, 4)
-              : totalCortes > 0
-                ? [
-                    ...items,
-                    ...Array.from({ length: 4 - totalCortes }).map(
-                      (_, i) => items[i % totalCortes],
-                    ),
-                  ]
-                : [
-                    {
-                      nombre: "Corte",
-                      imagen_url:
-                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
-                    },
-                    {
-                      nombre: "Corte",
-                      imagen_url:
-                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
-                    },
-                    {
-                      nombre: "Corte",
-                      imagen_url:
-                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
-                    },
-                    {
-                      nombre: "Corte",
-                      imagen_url:
-                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
-                    },
-                  ];
+          const comboImg =
+            combo.imagen_url || combo.imagenUrl || DEFAULT_COMBO_IMAGE;
 
           return (
-            <div
+            <article
               key={combo.id}
-              className="w-[80vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
+              onClick={() => setSelectedCombo(combo)}
+              className="w-[80vw] sm:w-[350px] md:w-[360px] shrink-0 snap-start last:snap-end bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer"
             >
-              <div
-                onClick={() => setSelectedCombo(combo)}
-                className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
-              >
-                <div>
-                  {/* 1. Mosaico 2x2 Cuadrado de los Cortes del Combo */}
-                  <div className="relative w-full h-fit rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
-                    {/* Badge flotante de Kilos Totales sobre las fotos */}
-                    <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
-                        <Scale className="size-3" />
-                        <span>{combo.kilos} kg en total</span>
-                      </span>
-                    </div>
-
-                    {/* Badge flotante "Ver fotos" en esquina derecha */}
-                    <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                      <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">
-                        <Eye className="size-2.5" />
-                        <span>Ver fotos</span>
-                      </span>
-                    </div>
-
-                    <div className="aspect-video flex w-full rounded overflow-hidden">
-                      <img
-                        src={combo.imagenUrl}
-                        alt={combo.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 2. Badges de Ahorro y Puntos */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${tagColorClass}`}
-                    >
-                      {combo.badge || "🔥 Combo Ahorro"}
-                    </span>
-                    <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
-                      <Sparkles className="size-2.5 text-amber-600" />+
-                      {combo.puntos || 50} pts Club
+              <div>
+                {/* 1. Imagen Única Custom del Combo */}
+                <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
+                  {/* Badge flotante de Kilos Totales sobre la foto */}
+                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
+                      <Scale className="size-3" />
+                      <span>{combo.kilos} kg en total</span>
                     </span>
                   </div>
 
-                  {/* 3. Título y Rinde */}
-                  <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
-                    <span>{combo.nombre}</span>
-                    <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
-                  </h3>
-                </div>
-
-                {/* 5. Precios y Botón de Acción en la Base */}
-                <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
-                  <div>
-                    <div className="flex flex-col">
-                      <span className="text-xl font-black text-slate-900 font-num">
-                        {formatPrecio(precio)}
-                      </span>
-                      {precioAnterior > precio && (
-                        <span className="text-[11px] text-slate-400 line-through font-num">
-                          {formatPrecio(precioAnterior)}
-                        </span>
-                      )}
-                    </div>
+                  {/* Badge flotante "Ver detalle" en esquina derecha */}
+                  <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">
+                      <Eye className="size-2.5" />
+                      <span>Ver detalle</span>
+                    </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddCombo(combo);
+                  <img
+                    src={comboImg}
+                    alt={combo.nombre}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_COMBO_IMAGE;
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
-                  >
-                    <ShoppingCart className="size-3.5" />
-                    <span>Sumar</span>
-                  </button>
+                    className="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
                 </div>
+
+                {/* 2. Badges de Ahorro y Puntos */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${tagColorClass}`}
+                  >
+                    {combo.badge || "🔥 Combo Ahorro"}
+                  </span>
+                  <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
+                    <Sparkles className="size-2.5 text-amber-600" />+
+                    {combo.puntos || 50} pts Club
+                  </span>
+                </div>
+
+                {/* 3. Título y Rinde */}
+                <h3 className="text-base font-black text-slate-900 leading-snug group-hover:text-[#003366] transition-colors flex items-center justify-between">
+                  <span>{combo.nombre}</span>
+                  <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                </h3>
               </div>
-            </div>
+
+              {/* 4. Precios y Botón de Acción en la Base */}
+              <footer className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-xl font-black text-slate-900 font-num">
+                    {formatPrecio(precio)}
+                  </span>
+                  {precioAnterior > precio && (
+                    <span className="text-[11px] text-slate-400 line-through font-num">
+                      {formatPrecio(precioAnterior)}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddCombo(combo);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#003366] hover:bg-valette-dark text-white font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-2xs cursor-pointer shrink-0"
+                >
+                  <ShoppingCart className="size-3.5" />
+                  <span>Sumar</span>
+                </button>
+              </footer>
+            </article>
           );
         })}
         {/* Spacer de cierre */}

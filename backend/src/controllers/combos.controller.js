@@ -1,6 +1,9 @@
 // backend/src/controllers/combos.controller.js
 const pool = require("../db");
 
+const DEFAULT_COMBO_IMAGE =
+  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop";
+
 function slugify(text) {
   return text
     .toString()
@@ -27,6 +30,7 @@ const getCombos = async (req, res) => {
         c.nombre, 
         c.slug, 
         c.descripcion, 
+        c.imagen_url,
         c.precio::numeric, 
         c.precio_anterior::numeric, 
         c.kilos::numeric, 
@@ -87,9 +91,12 @@ const getCombos = async (req, res) => {
         Number(combo.precio_anterior) > 0
           ? Number(combo.precio_anterior)
           : precioRegularTotal;
+      const finalImg = combo.imagen_url || DEFAULT_COMBO_IMAGE;
 
       return {
         ...combo,
+        imagen_url: finalImg,
+        imagenUrl: finalImg,
         precio: precioCombo,
         precio_anterior: precioAnterior,
         precio_regular_calculado: precioRegularTotal,
@@ -120,6 +127,7 @@ const getComboById = async (req, res) => {
         c.nombre, 
         c.slug, 
         c.descripcion, 
+        c.imagen_url,
         c.precio::numeric, 
         c.precio_anterior::numeric, 
         c.kilos::numeric, 
@@ -183,9 +191,12 @@ const getComboById = async (req, res) => {
       Number(combo.precio_anterior) > 0
         ? Number(combo.precio_anterior)
         : precioRegularTotal;
+    const finalImg = combo.imagen_url || DEFAULT_COMBO_IMAGE;
 
     res.json({
       ...combo,
+      imagen_url: finalImg,
+      imagenUrl: finalImg,
       precio: precioCombo,
       precio_anterior: precioAnterior,
       precio_regular_calculado: precioRegularTotal,
@@ -207,6 +218,8 @@ const createCombo = async (req, res) => {
       nombre,
       slug,
       descripcion,
+      imagen_url,
+      imagenUrl,
       precio,
       precio_anterior,
       kilos,
@@ -233,13 +246,15 @@ const createCombo = async (req, res) => {
     const finalPuntos = Number(puntos) || 50;
     const finalActivo = activo !== false;
     const finalOrden = Number(orden) || 0;
+    const finalImagen =
+      (imagen_url || imagenUrl || "").trim() || DEFAULT_COMBO_IMAGE;
 
     await client.query("BEGIN");
 
     const insertComboQuery = `
       INSERT INTO combos (
-        nombre, slug, descripcion, precio, precio_anterior, kilos, rinde, badge, puntos, activo, orden
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        nombre, slug, descripcion, imagen_url, precio, precio_anterior, kilos, rinde, badge, puntos, activo, orden
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *;
     `;
 
@@ -247,6 +262,7 @@ const createCombo = async (req, res) => {
       nombre,
       finalSlug,
       descripcion || "",
+      finalImagen,
       finalPrecio,
       finalPrecioAnterior,
       finalKilos,
@@ -285,7 +301,10 @@ const createCombo = async (req, res) => {
 
     await client.query("COMMIT");
 
-    res.status(201).json(nuevoCombo);
+    res.status(201).json({
+      ...nuevoCombo,
+      imagenUrl: nuevoCombo.imagen_url,
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error al crear combo:", err);
@@ -306,6 +325,8 @@ const updateCombo = async (req, res) => {
       nombre,
       slug,
       descripcion,
+      imagen_url,
+      imagenUrl,
       precio,
       precio_anterior,
       kilos,
@@ -330,6 +351,8 @@ const updateCombo = async (req, res) => {
     const finalPuntos = Number(puntos) || 50;
     const finalActivo = activo !== false;
     const finalOrden = Number(orden) || 0;
+    const finalImagen =
+      (imagen_url || imagenUrl || "").trim() || DEFAULT_COMBO_IMAGE;
 
     await client.query("BEGIN");
 
@@ -338,16 +361,17 @@ const updateCombo = async (req, res) => {
         nombre = $1,
         slug = $2,
         descripcion = $3,
-        precio = $4,
-        precio_anterior = $5,
-        kilos = $6,
-        rinde = $7,
-        badge = $8,
-        puntos = $9,
-        activo = $10,
-        orden = $11,
+        imagen_url = $4,
+        precio = $5,
+        precio_anterior = $6,
+        kilos = $7,
+        rinde = $8,
+        badge = $9,
+        puntos = $10,
+        activo = $11,
+        orden = $12,
         actualizado_en = NOW()
-      WHERE id = $12
+      WHERE id = $13
       RETURNING *;
     `;
 
@@ -355,6 +379,7 @@ const updateCombo = async (req, res) => {
       nombre,
       finalSlug,
       descripcion || "",
+      finalImagen,
       finalPrecio,
       finalPrecioAnterior,
       finalKilos,
@@ -392,7 +417,10 @@ const updateCombo = async (req, res) => {
 
     await client.query("COMMIT");
 
-    res.json(comboRows[0]);
+    res.json({
+      ...comboRows[0],
+      imagenUrl: comboRows[0].imagen_url,
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error al actualizar combo:", err);

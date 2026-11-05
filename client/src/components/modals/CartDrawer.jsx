@@ -34,14 +34,22 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
     updateItemKg,
     updateItemCantidad,
     removeFromCart,
+    registerFunnelStep,
   } = useCart();
 
   const updateQty = updateItemCantidad || updateItemKg;
 
+  const handleCloseDrawer = () => {
+    if (cartItems.length > 0 && registerFunnelStep) {
+      registerFunnelStep("carrito_abierto", "cierre_carrito");
+    }
+    onClose();
+  };
+
   // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose
+    handleCloseDrawer
   );
 
   if (!isOpen) return null;
@@ -57,6 +65,9 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
   );
 
   const handleCheckoutClick = () => {
+    if (registerFunnelStep) {
+      registerFunnelStep("checkout_datos", null);
+    }
     onClose();
     onOpenCheckout();
   };
@@ -93,7 +104,7 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseDrawer}
               title="Cerrar carrito"
               className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
             >

@@ -1,8 +1,10 @@
 // src/App.jsx
-import React, { useState, useMemo } from "react";
-import { BrowserRouter, useSearchParams } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { BrowserRouter, useSearchParams, useLocation } from "react-router-dom";
+import { trackPageView, trackEvent } from "@/utils/analytics";
 import { ToastProvider } from "@/context/ToastContext";
 import { LocationProvider } from "@/context/LocationContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { CatalogoProvider, useCatalogo } from "@/context/CatalogoContext";
@@ -35,12 +37,29 @@ function AppContent() {
   const { getProductBySlugOrId } = useCatalogo();
   const { isNotificationsOpen, setIsNotificationsOpen } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   // Estados de Búsqueda y Filtros
   const searchQuery = searchParams.get("q") || "";
   const [sortBy, setSortBy] = useState("destacados");
   const [onlyStock, setOnlyStock] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+
+  // Registro automático de vista de página en PostgreSQL (metricas_visitas)
+  useEffect(() => {
+    const rutaActual = `${location.pathname}${location.search || ""}`;
+    trackPageView(rutaActual || "/");
+  }, [location.pathname, location.search]);
+
+  // Registro debounced de búsquedas en el catálogo (metricas_eventos)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 3) return;
+    const timer = setTimeout(() => {
+      trackEvent("buscar_catalogo", q, { query: q });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleSearchChange = (val) => {
     const newParams = new URLSearchParams(searchParams);
@@ -69,6 +88,11 @@ function AppContent() {
   }, [productParam, getProductBySlugOrId]);
 
   const handleOpenProduct = (product) => {
+    trackEvent("ver_producto", product.id, {
+      nombre: product.nombre || product.nombre_producto,
+      slug: product.slug,
+      categoria: product.categoria || product.especie,
+    });
     const newParams = new URLSearchParams(searchParams);
     newParams.set("producto", product.slug || product.id);
     setSearchParams(newParams);
@@ -210,7 +234,8 @@ export default function App() {
   return (
     <ToastProvider>
       <LocationProvider>
-        <FavoritesProvider>
+        <AuthProvider>
+          <FavoritesProvider>
           <CartProvider>
             <BrowserRouter>
               <CatalogoProvider>
@@ -222,7 +247,8 @@ export default function App() {
               </CatalogoProvider>
             </BrowserRouter>
           </CartProvider>
-        </FavoritesProvider>
+          </FavoritesProvider>
+        </AuthProvider>
       </LocationProvider>
     </ToastProvider>
   );

@@ -1,22 +1,16 @@
 // admin/src/components/layout/Navbar.jsx
-import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Volume2, Bell, LogOut } from "lucide-react";
+import { useRef, useEffect } from "react";
+import { Volume2, Bell, LogOut } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { useSocket } from "../../context/SocketContext";
 import { useAuth } from "../../context/AuthContext";
 import { useTabNavigation } from "../../context/TabNavigationContext";
 
 export default function Navbar() {
-  const {
-    sucursales,
-    selectedSucursal,
-    setSelectedSucursal,
-    pedidosPendientesCount,
-  } = useAdmin();
+  const { pedidosPendientesCount } = useAdmin();
   const { isConnected, reproducirSonidoComanda } = useSocket();
   const { user, logout } = useAuth();
   const { switchTab } = useTabNavigation();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const navbarRef = useRef(null);
 
   // Sincronizar altura de navbar en CSS variable
@@ -34,18 +28,13 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  const handleSelectSucursal = (suc) => {
-    setSelectedSucursal(suc);
-    setDropdownOpen(false);
-  };
-
   return (
     <header
       ref={navbarRef}
       className="bg-[#002244] border-b border-brand-dark text-white sticky top-0 z-40 shadow-xs"
     >
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 h-18 flex items-center justify-between gap-3">
-        {/* Logo Oficial Valette (favicon.svg recuperado de client) + Selector */}
+        {/* Logo Oficial Valette + Indicador de Sucursal Única */}
         <div className="flex items-center gap-2.5 sm:gap-4">
           <button
             type="button"
@@ -69,50 +58,6 @@ export default function Navbar() {
               </div>
             </div>
           </button>
-
-          <div className="h-4 w-px bg-white/20 hidden sm:block"></div>
-
-          {/* Selector de Sucursal Activa */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/10 px-2.5 py-1 rounded-full text-xs font-semibold text-slate-100 transition-colors cursor-pointer"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="truncate max-w-27.5 sm:max-w-none">
-                {selectedSucursal?.nombre || "Luis Guillón"}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-300" />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-48 bg-white text-slate-800 rounded-xl shadow-xl border border-slate-200/80 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                  Sucursal de mostrador
-                </div>
-                {sucursales.map((suc) => (
-                  <button
-                    key={suc.id}
-                    type="button"
-                    onClick={() => handleSelectSucursal(suc)}
-                    className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between cursor-pointer transition-colors ${
-                      selectedSucursal?.id === suc.id
-                        ? "text-[#c53030] font-bold bg-red-50/50"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    <span>{suc.nombre}</span>
-                    {selectedSucursal?.id === suc.id && (
-                      <span className="text-[10px] font-bold text-emerald-600">
-                        ✓ Activa
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Indicadores en vivo & Controles de Mostrador */}
@@ -124,9 +69,7 @@ export default function Navbar() {
                 isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
               }`}
             ></span>
-            <span>
-              {isConnected ? "KDS Butcher Online" : "Reconectando..."}
-            </span>
+            <span>{isConnected ? "Conectado" : "Reconectando..."}</span>
           </div>
 
           {/* Test de sonido de comanda */}

@@ -1,17 +1,29 @@
 // src/components/home/BranchesSection.jsx
 import React from "react";
-import { ArrowRight, MessageCircle } from "lucide-react";
-import { useLocation } from "@/context/LocationContext";
+import {
+  ArrowRight,
+  MessageCircle,
+  MapPin,
+  Clock,
+  Store,
+  Truck,
+} from "lucide-react";
+import { useLocation, CASA_CENTRAL_BRANCH } from "@/context/LocationContext";
 import { useToast } from "@/context/ToastContext";
 
 export const BranchesSection = () => {
-  const { selectBranch, sucursales, setDeliveryMode } = useLocation();
+  const { selectedBranch, deliveryMode, setDeliveryMode } = useLocation();
   const { showToast } = useToast();
 
-  const handleSelect = (branch) => {
-    selectBranch(branch);
-    setDeliveryMode("pickup");
-    showToast(`Sucursal activa cambiada a: ${branch.nombre} (Modo Retiro)`);
+  const branch = selectedBranch || CASA_CENTRAL_BRANCH;
+
+  const handleModeChange = (mode) => {
+    setDeliveryMode(mode);
+    showToast(
+      mode === "pickup"
+        ? "Modalidad seleccionada: Retiro en Casa Central"
+        : "Modalidad seleccionada: Envío a Domicilio desde Casa Central",
+    );
   };
 
   return (
@@ -19,76 +31,99 @@ export const BranchesSection = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
         <div>
           <span className="text-xs font-bold text-[#003366] uppercase tracking-wider">
-            Atención Presencial & Retiro
+            Casa Central · Zona Sur
           </span>
           <h3 className="text-lg font-black text-slate-900 mt-0.5">
-            Nuestras Sucursales Físicas
+            Sucursal Luis Guillon
           </h3>
           <p className="text-xs text-slate-500">
-            Ambas sedes equipadas con mostradores de corte artesanal y retiro
-            express.
+            Mostrador de corte artesanal, retiro express sin fila y envíos a
+            domicilio en el día.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setDeliveryMode("pickup")}
-            className="px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold hover:bg-valette-dark transition-colors cursor-pointer"
+            onClick={() => handleModeChange("pickup")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              deliveryMode === "pickup"
+                ? "bg-[#003366] text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
           >
-            Retirar en Mostrador
+            <Store className="size-3.5" />
+            <span>Retiro en Mostrador</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange("delivery")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              deliveryMode === "delivery"
+                ? "bg-[#003366] text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            <Truck className="size-3.5" />
+            <span>Envío a Domicilio</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-5">
-        {sucursales.map((branch) => (
-          <div
-            key={branch.id}
-            className="p-5 rounded-2xl bg-white border border-slate-200/90 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black text-[#003366] uppercase tracking-wide">
-                  {branch.id === 1 ? "Zona Sur" : "Zona Oeste"}
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                  ● Abierto Ahora
-                </span>
-              </div>
-              <h4 className="text-base font-extrabold text-slate-900">
-                Sucursal {branch.nombre}
-              </h4>
-              <p className="text-xs text-slate-600 mt-1">
-                {branch.direccion}, {branch.ciudad}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                Horarios: {branch.horario}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Teléfono: {branch.telefono}
-              </p>
+      <div className="pt-5">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-0.5 rounded-md bg-[#003366]/10 text-[#003366] text-[11px] font-black uppercase tracking-wide">
+                Casa Central Oficial
+              </span>
+              <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                ● Abierto Ahora
+              </span>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-              <a
-                href={`https://wa.me/54${branch.telefono}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-emerald-700 flex items-center gap-1 hover:underline"
-              >
-                <MessageCircle className="size-3.5" />
-                <span>WhatsApp de mostrador</span>
-                <ArrowRight className="size-3" />
-              </a>
-              <button
-                type="button"
-                onClick={() => handleSelect(branch)}
-                className="px-3 py-1.5 rounded-lg bg-valette-blue border border-slate-200 text-white font-bold text-xs hover:bg-slate-100 cursor-pointer"
-              >
-                Elegir esta
-              </button>
+
+            <h4 className="text-lg font-extrabold text-slate-900">
+              Abastecedora Valette — {branch.nombre}
+            </h4>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-xs text-slate-600">
+              <p className="flex items-center gap-1.5 font-medium">
+                <MapPin className="size-4 text-[#003366] shrink-0" />
+                <span>
+                  Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos
+                  Aires
+                </span>
+              </p>
+              <p className="flex items-center gap-1.5 font-medium">
+                <Clock className="size-4 text-[#003366] shrink-0" />
+                <span>
+                  Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a
+                  13:00hs
+                </span>
+              </p>
             </div>
           </div>
-        ))}
+
+          <div className="flex flex-wrap items-center gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0">
+            <a
+              href={`https://wa.me/549${branch.telefono || "1135534033"}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors"
+            >
+              <MessageCircle className="size-4" />
+              <span>WhatsApp Mostrador</span>
+              <ArrowRight className="size-3.5" />
+            </a>
+            <a
+              href="https://maps.google.com/?q=Av.+Luciano+Valette+1696,+Luis+Guillon,+Provincia+de+Buenos+Aires"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+            >
+              Cómo llegar
+            </a>
+          </div>
+        </div>
       </div>
     </>
   );

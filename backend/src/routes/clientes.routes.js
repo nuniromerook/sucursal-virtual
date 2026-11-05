@@ -12,6 +12,9 @@ const {
   validarCodigoReferido,
   solicitarRecuperacionPassword,
   restablecerPassword,
+  getFavoritos,
+  sincronizarFavoritos,
+  toggleFavorito,
 } = require("../controllers/clientes.controller");
 const { requireAuth } = require("../utils/auth");
 const { authLimiter } = require("../middlewares/rateLimiter");
@@ -40,5 +43,10 @@ router.get("/clientes/pedidos", requireAuth, getHistorialPedidos);
 
 // Historial de movimientos de puntos
 router.get("/clientes/puntos/historial", requireAuth, getHistorialPuntos);
+
+// Favoritos del cliente en PostgreSQL
+router.get("/clientes/favoritos", requireAuth, getFavoritos);
+router.post("/clientes/favoritos/sincronizar", requireAuth, sincronizarFavoritos);
+router.post("/clientes/favoritos/toggle", requireAuth, toggleFavorito);
 
 module.exports = router;

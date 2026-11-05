@@ -26,6 +26,7 @@ const getNotificaciones = async (req, res) => {
   try {
     const clienteId = getClienteIdFromHeader(req) || req.query.cliente_id;
     const sucursalId = req.query.sucursal_id;
+    const pedidoId = req.query.pedido_id;
     const soloNoLeidas = req.query.no_leidas === "true";
 
     let query = `
@@ -50,13 +51,21 @@ const getNotificaciones = async (req, res) => {
     `;
     const params = [];
 
-    if (clienteId) {
+    if (clienteId && pedidoId) {
+      params.push(clienteId, pedidoId);
+      query += ` AND (n.cliente_id = $1 OR n.pedido_id = $2 OR (n.cliente_id IS NULL AND n.sucursal_id IS NULL))`;
+    } else if (clienteId) {
       params.push(clienteId);
       // Notificaciones directas del cliente O notificaciones globales broadcast (sin cliente_id ni sucursal_id)
       query += ` AND (n.cliente_id = $${params.length} OR (n.cliente_id IS NULL AND n.sucursal_id IS NULL))`;
     } else if (sucursalId) {
       params.push(sucursalId);
       query += ` AND n.sucursal_id = $${params.length}`;
+    } else if (pedidoId) {
+      params.push(pedidoId);
+      query += ` AND (n.pedido_id = $${params.length} OR (n.cliente_id IS NULL AND n.sucursal_id IS NULL))`;
+    } else {
+      query += ` AND (n.cliente_id IS NULL AND n.sucursal_id IS NULL)`;
     }
 
     if (soloNoLeidas) {
@@ -67,15 +76,8 @@ const getNotificaciones = async (req, res) => {
 
     const { rows } = await pool.query(query, params);
 
-    // Conteo de no leídas
-    let unreadCount = 0;
-    if (clienteId) {
-      const countRes = await pool.query(
-        `SELECT COUNT(*) FROM notificaciones WHERE (cliente_id = $1 OR (cliente_id IS NULL AND sucursal_id IS NULL)) AND leida = FALSE`,
-        [clienteId]
-      );
-      unreadCount = parseInt(countRes.rows[0].count, 10) || 0;
-    }
+    // Conteo de no leídas sobre el subconjunto obtenido
+    const unreadCount = rows.filter((n) => !n.leida).length;
 
     res.json({
       notificaciones: rows,
@@ -116,15 +118,20 @@ const marcarLeida = async (req, res) => {
  */
 const marcarTodasLeidas = async (req, res) => {
   try {
-    const clienteId = getClienteIdFromHeader(req) || req.body.cliente_id;
-    if (!clienteId) {
-      return res.status(400).json({ error: "ID de cliente no proporcionado" });
-    }
+    const clienteId = getClienteIdFromHeader(req) || req.body?.cliente_id;
+    const pedidoId = req.body?.pedido_id;
 
-    await pool.query(
-      `UPDATE notificaciones SET leida = TRUE WHERE cliente_id = $1 OR (cliente_id IS NULL AND sucursal_id IS NULL)`,
-      [clienteId]
-    );
+    if (clienteId) {
+      await pool.query(
+        `UPDATE notificaciones SET leida = TRUE WHERE cliente_id = $1 OR (cliente_id IS NULL AND sucursal_id IS NULL)`,
+        [clienteId]
+      );
+    } else if (pedidoId) {
+      await pool.query(
+        `UPDATE notificaciones SET leida = TRUE WHERE pedido_id = $1`,
+        [pedidoId]
+      );
+    }
 
     res.json({ message: "Todas las notificaciones fueron marcadas como leídas" });
   } catch (error) {

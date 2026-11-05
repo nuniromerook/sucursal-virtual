@@ -4,20 +4,69 @@ import React, {
   useState,
   useEffect,
   useMemo,
+  useRef,
+  useCallback,
 } from "react";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 import { formatUnidadMedida } from "@/utils/formatters";
+import { API_URL } from "@/config/api";
+import { trackEvent } from "@/utils/analytics";
 
 const CartContext = createContext(null);
 
 const DEFAULT_CUT_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
 
+function getOrCreateSesionId() {
+  try {
+    let id = localStorage.getItem("valette_sesion_id");
+    if (!id) {
+      id = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      localStorage.setItem("valette_sesion_id", id);
+    }
+    return id;
+  } catch {
+    return `dev_${Date.now()}`;
+  }
+}
+
+function getAuthHeaders() {
+  try {
+    const token = localStorage.getItem("valette_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 export const CartProvider = ({ children }) => {
-  // Inicializar carrito con items de demostración o desde localStorage (asegurando imagen_url y unidad_medida)
+  const [sesionId] = useState(getOrCreateSesionId);
+
+  // Pedido activo en seguimiento en vivo
+  const [activeOrderId, setActiveOrderIdState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("valette_active_order_id");
+      return saved ? Number(saved) || null : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setActiveOrderId = useCallback((orderId) => {
+    setActiveOrderIdState(orderId ? Number(orderId) : null);
+    try {
+      if (orderId) {
+        localStorage.setItem("valette_active_order_id", String(orderId));
+      } else {
+        localStorage.removeItem("valette_active_order_id");
+      }
+    } catch {}
+  }, []);
+
+  // Inicializar carrito real desde localStorage (sin ítems demo hardcodeados)
   const [cartItems, setCartItems] = useState(() => {
     try {
-      const saved = localStorage.getItem("valette_cart");
+      const saved = localStorage.getItem("valette_cart_v1");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -33,50 +82,150 @@ export const CartProvider = ({ children }) => {
         }
       }
     } catch {}
-    // Items iniciales de prueba como en la maqueta
-    return [
-      {
-        id: 1,
-        nombre: "Vacío Especial de Novillito",
-        slug: "vacio-especial-novillito",
-        precio: 11900,
-        cantidad_kg: 1,
-        cantidad: 1,
-        unidad_medida: "kg",
-        puntos: 15,
-        corte: "Corte clásico (2 cm)",
-        envasado: "Envasado al vacío",
-        imagen_url:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800",
-        notas: "",
-        promos: [{ cantidad_kg: 3, precio_promocional: 10500, activa: true }],
-      },
-      {
-        id: 2,
-        nombre: "Asado Criollo de Centro",
-        slug: "asado-criollo-centro",
-        precio: 10900,
-        cantidad_kg: 1,
-        cantidad: 1,
-        unidad_medida: "kg",
-        puntos: 20,
-        corte: "Tiras tradicionales",
-        envasado: "Bandeja filmada",
-        imagen_url:
-          "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800",
-        notas: "",
-        promos: [{ cantidad_kg: 3, precio_promocional: 9990, activa: true }],
-      },
-    ];
+    return [];
   });
 
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartOpen, setIsCartOpenState] = useState(false);
+  const hasHydratedCloudRef = useRef(false);
+  const skipNextCloudSyncRef = useRef(false);
 
+  // Registrar paso del embudo en PostgreSQL (carritos.ultimo_paso / motivo_abandono)
+  const registerFunnelStep = useCallback(
+    async (ultimoPaso, motivoAbandono = undefined) => {
+      try {
+        trackEvent("embudo_checkout", ultimoPaso, {
+          motivo_abandono: motivoAbandono || null,
+        });
+        await fetch(`${API_URL}/carritos/paso`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            sesion_id: sesionId,
+            ultimo_paso: ultimoPaso,
+            ...(motivoAbandono !== undefined
+              ? { motivo_abandono: motivoAbandono }
+              : {}),
+          }),
+        });
+      } catch {
+        // Silencioso en caso de desconexión momentánea
+      }
+    },
+    [sesionId]
+  );
+
+  const setIsCartOpen = useCallback(
+    (nextOpen) => {
+      setIsCartOpenState((prev) => {
+        const resolved =
+          typeof nextOpen === "function" ? nextOpen(prev) : Boolean(nextOpen);
+        if (resolved && !prev) {
+          registerFunnelStep("carrito_abierto", null);
+        }
+        return resolved;
+      });
+    },
+    [registerFunnelStep]
+  );
+
+  // 1. Al montar: recuperar carrito en la nube si el dispositivo no tiene items locales
+  useEffect(() => {
+    let isMounted = true;
+    const hydrateFromCloud = async () => {
+      try {
+        if (cartItems.length === 0) {
+          const res = await fetch(
+            `${API_URL}/carritos/mi-carrito?sesion_id=${encodeURIComponent(sesionId)}`,
+            {
+              headers: {
+                ...getAuthHeaders(),
+              },
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (
+              isMounted &&
+              Array.isArray(data.items) &&
+              data.items.length > 0
+            ) {
+              skipNextCloudSyncRef.current = true;
+              setCartItems(
+                data.items.map((item) => ({
+                  ...item,
+                  nombre: item.nombre || item.nombre_producto,
+                  unidad_medida: formatUnidadMedida(item.unidad_medida || "kg"),
+                  imagen_url:
+                    item.imagen_url || item.imagenUrl || DEFAULT_CUT_IMAGE,
+                }))
+              );
+            }
+          }
+        }
+      } catch {
+        // Mantener estado local si la API no responde
+      } finally {
+        if (isMounted) {
+          hasHydratedCloudRef.current = true;
+        }
+      }
+    };
+
+    hydrateFromCloud();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesionId]);
+
+  // 2. Persistir en localStorage y sincronizar con PostgreSQL (carritos + carrito_items)
   useEffect(() => {
     try {
-      localStorage.setItem("valette_cart", JSON.stringify(cartItems));
+      localStorage.setItem("valette_cart_v1", JSON.stringify(cartItems));
     } catch {}
-  }, [cartItems]);
+
+    if (!hasHydratedCloudRef.current) return;
+    if (skipNextCloudSyncRef.current) {
+      skipNextCloudSyncRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch(`${API_URL}/carritos/sincronizar`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            sesion_id: sesionId,
+            replace: true,
+            items: cartItems.map((it) => ({
+              id: it.id,
+              catalogo_id: it.catalogo_id || it.id,
+              nombre: it.nombre || it.nombre_producto,
+              slug: it.slug,
+              precio: Number(it.precio) || 0,
+              cantidad_kg: Number(it.cantidad_kg || it.cantidad || 1),
+              unidad_medida: it.unidad_medida || "kg",
+              corte: it.corte || "Corte tradicional",
+              imagen_url: it.imagen_url,
+              puntos: it.puntos || 15,
+              promos: it.promos || [],
+            })),
+          }),
+        });
+      } catch {
+        // Ignorar errores de red en background
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cartItems, sesionId]);
 
   // Cálculos financieros y métricas (separando kilos de unidades)
   const {
@@ -125,6 +274,12 @@ export const CartProvider = ({ children }) => {
     const unidadMedida = formatUnidadMedida(
       product.unidad_medida || options.unidad_medida || "kg"
     );
+    trackEvent("agregar_carrito", product.id, {
+      nombre: product.nombre || product.nombre_producto,
+      cantidad: intCant,
+      unidad: unidadMedida,
+      corte: options.corte || "Corte tradicional",
+    });
     const imageUrl =
       product.imagen_url ||
       product.imagenUrl ||
@@ -156,6 +311,9 @@ export const CartProvider = ({ children }) => {
         ...prev,
         {
           id: product.id,
+          catalogo_id: product.catalogo_id || product.id,
+          es_combo: Boolean(product.es_combo),
+          combo_id: product.combo_id || null,
           nombre: product.nombre || product.nombre_producto,
           slug: product.slug,
           precio: product.precio,
@@ -204,6 +362,10 @@ export const CartProvider = ({ children }) => {
   return (
     <CartContext.Provider
       value={{
+        sesionId,
+        activeOrderId,
+        setActiveOrderId,
+        registerFunnelStep,
         cartItems,
         totalItems,
         totalKg,

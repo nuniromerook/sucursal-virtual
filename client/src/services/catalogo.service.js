@@ -844,7 +844,7 @@ export const fetchBanners = async () => {
 };
 
 /**
- * Obtiene las sucursales físicas oficiales con horarios desde PostgreSQL.
+ * Obtiene la sucursal oficial (Casa Central Luis Guillón) con sus horarios desde PostgreSQL.
  */
 export const fetchSucursales = async () => {
   try {
@@ -858,11 +858,15 @@ export const fetchSucursales = async () => {
       if (Array.isArray(data) && data.length > 0) {
         return data.map((s) => ({
           id: s.id,
-          nombre: s.nombre,
-          slug: s.slug || `sucursal-${s.id}`,
-          ciudad: s.ciudad || s.nombre,
-          direccion: s.direccion,
-          horario: s.horario_atencion || "Lun a Sáb 07:00 a 15:00 hs",
+          nombre: s.nombre || "Luis Guillón (Casa Central)",
+          slug: s.slug || "luis-guillon",
+          ciudad: s.ciudad || "Luis Guillón",
+          direccion:
+            s.direccion ||
+            "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires",
+          horario:
+            s.horario_atencion ||
+            "Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs",
           telefono: s.telefono || "1135534033",
           activa: s.activa !== false,
           latitud: s.latitud ? parseFloat(s.latitud) : null,
@@ -873,7 +877,7 @@ export const fetchSucursales = async () => {
     }
   } catch (err) {
     console.warn(
-      "⚠️ [Sucursales Service] Usando sucursales por defecto:",
+      "⚠️ [Sucursales Service] Usando sucursal Casa Central por defecto:",
       err.message,
     );
   }

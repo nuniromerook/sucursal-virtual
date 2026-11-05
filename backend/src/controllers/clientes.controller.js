@@ -433,7 +433,7 @@ const updatePerfil = async (req, res) => {
            longitud = COALESCE($8, longitud),
            actualizado_en = NOW()
        WHERE id = $9
-       RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, latitud, longitud`,
+       RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code, latitud, longitud`,
       [
         nombre ? nombre.trim() : null,
         usuarioClean,
@@ -446,6 +446,16 @@ const updatePerfil = async (req, res) => {
         clienteId,
       ]
     );
+
+    if (completaAhora && puntosBonus > 0) {
+      await pool
+        .query(
+          `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+           VALUES ($1, 'bienvenida', $2, 'Bono por completar datos de usuario y WhatsApp')`,
+          [clienteId, puntosBonus]
+        )
+        .catch(() => {});
+    }
 
     res.json({
       success: true,
@@ -778,6 +788,121 @@ const restablecerPassword = async (req, res) => {
   }
 };
 
+/**
+ * GET /clientes/favoritos
+ * Obtiene los IDs de catálogo favoritos del cliente autenticado
+ */
+const getFavoritos = async (req, res) => {
+  const clienteId = req.user.id;
+  try {
+    const result = await pool.query(
+      `SELECT f.catalogo_id
+       FROM favoritos f
+       JOIN catalogo c ON c.id = f.catalogo_id
+       WHERE f.cliente_id = $1 AND c.activo = true
+       ORDER BY f.creado_en DESC`,
+      [clienteId]
+    );
+    res.json({
+      favoritos: result.rows.map((r) => Number(r.catalogo_id)),
+    });
+  } catch (error) {
+    console.error("Error al obtener favoritos:", error.message);
+    res.status(500).json({ error: "Error al obtener favoritos." });
+  }
+};
+
+/**
+ * POST /clientes/favoritos/sincronizar
+ * Fusiona los favoritos locales con los almacenados en PostgreSQL
+ */
+const sincronizarFavoritos = async (req, res) => {
+  const clienteId = req.user.id;
+  const localFavs = Array.isArray(req.body.favoritos)
+    ? req.body.favoritos.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+
+  try {
+    if (localFavs.length > 0) {
+      await pool.query(
+        `INSERT INTO favoritos (cliente_id, catalogo_id)
+         SELECT $1, c.id
+         FROM catalogo c
+         WHERE c.id = ANY($2::int[]) AND c.activo = true
+         ON CONFLICT (cliente_id, catalogo_id) DO NOTHING`,
+        [clienteId, localFavs]
+      );
+    }
+
+    const result = await pool.query(
+      `SELECT f.catalogo_id
+       FROM favoritos f
+       JOIN catalogo c ON c.id = f.catalogo_id
+       WHERE f.cliente_id = $1 AND c.activo = true
+       ORDER BY f.creado_en DESC`,
+      [clienteId]
+    );
+
+    res.json({
+      favoritos: result.rows.map((r) => Number(r.catalogo_id)),
+    });
+  } catch (error) {
+    console.error("Error al sincronizar favoritos:", error.message);
+    res.status(500).json({ error: "Error al sincronizar favoritos." });
+  }
+};
+
+/**
+ * POST /clientes/favoritos/toggle
+ * Agrega o quita un corte de favoritos en PostgreSQL
+ */
+const toggleFavorito = async (req, res) => {
+  const clienteId = req.user.id;
+  const catalogoId = Number(req.body.catalogo_id || req.body.id);
+
+  if (!Number.isFinite(catalogoId) || catalogoId <= 0) {
+    return res.status(400).json({ error: "ID de producto inválido." });
+  }
+
+  try {
+    const existing = await pool.query(
+      `SELECT id FROM favoritos WHERE cliente_id = $1 AND catalogo_id = $2 LIMIT 1`,
+      [clienteId, catalogoId]
+    );
+
+    let favorito = false;
+    if (existing.rows.length > 0) {
+      await pool.query(
+        `DELETE FROM favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
+        [clienteId, catalogoId]
+      );
+      favorito = false;
+    } else {
+      await pool.query(
+        `INSERT INTO favoritos (cliente_id, catalogo_id)
+         SELECT $1, c.id FROM catalogo c WHERE c.id = $2
+         ON CONFLICT (cliente_id, catalogo_id) DO NOTHING`,
+        [clienteId, catalogoId]
+      );
+      favorito = true;
+    }
+
+    const listRes = await pool.query(
+      `SELECT catalogo_id FROM favoritos WHERE cliente_id = $1 ORDER BY creado_en DESC`,
+      [clienteId]
+    );
+
+    res.json({
+      ok: true,
+      favorito,
+      favoritos: listRes.rows.map((r) => Number(r.catalogo_id)),
+    });
+  } catch (error) {
+    console.error("Error en toggleFavorito:", error.message);
+    res.status(500).json({ error: "Error al actualizar favorito." });
+  }
+};
+
 module.exports = {
   registroCliente,
   loginCliente,
@@ -790,5 +915,8 @@ module.exports = {
   validarCodigoReferido,
   solicitarRecuperacionPassword,
   restablecerPassword,
+  getFavoritos,
+  sincronizarFavoritos,
+  toggleFavorito,
 };
 

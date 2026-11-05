@@ -15,7 +15,7 @@ const { verifyToken } = require("../utils/auth");
 const createPedido = async (req, res) => {
   const {
     cliente,
-    sucursal_id,
+    sucursal_id = 1,
     tipo_entrega,
     fecha_entrega_programada,
     medio_pago,
@@ -24,17 +24,12 @@ const createPedido = async (req, res) => {
     items,
     monto_total_estimado,
     banner_id,
+    sesion_id,
   } = req.body;
 
   if (!cliente || !cliente.nombre || !cliente.telefono) {
     return res.status(400).json({
       error: "Nombre y teléfono del cliente son requeridos.",
-    });
-  }
-
-  if (!sucursal_id) {
-    return res.status(400).json({
-      error: "Debe seleccionar una sucursal para el pedido.",
     });
   }
 
@@ -125,8 +120,11 @@ const createPedido = async (req, res) => {
       clienteId = nuevoCliente.rows[0].id;
     }
 
-    // 2. Validar precios y calcular total directamente desde la DB (Seguridad)
-    const catalogoIds = items.map((i) => Number(i.catalogo_id || i.id));
+    // 2. Validar precios y calcular total directamente desde la DB (Seguridad + soporte Combos)
+    const rawCatalogoIds = items
+      .map((i) => Number(i.catalogo_id || i.id))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
     const catalogoRes = await dbClient.query(
       `SELECT c.id, c.precio,
          COALESCE(
@@ -143,43 +141,73 @@ const createPedido = async (req, res) => {
            '[]'::jsonb
          ) AS promos
        FROM catalogo c WHERE c.id = ANY($1::int[])`,
-      [catalogoIds]
+      [rawCatalogoIds.length > 0 ? rawCatalogoIds : [1]]
     );
 
     const catalogoMap = new Map(catalogoRes.rows.map((r) => [r.id, r]));
+    let fallbackCatRow = catalogoRes.rows[0] || null;
+    if (!fallbackCatRow) {
+      const firstCat = await dbClient.query(
+        `SELECT id, precio FROM catalogo ORDER BY id ASC LIMIT 1`
+      );
+      fallbackCatRow = firstCat.rows[0] || { id: 1, precio: 10000, promos: [] };
+    }
+
     let montoTotalVerificado = 0;
     const itemsProcesados = [];
 
     for (const item of items) {
-      const catalogoId = Number(item.catalogo_id || item.id);
-      const cantidadKg = Number(item.cantidad_kg) || 1;
-      
-      const catData = catalogoMap.get(catalogoId);
+      const parsedId = Number(item.catalogo_id || item.id);
+      const isCombo =
+        Boolean(item.es_combo) || String(item.id || "").startsWith("combo-");
+      const catData =
+        catalogoMap.get(parsedId) || (isCombo ? fallbackCatRow : null);
+
       if (!catData) {
         await dbClient.query("ROLLBACK");
-        return res.status(400).json({ error: `Producto no encontrado en catálogo (ID: ${catalogoId})` });
+        return res
+          .status(400)
+          .json({ error: `Producto no encontrado en catálogo (ID: ${parsedId})` });
       }
-      
+
+      const catalogoId = Number(catData.id);
+      const cantidadKg = Math.max(
+        0.1,
+        Number(item.cantidad_kg || item.cantidad) || 1
+      );
+
       let precioPorKg = Number(catData.precio);
-      const promos = Array.isArray(catData.promos) ? catData.promos : [];
-      for (const promo of promos) {
-        if (cantidadKg >= Number(promo.cantidad_kg)) {
-          precioPorKg = Number(promo.precio_promocional);
+      if (isCombo && Number(item.precio) > 0) {
+        precioPorKg = Number(item.precio);
+      } else {
+        const promos = Array.isArray(catData.promos) ? catData.promos : [];
+        for (const promo of promos) {
+          if (cantidadKg >= Number(promo.cantidad_kg)) {
+            precioPorKg = Number(promo.precio_promocional);
+          }
         }
       }
 
-      const precioEstimado = precioPorKg * cantidadKg;
+      const precioEstimado = Math.round(precioPorKg * cantidadKg);
       montoTotalVerificado += precioEstimado;
+
+      const opcionesCorte =
+        item.corte ||
+        item.opciones_corte_seleccionada ||
+        (isCombo
+          ? `${item.nombre || "Combo"}${item.items_combo ? ` (${item.items_combo})` : ""}`
+          : "Corte tradicional");
 
       itemsProcesados.push({
         catalogoId,
         cantidadKg,
         precioPorKg,
-        precioEstimado
+        precioEstimado,
+        opcionesCorte,
       });
     }
 
-    // 3. Insertar el Pedido maestro
+    // 3. Insertar el Pedido maestro (siempre en Sucursal 1: Luis Guillón Casa Central)
     const insertPedidoRes = await dbClient.query(
       `INSERT INTO pedidos (
          cliente_id,
@@ -198,7 +226,7 @@ const createPedido = async (req, res) => {
        RETURNING *`,
       [
         clienteId,
-        Number(sucursal_id),
+        1,
         tipo_entrega || "retiro_sucursal",
         fecha_entrega_programada || null,
         medio_pago || "efectivo",
@@ -206,12 +234,12 @@ const createPedido = async (req, res) => {
         direccion_entrega || null,
         notas || null,
         banner_id ? Number(banner_id) : null,
-      ],
+      ]
     );
 
     const pedidoCreado = insertPedidoRes.rows[0];
 
-    // 4. Insertar cada item del pedido
+    // 4. Insertar cada item del pedido con su opción de corte seleccionada
     for (const item of itemsProcesados) {
       await dbClient.query(
         `INSERT INTO pedido_items (
@@ -220,10 +248,45 @@ const createPedido = async (req, res) => {
            cantidad_kg_solicitada,
            precio_por_kg_congelado,
            precio_estimado,
+           opciones_corte_seleccionada,
            estado_item
-         ) VALUES ($1, $2, $3, $4, $5, 'pendiente')`,
-        [pedidoCreado.id, item.catalogoId, item.cantidadKg, item.precioPorKg, item.precioEstimado],
+         ) VALUES ($1, $2, $3, $4, $5, $6, 'pendiente')`,
+        [
+          pedidoCreado.id,
+          item.catalogoId,
+          item.cantidadKg,
+          item.precioPorKg,
+          item.precioEstimado,
+          item.opcionesCorte,
+        ]
       );
+    }
+
+    // 4b. Actualizar el carrito en la nube como 'pedido_completado' y limpiar sus items
+    if (sesion_id || clienteId) {
+      const carritoFind = await dbClient.query(
+        `SELECT id FROM carritos
+         WHERE ($1::text IS NOT NULL AND sesion_id = $1)
+            OR ($2::int IS NOT NULL AND cliente_id = $2)
+         ORDER BY actualizado_en DESC LIMIT 1`,
+        [sesion_id || null, clienteId || null]
+      );
+      if (carritoFind.rows.length > 0) {
+        const cId = carritoFind.rows[0].id;
+        await dbClient.query(
+          `UPDATE carritos
+           SET ultimo_paso = 'pedido_completado',
+               motivo_abandono = NULL,
+               cliente_id = COALESCE(cliente_id, $1),
+               actualizado_en = NOW()
+           WHERE id = $2`,
+          [clienteId || null, cId]
+        );
+        await dbClient.query(
+          `DELETE FROM carrito_items WHERE carrito_id = $1`,
+          [cId]
+        );
+      }
     }
 
     await dbClient.query("COMMIT");
@@ -257,9 +320,10 @@ const createPedido = async (req, res) => {
         );
 
         // Notificación de puntos ganados
-        await pool.query(
+        const notifPuntosRes = await pool.query(
           `INSERT INTO notificaciones (cliente_id, pedido_id, titulo, mensaje, tipo, icono, enlace)
-           VALUES ($1, $2, $3, $4, 'puntos', 'sparkles', '/perfil?tab=puntos')`,
+           VALUES ($1, $2, $3, $4, 'puntos', 'sparkles', '/perfil?tab=puntos')
+           RETURNING *`,
           [
             clienteId,
             pedidoCreado.id,
@@ -267,6 +331,9 @@ const createPedido = async (req, res) => {
             `Acreditamos tus puntos por la compra del pedido #${pedidoCreado.id}. Consultá tu saldo en tu perfil.`,
           ],
         );
+        if (notifPuntosRes.rows[0]) {
+          emitirNotificacion(notifPuntosRes.rows[0]);
+        }
       }
     } catch (puntosError) {
       console.warn(
@@ -278,9 +345,10 @@ const createPedido = async (req, res) => {
     // 5. Crear notificación viva de pedido para el cliente
     if (clienteId) {
       try {
-        await pool.query(
+        const notifPedidoRes = await pool.query(
           `INSERT INTO notificaciones (cliente_id, sucursal_id, pedido_id, titulo, mensaje, tipo, icono, enlace, estado_pedido)
-           VALUES ($1, $2, $3, $4, $5, 'pedido', 'package', $6, 'solicitado')`,
+           VALUES ($1, $2, $3, $4, $5, 'pedido', 'package', $6, 'solicitado')
+           RETURNING *`,
           [
             clienteId,
             Number(sucursal_id),
@@ -290,6 +358,9 @@ const createPedido = async (req, res) => {
             `/pedido/${pedidoCreado.id}/confirmacion`,
           ],
         );
+        if (notifPedidoRes.rows[0]) {
+          emitirNotificacion(notifPedidoRes.rows[0]);
+        }
       } catch (notifErr) {
         console.warn(
           "No se pudo registrar notificación de pedido:",
@@ -589,7 +660,7 @@ const actualizarEstadoPedido = async (req, res) => {
  * Cotiza el costo de entrega según la sucursal y la dirección de destino
  */
 const cotizarEnvio = async (req, res) => {
-  const { sucursal_id, destino, items } = req.body;
+  const { sucursal_id = 1, destino, items } = req.body;
 
   try {
     let sucursal = null;
@@ -605,8 +676,9 @@ const cotizarEnvio = async (req, res) => {
 
     if (!sucursal) {
       sucursal = {
-        direccion: "Av. Central 123",
-        ciudad: "Buenos Aires",
+        nombre: "Luis Guillón (Casa Central)",
+        direccion: "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires",
+        ciudad: "Luis Guillón",
       };
     }
 
