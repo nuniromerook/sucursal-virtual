@@ -171,6 +171,9 @@ function AppContent() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenBranchModal={() => setIsBranchModalOpen(true)}
+        onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
+        onOpenProduct={handleOpenProduct}
       />
 
       <BranchSelectorModal

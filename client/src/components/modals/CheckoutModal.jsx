@@ -66,7 +66,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-10 py-4 text-xs">
           {/* Paso 1: Datos Personales */}
           <div>
             <span className="font-bold text-slate-800 uppercase text-[11px] block mb-2">

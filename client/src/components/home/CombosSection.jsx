@@ -27,7 +27,6 @@ export const COMBOS = [
     ahorro: 5400,
     puntos: 50,
     precio: 37900,
-    precioAnterior: 43300,
     descripcion:
       "La selección parrillera definitiva con novillito seleccionado, cerdo crocante y chorizo puro cerdo. Todo lo indispensable para lucirse frente a las brasas.",
     items: [
@@ -54,6 +53,22 @@ export const COMBOS = [
           "Embutido parrillero fresco elaborado con receta tradicional en tripa natural. Jugoso y especiado en su punto exacto.",
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685191/qygthxwjvw6t8w4ra4j1.jpg",
+      },
+      {
+        nombre: "Vacío",
+        peso: "1.5 kg",
+        descripcion:
+          "Corte vacuno parrillero por excelencia con fina cobertura grasa y carne tierna y fibrosa.",
+        imagenUrl:
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685051/nqtxmos2sbshqtvip3yq.webp",
+      },
+      {
+        nombre: "Morcilla",
+        peso: "0.5 kg",
+        descripcion:
+          "Morcilla bombón artesanal con suave textura y especias tradicionales.",
+        imagenUrl:
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526373/geg0ezk3acs5xrhd0jmf.webp",
       },
     ],
   },
@@ -96,6 +111,14 @@ export const COMBOS = [
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685476/sb35jibeojseltwvgcd5.webp",
       },
+      {
+        nombre: "Milanesas de Carne",
+        peso: "1.5 kg",
+        descripcion:
+          "Elaboradas con pulpa tierna de ternera y rebozadas en pan rallado casero del día.",
+        imagenUrl:
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685232/dffz5ux606ealcpkzffz.webp",
+      },
     ],
   },
   {
@@ -136,6 +159,22 @@ export const COMBOS = [
           "Corte delgado y tierno entre el cuero y el costillar. Clásico para tiernizar a la pizza, arrollar o hacer a la parrilla.",
         imagenUrl:
           "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791526373/geg0ezk3acs5xrhd0jmf.webp",
+      },
+      {
+        nombre: "Entraña",
+        peso: "1 kg",
+        descripcion:
+          "Corte con membrana crocante al fuego y textura sumamente tierna y sabrosa.",
+        imagenUrl:
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685112/fb7oorariii16nelsew8.webp",
+      },
+      {
+        nombre: "Chinchulines",
+        peso: "1 kg",
+        descripcion:
+          "Achura crocante por fuera y suave por dentro, limpia y lista para la parrilla.",
+        imagenUrl:
+          "https://res.cloudinary.com/ylrkjlsv/image/upload/f_auto,q_auto/v1791685191/qygthxwjvw6t8w4ra4j1.jpg",
       },
     ],
   },
@@ -289,7 +328,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
         {filteredCombos.map((combo) => {
           const items = Array.isArray(combo.items) ? combo.items : [];
           const totalCortes = items.length;
-          const extraCortes = Math.max(0, totalCortes - 2);
+          const extraCortes = Math.max(0, totalCortes - 4);
           const tagColorClass = combo.tagColor || getTagColor(combo.badge);
 
           const precio = Number(combo.precio) || 0;
@@ -303,18 +342,52 @@ export const CombosSection = ({ searchQuery = "" }) => {
               ? Number(combo.ahorro)
               : Math.max(0, precioAnterior - precio);
 
+          // Si el combo tiene menos de 4 cortes, completar hasta 4 repitiendo cortes para mantener el grid 2x2 simétrico
+          const displayItems =
+            totalCortes >= 4
+              ? items.slice(0, 4)
+              : totalCortes > 0
+                ? [
+                    ...items,
+                    ...Array.from({ length: 4 - totalCortes }).map(
+                      (_, i) => items[i % totalCortes],
+                    ),
+                  ]
+                : [
+                    {
+                      nombre: "Corte",
+                      imagen_url:
+                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+                    },
+                    {
+                      nombre: "Corte",
+                      imagen_url:
+                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+                    },
+                    {
+                      nombre: "Corte",
+                      imagen_url:
+                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+                    },
+                    {
+                      nombre: "Corte",
+                      imagen_url:
+                        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400",
+                    },
+                  ];
+
           return (
             <div
               key={combo.id}
-              className="w-[70vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
+              className="w-[80vw] sm:w-[350px] md:w-[360px] shrink-0 flex flex-col snap-start last:snap-end"
             >
               <div
                 onClick={() => setSelectedCombo(combo)}
                 className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-native flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all group cursor-pointer h-full"
               >
                 <div>
-                  {/* 1. Tira de Miniaturas de los Cortes del Combo (1, 2, 3 o +3 cortes) */}
-                  <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
+                  {/* 1. Mosaico 2x2 Cuadrado de los Cortes del Combo */}
+                  <div className="relative w-full h-fit rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
                     {/* Badge flotante de Kilos Totales sobre las fotos */}
                     <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
@@ -331,48 +404,12 @@ export const CombosSection = ({ searchQuery = "" }) => {
                       </span>
                     </div>
 
-                    <div
-                      className={`grid w-full aspect-16/7 divide-x divide-white/80 ${
-                        totalCortes === 1
-                          ? "grid-cols-1"
-                          : totalCortes === 2
-                            ? "grid-cols-2"
-                            : "grid-cols-3"
-                      }`}
-                    >
-                      {items.slice(0, 3).map((item, idx) => {
-                        const isThird = idx === 2;
-                        const imgSrc =
-                          item.imagen_url ||
-                          item.imagenUrl ||
-                          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
-
-                        return (
-                          <div
-                            key={idx}
-                            className="relative h-full w-full overflow-hidden bg-slate-200"
-                          >
-                            <img
-                              src={imgSrc}
-                              alt={item.nombre}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              loading="lazy"
-                            />
-
-                            {/* Badge sobre el 3er corte si hay más de 3 cortes */}
-                            {isThird && totalCortes > 3 && (
-                              <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center text-white transition-opacity group-hover:bg-slate-950/70 p-1 text-center">
-                                <span className="text-base sm:text-lg font-black leading-none drop-shadow-sm font-num">
-                                  +{extraCortes}
-                                </span>
-                                <span className="text-[9px] font-extrabold uppercase tracking-tight text-slate-200 mt-0.5">
-                                  cortes
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="aspect-video flex w-full rounded overflow-hidden">
+                      <img
+                        src={combo.imagenUrl}
+                        alt={combo.nombre}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
                   </div>
 
@@ -394,52 +431,12 @@ export const CombosSection = ({ searchQuery = "" }) => {
                     <span>{combo.nombre}</span>
                     <ChevronRight className="size-4 text-slate-300 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                    Rinde estimado: {combo.rinde || "6 a 8 personas"}
-                  </p>
-
-                  {/* 4. Desglose Escaneable de Cortes Incluidos */}
-                  <div className="my-3 space-y-1.5 w-full">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-0.5">
-                      <span>Incluye en el paquete:</span>
-                      <span className="text-[#003366] font-black">
-                        {totalCortes} variedades
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      {items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-slate-50 border border-slate-200/70 group-hover:bg-slate-100/70 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
-                            <span className="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">
-                              {item.nombre}
-                            </span>
-                          </div>
-                          <span className="font-black text-[#003366] text-[10px] sm:text-[11px] bg-white px-2 py-0.5 rounded-md border border-slate-200 shrink-0 ml-2 shadow-2xs font-num">
-                            {item.cantidad_o_peso || item.peso}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Enlace sutil para abrir el modal */}
-                  <div className="mb-1 text-center">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#003366] group-hover:underline">
-                      <Eye className="size-3" />
-                      <span>Ver fotos y detalle de cada corte</span>
-                    </span>
-                  </div>
                 </div>
 
                 {/* 5. Precios y Botón de Acción en la Base */}
                 <div className="pt-3 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
                   <div>
-                    <div className="flex items-baseline gap-1.5">
+                    <div className="flex flex-col">
                       <span className="text-xl font-black text-slate-900 font-num">
                         {formatPrecio(precio)}
                       </span>
@@ -449,11 +446,6 @@ export const CombosSection = ({ searchQuery = "" }) => {
                         </span>
                       )}
                     </div>
-                    {ahorro > 0 && (
-                      <span className="text-[10px] font-black text-valette-red block">
-                        Ahorrás {formatPrecio(ahorro)}
-                      </span>
-                    )}
                   </div>
 
                   <button

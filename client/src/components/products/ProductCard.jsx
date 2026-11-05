@@ -141,13 +141,12 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
                 Agotado por Hoy
               </span>
             ) : promoInfo ? (
-              <span className="p-1 rounded-lg bg-red-600/80 border border-red-400 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 max-w-full">
-                <Percent className="size-5 stroke-2 bg-white rounded-sm text-red-700 p-1" />
-                <span className="pl-1">
-                  Llevás {promoInfo.cant}
-                  {unidadMedida} o más por
+              <span className="rounded-lg text-valette-blue text-[12px] font-bold flex items-center max-w-full">
+                <span className="pr-1">
+                  Llevando {promoInfo.cant}
+                  {unidadMedida} o más:
                 </span>
-                <strong className="text-amber-200 font-black pr-1">
+                <strong className="text-amber-600 font-black pr-1">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
                 </strong>
               </span>
@@ -184,7 +183,7 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
 
           {/* Puntos Club flotantes */}
           <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-amber-300/90 border border-amber-500 text-amber-700 text-[10px] font-bold">
-            Sumás +{product.puntos || 15} pts Club Valette
+            Sumá +{product.puntos || 15} pts
           </span>
         </div>
 
@@ -194,12 +193,10 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
             <span>{product.categoria_label || "Vacuno"}</span>
             <span
               className={`font-bold px-2 py-0.5 rounded ${
-                isOutOfStock
-                  ? "text-rose-600 bg-rose-50"
-                  : "text-emerald-700 bg-emerald-50"
+                isOutOfStock ? "block text-rose-600 bg-rose-50" : "hidden"
               }`}
             >
-              {isOutOfStock ? "Sin Stock" : "En Stock"}
+              {isOutOfStock && "Sin Stock"}
             </span>
           </div>
 
@@ -209,13 +206,6 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
           >
             {productName}
           </h3>
-
-          {/* Descripción llamativa expuesta en la card */}
-          {product.descripcion && (
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              {product.descripcion}
-            </p>
-          )}
         </div>
       </div>
 
