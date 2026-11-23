@@ -13,6 +13,7 @@ const router = Router();
 router.post("/pedidos", orderLimiter, createPedido);
 router.get("/pedidos/:id", getPedidoById);
 router.put("/pedidos/:id/estado", requireAuth, actualizarEstadoPedido);
+router.patch("/pedidos/:id/estado", requireAuth, actualizarEstadoPedido);
 router.post("/pedidos/cotizar-envio", cotizarEnvio);
 
 module.exports = router;

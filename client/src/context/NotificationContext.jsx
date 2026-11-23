@@ -17,6 +17,17 @@ const NotificationContext = createContext(null);
 
 const STORAGE_KEY = "valette_notificaciones_v1";
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 function normalizeNotification(n) {
   if (!n) return null;
   const tipo = n.tipo || "sistema";
@@ -57,6 +68,82 @@ export const NotificationProvider = ({ children }) => {
   });
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Registro de Service Worker y sincronización de Web Push VAPID
+  const subscribeToPush = useCallback(
+    async (requestPermission = false) => {
+      if (
+        typeof window === "undefined" ||
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window) ||
+        !("Notification" in window)
+      ) {
+        return false;
+      }
+
+      try {
+        if (Notification.permission === "denied") return false;
+        if (Notification.permission === "default") {
+          if (!requestPermission) return false;
+          const perm = await Notification.requestPermission();
+          if (perm !== "granted") return false;
+        }
+
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+
+        const keyRes = await fetch(
+          `${API_URL}/notificaciones/push/public-key`
+        );
+        if (!keyRes.ok) return false;
+        const { publicKey } = await keyRes.json();
+        if (!publicKey) return false;
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+          });
+        }
+
+        const subJson = subscription.toJSON();
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        await fetch(`${API_URL}/notificaciones/push/subscribe`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            cliente_id: userId,
+            endpoint: subJson.endpoint,
+            keys: subJson.keys,
+          }),
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [token, userId]
+  );
+
+  // Registrar Service Worker al montar y sincronizar si el permiso ya estaba concedido
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      if ("Notification" in window && Notification.permission === "granted") {
+        subscribeToPush(false);
+      }
+    }
+  }, [subscribeToPush]);
+
+  // Si el usuario abre el centro de notificaciones o confirma un pedido activo, solicitar permiso push si está en "default"
+  useEffect(() => {
+    if (isNotificationsOpen || activeOrderId) {
+      subscribeToPush(true);
+    }
+  }, [isNotificationsOpen, activeOrderId, subscribeToPush]);
 
   // Persistir copia local en localStorage
   useEffect(() => {
@@ -209,6 +296,7 @@ export const NotificationProvider = ({ children }) => {
         markAllAsRead,
         addNotification,
         refreshNotifications: fetchNotifications,
+        subscribeToPush,
       }}
     >
       {children}

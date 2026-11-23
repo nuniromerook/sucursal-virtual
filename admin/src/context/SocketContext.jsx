@@ -1,5 +1,5 @@
 // admin/src/context/SocketContext.jsx
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
@@ -62,7 +62,7 @@ export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [ultimoPedido, setUltimoPedido] = useState(null);
-  const sucursalActivaRef = useRef(null);
+  const sucursalActivaRef = useRef(1);
 
   useEffect(() => {
     const s = io(VITE_API_URL, {
@@ -73,9 +73,8 @@ export function SocketProvider({ children }) {
 
     s.on("connect", () => {
       setIsConnected(true);
-      if (sucursalActivaRef.current) {
-        s.emit("join_sucursal", { sucursal_id: sucursalActivaRef.current });
-      }
+      const sucId = sucursalActivaRef.current || 1;
+      s.emit("join_sucursal", sucId);
     });
 
     s.on("disconnect", () => {
@@ -100,9 +99,13 @@ export function SocketProvider({ children }) {
 
   const joinSucursal = useCallback(
     (sucursalId) => {
-      sucursalActivaRef.current = sucursalId;
-      if (socket && isConnected && sucursalId) {
-        socket.emit("join_sucursal", { sucursal_id: sucursalId });
+      const cleanId =
+        typeof sucursalId === "object"
+          ? sucursalId?.sucursal_id || sucursalId?.id || 1
+          : sucursalId || 1;
+      sucursalActivaRef.current = cleanId;
+      if (socket && isConnected && cleanId) {
+        socket.emit("join_sucursal", cleanId);
       }
     },
     [socket, isConnected]
@@ -110,11 +113,15 @@ export function SocketProvider({ children }) {
 
   const leaveSucursal = useCallback(
     (sucursalId) => {
-      if (sucursalActivaRef.current === sucursalId) {
+      const cleanId =
+        typeof sucursalId === "object"
+          ? sucursalId?.sucursal_id || sucursalId?.id
+          : sucursalId;
+      if (sucursalActivaRef.current === cleanId) {
         sucursalActivaRef.current = null;
       }
-      if (socket && isConnected && sucursalId) {
-        socket.emit("leave_sucursal", { sucursal_id: sucursalId });
+      if (socket && isConnected && cleanId) {
+        socket.emit("leave_sucursal", cleanId);
       }
     },
     [socket, isConnected]
@@ -134,6 +141,7 @@ export function SocketProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSocket() {
   const ctx = useContext(SocketContext);
   if (!ctx) throw new Error("useSocket debe usarse dentro de SocketProvider");

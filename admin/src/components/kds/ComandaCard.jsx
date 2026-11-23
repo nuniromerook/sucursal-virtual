@@ -10,10 +10,24 @@ import {
 import { formatMoney, formatWeight, formatDate } from "../../utils/formatters";
 
 export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
-  const estado = pedido.estado || "solicitado";
+  const estado = pedido.estado || pedido.estado_local || "solicitado";
   const items = Array.isArray(pedido.items) ? pedido.items : [];
   const isRetiro =
-    pedido.tipo_entrega === "retiro" || pedido.tipo === "Retiro en Sucursal";
+    pedido.tipo_entrega === "retiro_sucursal" ||
+    pedido.tipo_entrega === "retiro" ||
+    pedido.tipo === "Retiro en Sucursal";
+  const clienteNombre =
+    pedido.cliente_nombre ||
+    pedido.nombre_cliente ||
+    pedido.cliente ||
+    "Cliente Web";
+  const totalPedido =
+    Number(pedido.monto_total_final) ||
+    Number(pedido.monto_final_real) ||
+    Number(pedido.monto_total_estimado) ||
+    Number(pedido.total) ||
+    Number(pedido.total_estimado) ||
+    0;
 
   let statusBadge;
   if (estado === "solicitado") {
@@ -66,7 +80,12 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
             )}
           </div>
           <div className="font-semibold text-slate-800 text-xs mt-0.5">
-            {pedido.nombre_cliente || pedido.cliente || "Cliente Mostrador"}
+            {clienteNombre}
+            {pedido.cliente_telefono ? (
+              <span className="text-[11px] font-normal text-slate-500 ml-1.5 font-mono">
+                ({pedido.cliente_telefono})
+              </span>
+            ) : null}
           </div>
         </div>
         <div>{statusBadge}</div>
@@ -74,13 +93,22 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
 
       {/* Items del Pedido */}
       <div className="p-3.5 space-y-3 flex-1 text-xs">
+        {pedido.notas ? (
+          <div className="text-[11px] text-amber-900 bg-amber-50/90 p-2 rounded-lg border border-amber-200/70 font-medium">
+            <b>Observaciones:</b> {pedido.notas}
+          </div>
+        ) : null}
+
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Cortes solicitados por el cliente:
         </div>
 
         {items.map((it, idx) => {
           const prep =
-            it.opcion_corte || it.preparacion_seleccionada || it.corte;
+            it.opciones_corte_seleccionada ||
+            it.opcion_corte ||
+            it.preparacion_seleccionada ||
+            it.corte;
           const nota = it.notas || it.nota_cliente || it.observaciones;
           const unit = it.unidad_medida || it.unidad || "kg";
           const cant =
@@ -150,7 +178,7 @@ export default function ComandaCard({ pedido, onOpenPesaje, onChangeStatus }) {
             {isRetiro ? "Retiro en Mostrador" : "Envío a Domicilio"}
           </span>
           <span className="text-slate-900 font-bold font-mono">
-            Total: {formatMoney(pedido.total || pedido.total_estimado)}
+            Total: {formatMoney(totalPedido)}
           </span>
         </div>
       </div>

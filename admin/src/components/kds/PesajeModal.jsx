@@ -46,7 +46,12 @@ function PesajeModalContent({
     const rawPeso = parseFloat(pesos[it.id]);
     const peso = !isNaN(rawPeso) && rawPeso > 0 ? rawPeso : 0;
     const precioUnit = Number(
-      it.precio_unitario || it.precio_unit || it.precio || 0,
+      it.precio_por_kg_congelado ||
+        it.precio_al_agregar ||
+        it.precio_unitario ||
+        it.precio_unit ||
+        it.precio ||
+        0,
     );
     totalRecalculado += peso * precioUnit;
   });
@@ -81,7 +86,10 @@ function PesajeModalContent({
                 </span>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
                   Pedido #{pedido.id} •{" "}
-                  {pedido.nombre_cliente || pedido.cliente}
+                  {pedido.cliente_nombre ||
+                    pedido.nombre_cliente ||
+                    pedido.cliente ||
+                    "Cliente Web"}
                 </h3>
               </div>
             </div>

@@ -48,18 +48,27 @@ const initSocket = (httpServer) => {
     pingInterval: 25000,
   });
 
+  const extractRoomId = (payload, key) => {
+    if (payload && typeof payload === "object") {
+      return payload[key] || payload.id || null;
+    }
+    return payload || null;
+  };
+
   io.on("connection", (socket) => {
     console.log(`⚡ [Socket.io] Nuevo cliente conectado: ${socket.id}`);
 
     // 1. Unirse a la sala de una sucursal específica (para cajeras y administradores)
-    socket.on("join_sucursal", (sucursalId) => {
+    socket.on("join_sucursal", (payload) => {
+      const sucursalId = extractRoomId(payload, "sucursal_id");
       if (!sucursalId) return;
       const room = `sala_sucursal_${sucursalId}`;
       socket.join(room);
       console.log(`👥 Socket ${socket.id} se unió a ${room}`);
     });
 
-    socket.on("leave_sucursal", (sucursalId) => {
+    socket.on("leave_sucursal", (payload) => {
+      const sucursalId = extractRoomId(payload, "sucursal_id");
       if (!sucursalId) return;
       const room = `sala_sucursal_${sucursalId}`;
       socket.leave(room);
@@ -67,7 +76,8 @@ const initSocket = (httpServer) => {
     });
 
     // 2. Unirse a la sala de cortadores/fraccionadores de una sucursal
-    socket.on("join_cortadores", (sucursalId) => {
+    socket.on("join_cortadores", (payload) => {
+      const sucursalId = extractRoomId(payload, "sucursal_id");
       if (!sucursalId) return;
       const room = `sala_cortadores_${sucursalId}`;
       socket.join(room);
@@ -75,7 +85,8 @@ const initSocket = (httpServer) => {
     });
 
     // 3. Unirse a la sala privada de un cliente (para seguimiento de sus pedidos)
-    socket.on("join_cliente", (clienteId) => {
+    socket.on("join_cliente", (payload) => {
+      const clienteId = extractRoomId(payload, "cliente_id");
       if (!clienteId) return;
       const room = `sala_cliente_${clienteId}`;
       socket.join(room);
@@ -83,7 +94,8 @@ const initSocket = (httpServer) => {
     });
 
     // 3b. Unirse a la sala de seguimiento de un pedido específico
-    socket.on("join_pedido", (pedidoId) => {
+    socket.on("join_pedido", (payload) => {
+      const pedidoId = extractRoomId(payload, "pedido_id");
       if (!pedidoId) return;
       const room = `sala_pedido_${pedidoId}`;
       socket.join(room);

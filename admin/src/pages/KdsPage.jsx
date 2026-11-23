@@ -94,14 +94,23 @@ export default function KdsPage() {
   useEffect(() => {
     if (!socket) return;
 
+    const syncPendientes = (list) => {
+      const pendientes = list.filter(
+        (p) =>
+          (p.estado || p.estado_local) === "solicitado" ||
+          (p.estado || p.estado_local) === "en_corte"
+      ).length;
+      setPedidosPendientesCount(pendientes);
+    };
+
     const handleNuevoPedido = (pedido) => {
       setPedidos((prev) => {
         const exists = prev.find((p) => p.id === pedido.id);
-        if (exists) {
-          return prev.map((p) => (p.id === pedido.id ? pedido : p));
-        } else {
-          return [pedido, ...prev];
-        }
+        const next = exists
+          ? prev.map((p) => (p.id === pedido.id ? pedido : p))
+          : [pedido, ...prev];
+        syncPendientes(next);
+        return next;
       });
       showToast(
         `¡Nuevo pedido #${pedido.id} recibido en mostrador!`,
@@ -110,9 +119,11 @@ export default function KdsPage() {
     };
 
     const handlePedidoActualizado = (pedido) => {
-      setPedidos((prev) =>
-        prev.map((p) => (p.id === pedido.id ? pedido : p)),
-      );
+      setPedidos((prev) => {
+        const next = prev.map((p) => (p.id === pedido.id ? pedido : p));
+        syncPendientes(next);
+        return next;
+      });
     };
 
     socket.on("nuevo_pedido", handleNuevoPedido);
@@ -122,22 +133,31 @@ export default function KdsPage() {
       socket.off("nuevo_pedido", handleNuevoPedido);
       socket.off("pedido_actualizado", handlePedidoActualizado);
     };
-  }, [socket, showToast]);
+  }, [socket, showToast, setPedidosPendientesCount]);
 
   const handleChangeStatus = async (orderId, newStatus) => {
     setPedidos((prev) =>
-      prev.map((p) => (p.id === orderId ? { ...p, estado: newStatus } : p)),
+      prev.map((p) =>
+        p.id === orderId
+          ? { ...p, estado: newStatus, estado_local: newStatus }
+          : p
+      ),
     );
 
     try {
-      await fetch(
-        `${VITE_API_URL}/sucursales/${selectedSucursal.id}/pedidos/${orderId}/estado`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ estado: newStatus }),
-        },
-      );
+      const res = await fetch(`${VITE_API_URL}/pedidos/${orderId}/estado`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ estado: newStatus }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.pedido) {
+          setPedidos((prev) =>
+            prev.map((p) => (p.id === orderId ? data.pedido : p))
+          );
+        }
+      }
       showToast(`Pedido #${orderId} actualizado a ${newStatus.toUpperCase()}`);
     } catch (err) {
       console.error("Error al actualizar estado:", err);
@@ -152,54 +172,37 @@ export default function KdsPage() {
   const handleConfirmarPesaje = async (orderId, pesosMap) => {
     setIsSavingPesaje(true);
     try {
-      await fetch(
-        `${VITE_API_URL}/sucursales/${selectedSucursal.id}/pedidos/${orderId}/pesaje`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ pesos: pesosMap }),
-        },
-      );
+      const itemsPesos = Object.entries(pesosMap).map(([itemId, pesoVal]) => ({
+        item_id: Number(itemId),
+        peso_real: parseFloat(pesoVal) || 0,
+      }));
+      const currentOrder = pedidos.find((p) => p.id === orderId);
+      const currEst =
+        currentOrder?.estado || currentOrder?.estado_local || "solicitado";
+      const nextEstado = currEst === "solicitado" ? "en_corte" : currEst;
 
-      // Actualizar localmente el pedido
-      setPedidos((prev) =>
-        prev.map((p) => {
-          if (p.id === orderId) {
-            const updatedItems = (p.items || []).map((it) => ({
-              ...it,
-              peso_real: pesosMap[it.id]
-                ? parseFloat(pesosMap[it.id])
-                : it.peso_real,
-            }));
-            return {
-              ...p,
-              items: updatedItems,
-              estado: p.estado === "solicitado" ? "en_corte" : p.estado,
-            };
-          }
-          return p;
+      const res = await fetch(`${VITE_API_URL}/pedidos/${orderId}/estado`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          estado: nextEstado,
+          items_pesos: itemsPesos,
         }),
-      );
+      });
 
-      showToast(`Pesaje confirmado para Pedido #${orderId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.pedido) {
+          setPedidos((prev) =>
+            prev.map((p) => (p.id === orderId ? data.pedido : p))
+          );
+        }
+      }
+
+      showToast(`Pesaje de balanza confirmado para Pedido #${orderId}`);
       setPesajeModalOpen(false);
     } catch (err) {
       console.error("Error al guardar pesaje:", err);
-      // Fallback local
-      setPedidos((prev) =>
-        prev.map((p) => {
-          if (p.id === orderId) {
-            const updatedItems = (p.items || []).map((it) => ({
-              ...it,
-              peso_real: pesosMap[it.id]
-                ? parseFloat(pesosMap[it.id])
-                : it.peso_real,
-            }));
-            return { ...p, items: updatedItems };
-          }
-          return p;
-        }),
-      );
       setPesajeModalOpen(false);
     } finally {
       setIsSavingPesaje(false);
