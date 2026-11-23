@@ -1,43 +1,72 @@
 // src/hooks/useModalBehavior.js
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useId } from "react";
+
+// Pila global de modales abiertos para soportar apilamiento real en el DOM:
+// - Asigna z-index incremental automático al modal superior.
+// - Mantiene bloqueado el scroll del body hasta que se cierra el último modal de la pila.
+// - Garantiza que la tecla Escape solo cierre el modal que está arriba de todo.
+let activeModalStack = [];
+let zIndexCounter = 50;
 
 /**
  * Hook para estandarizar el comportamiento de todos los modales/bottom sheets:
- * - Bloqueo de scroll del body mientras el modal está abierto.
- * - Cierre accesible con la tecla Escape.
+ * - Apilamiento real sin desmontar el modal inferior (z-index dinámico).
+ * - Bloqueo de scroll del body mientras haya al menos un modal abierto.
+ * - Cierre accesible con la tecla Escape (solo para el modal en la cima de la pila).
  * - Cierre al hacer click en el backdrop / fondo exterior.
  * - Gesto nativo de arrastre hacia abajo (swipe/drag to dismiss) desde la barra táctil y cabecera.
  */
 export const useModalBehavior = (isOpen, onClose) => {
   const modalRef = useRef(null);
+  const instanceId = useId();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   const startY = useRef(0);
   const currentDeltaY = useRef(0);
   const isDragging = useRef(false);
   const animationTimer = useRef(null);
 
-  // 1. Manejo de overflow del body y tecla Escape
+  // 1. Registro en la pila de modales, z-index incremental, overflow del body y tecla Escape
   useEffect(() => {
     if (!isOpen) return;
 
-    const originalOverflow = document.body.style.overflow;
+    zIndexCounter += 2;
+    const assignedZIndex = zIndexCounter;
+
+    activeModalStack.push({ id: instanceId, zIndex: assignedZIndex });
     document.body.style.overflow = "hidden";
 
+    if (modalRef.current?.parentElement) {
+      modalRef.current.parentElement.style.zIndex = String(assignedZIndex);
+    }
+
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && onClose) {
-        onClose();
+      if (e.key === "Escape") {
+        const topModal = activeModalStack[activeModalStack.length - 1];
+        if (topModal && topModal.id === instanceId && onCloseRef.current) {
+          e.stopPropagation();
+          onCloseRef.current();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow || "";
+      activeModalStack = activeModalStack.filter((m) => m.id !== instanceId);
+      if (activeModalStack.length === 0) {
+        document.body.style.overflow = "";
+        zIndexCounter = 50;
+      }
       window.removeEventListener("keydown", handleKeyDown);
       if (animationTimer.current) {
         clearTimeout(animationTimer.current);
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, instanceId]);
 
   // 2. Resetear transform al abrir/cerrar
   useEffect(() => {
@@ -49,19 +78,15 @@ export const useModalBehavior = (isOpen, onClose) => {
     currentDeltaY.current = 0;
   }, [isOpen]);
 
-  // 3. Cierre por click en backdrop
-  const handleBackdropClick = useCallback(
-    (e) => {
-      if (e.target === e.currentTarget && onClose) {
-        onClose();
-      }
-    },
-    [onClose],
-  );
+  // 3. Cierre por click en backdrop (cierra únicamente este modal superior)
+  const handleBackdropClick = useCallback((e) => {
+    if (e.target === e.currentTarget && onCloseRef.current) {
+      onCloseRef.current();
+    }
+  }, []);
 
   // 4. Lógica de arrastre táctil (Swipe Down to Dismiss)
   const handleTouchStart = useCallback((e) => {
-    // Si el toque fue sobre un botón interactivo (ej: X, volver), ignorar arrastre
     if (e.target.closest("button, a, input, textarea, select")) {
       return;
     }
@@ -82,7 +107,6 @@ export const useModalBehavior = (isOpen, onClose) => {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     const diff = clientY - startY.current;
 
-    // Resistencia si arrastra hacia arriba (efecto elástico)
     const deltaY = diff < 0 ? Math.max(-15, diff * 0.15) : diff;
     currentDeltaY.current = deltaY;
 
@@ -95,10 +119,9 @@ export const useModalBehavior = (isOpen, onClose) => {
     if (!isDragging.current) return;
     isDragging.current = false;
 
-    const threshold = 200; // Umbral en píxeles para confirmar el cierre
+    const threshold = 200;
 
     if (currentDeltaY.current > threshold) {
-      // Animar salida hacia abajo y cerrar
       if (modalRef.current) {
         modalRef.current.style.transition =
           "transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)";
@@ -106,10 +129,9 @@ export const useModalBehavior = (isOpen, onClose) => {
       }
 
       animationTimer.current = setTimeout(() => {
-        if (onClose) onClose();
+        if (onCloseRef.current) onCloseRef.current();
       }, 200);
     } else {
-      // Rebotar elásticamente a la posición original
       if (modalRef.current) {
         modalRef.current.style.transition =
           "transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)";
@@ -125,7 +147,7 @@ export const useModalBehavior = (isOpen, onClose) => {
     }
 
     currentDeltaY.current = 0;
-  }, [onClose]);
+  }, []);
 
   const dragHandleProps = {
     onTouchStart: handleTouchStart,

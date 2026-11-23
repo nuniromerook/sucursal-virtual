@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { BrowserRouter, useSearchParams, useLocation } from "react-router-dom";
 import { trackPageView, trackEvent } from "@/utils/analytics";
 import { ToastProvider } from "@/context/ToastContext";
@@ -45,6 +45,15 @@ function AppContent() {
   const [onlyStock, setOnlyStock] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
 
+  // Estados de modales y drawers (se apilan en vivo sin cerrar el modal inferior)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileInitialView, setProfileInitialView] = useState("main");
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isNavbarFused, setIsNavbarFused] = useState(false);
+
   // Registro automático de vista de página en PostgreSQL (metricas_visitas)
   useEffect(() => {
     const rutaActual = `${location.pathname}${location.search || ""}`;
@@ -87,35 +96,44 @@ function AppContent() {
     return getProductBySlugOrId(productParam);
   }, [productParam, getProductBySlugOrId]);
 
-  const handleOpenProduct = (product) => {
-    trackEvent("ver_producto", product.id, {
-      nombre: product.nombre || product.nombre_producto,
-      slug: product.slug,
-      categoria: product.categoria || product.especie,
-    });
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("producto", product.slug || product.id);
-    setSearchParams(newParams);
-  };
+  const openProductInUrl = useCallback(
+    (product) => {
+      trackEvent("ver_producto", product.id, {
+        nombre: product.nombre || product.nombre_producto,
+        slug: product.slug,
+        categoria: product.categoria || product.especie,
+      });
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("producto", product.slug || product.id);
+      setSearchParams(newParams);
+    },
+    [searchParams, setSearchParams]
+  );
 
-  const handleCloseProductDetail = () => {
+  const closeProductInUrl = useCallback(() => {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("producto");
     newParams.delete("corte");
     setSearchParams(newParams);
-  };
+  }, [searchParams, setSearchParams]);
 
-  // Estados de modales y drawers auxiliares
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileInitialView, setProfileInitialView] = useState("main");
-  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [isNavbarFused, setIsNavbarFused] = useState(false);
+  // Cierra absolutamente todos los modales apilados (acción del botón X)
+  const closeAllModals = useCallback(() => {
+    setIsSidebarOpen(false);
+    setIsNotificationsOpen(false);
+    setIsCartOpen(false);
+    setIsCheckoutModalOpen(false);
+    setIsTrackingModalOpen(false);
+    setIsProfileModalOpen(false);
+    setProfileInitialView("main");
+    setIsBranchModalOpen(false);
+    setIsFiltersModalOpen(false);
+    closeProductInUrl();
+  }, [setIsNotificationsOpen, setIsCartOpen, closeProductInUrl]);
 
-  const handleOpenProfileModal = (view = "main") => {
-    setProfileInitialView(typeof view === "string" ? view : "main");
+  const handleOpenProfile = (view = "main") => {
+    const targetView = typeof view === "string" ? view : "main";
+    setProfileInitialView(targetView);
     setIsProfileModalOpen(true);
   };
 
@@ -129,7 +147,7 @@ function AppContent() {
         hasActiveFilters={sortBy !== "destacados" || onlyStock}
         isNavbarFused={isNavbarFused}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenProfileModal={() => handleOpenProfile("main")}
         onOpenSidebar={() => setIsSidebarOpen(true)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
@@ -137,8 +155,8 @@ function AppContent() {
       {/* 2. Pantalla Principal Integral con Todas las Secciones y Combos */}
       <main className="relative w-full">
         <Home
-          onOpenProduct={handleOpenProduct}
-          onOpenCustomizer={handleOpenProduct}
+          onOpenProduct={openProductInUrl}
+          onOpenCustomizer={openProductInUrl}
           onOpenBranchModal={() => setIsBranchModalOpen(true)}
           searchQuery={searchQuery}
           sortBy={sortBy}
@@ -151,14 +169,14 @@ function AppContent() {
       {/* 3. Dock Inferior Mobile */}
       <MobileDock
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
-        onOpenProfileModal={handleOpenProfileModal}
+        onOpenProfileModal={handleOpenProfile}
       />
 
-      {/* 4. Sidebar Drawer Estratégica (Menú Lateral) */}
+      {/* 4. Sidebar Drawer Estratégica (Menú Lateral — permanece debajo si abre otro modal) */}
       <SidebarDrawer
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onOpenProfileModal={handleOpenProfileModal}
+        onOpenProfileModal={handleOpenProfile}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
@@ -167,9 +185,15 @@ function AppContent() {
       {/* 5. Modal / Bottom Sheet de Notificaciones */}
       <NotificationsModal
         isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
+        onBack={() => setIsNotificationsOpen(false)}
+        onClose={closeAllModals}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
-        onOpenProfileModal={handleOpenProfileModal}
+        onOpenProfileModal={(view = "points") => {
+          handleOpenProfile(view);
+          if (isProfileModalOpen) {
+            setIsNotificationsOpen(false);
+          }
+        }}
       />
 
       {/* 6. Modal / Bottom Sheet de Detalle de Producto Sincronizado con URL */}
@@ -177,49 +201,67 @@ function AppContent() {
         key={activeProduct?.id || "product-detail-modal"}
         isOpen={!!activeProduct}
         product={activeProduct}
-        onClose={handleCloseProductDetail}
+        onBack={closeProductInUrl}
+        onClose={closeAllModals}
       />
 
-      {/* 7. Modales Globales y Drawers */}
+      {/* 7. Modales Globales y Drawers Apilables */}
       <CartDrawer
         isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+        onBack={() => setIsCartOpen(false)}
+        onClose={closeAllModals}
         onOpenCheckout={() => setIsCheckoutModalOpen(true)}
       />
 
       <CheckoutModal
         isOpen={isCheckoutModalOpen}
-        onClose={() => setIsCheckoutModalOpen(false)}
-        onOrderConfirmed={() => setIsTrackingModalOpen(true)}
+        onBack={() => setIsCheckoutModalOpen(false)}
+        onClose={closeAllModals}
+        onOrderConfirmed={() => {
+          setIsCartOpen(false);
+          setIsCheckoutModalOpen(false);
+          setIsTrackingModalOpen(true);
+        }}
       />
 
       <OrderTrackingModal
         isOpen={isTrackingModalOpen}
-        onClose={() => setIsTrackingModalOpen(false)}
+        onBack={() => setIsTrackingModalOpen(false)}
+        onClose={closeAllModals}
       />
 
       <ProfileModal
         key={`profile-modal-${isProfileModalOpen ? profileInitialView : "closed"}`}
         isOpen={isProfileModalOpen}
         initialView={profileInitialView}
-        onClose={() => {
+        originView={profileInitialView}
+        onBack={() => {
           setIsProfileModalOpen(false);
           setProfileInitialView("main");
         }}
+        onClose={closeAllModals}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
-        onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
-        onOpenProduct={handleOpenProduct}
+        onOpenNotificationsModal={() => {
+          if (isNotificationsOpen) {
+            setIsProfileModalOpen(false);
+          } else {
+            setIsNotificationsOpen(true);
+          }
+        }}
+        onOpenProduct={openProductInUrl}
       />
 
       <BranchSelectorModal
         isOpen={isBranchModalOpen}
-        onClose={() => setIsBranchModalOpen(false)}
+        onBack={() => setIsBranchModalOpen(false)}
+        onClose={closeAllModals}
       />
 
       <SearchFilterModal
         isOpen={isFiltersModalOpen}
-        onClose={() => setIsFiltersModalOpen(false)}
+        onBack={() => setIsFiltersModalOpen(false)}
+        onClose={closeAllModals}
         sortBy={sortBy}
         setSortBy={setSortBy}
         onlyStock={onlyStock}
@@ -236,17 +278,17 @@ export default function App() {
       <LocationProvider>
         <AuthProvider>
           <FavoritesProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <CatalogoProvider>
-                <NotificationProvider>
-                  <TabNavigationProvider>
-                    <AppContent />
-                  </TabNavigationProvider>
-                </NotificationProvider>
-              </CatalogoProvider>
-            </BrowserRouter>
-          </CartProvider>
+            <CartProvider>
+              <BrowserRouter>
+                <CatalogoProvider>
+                  <NotificationProvider>
+                    <TabNavigationProvider>
+                      <AppContent />
+                    </TabNavigationProvider>
+                  </NotificationProvider>
+                </CatalogoProvider>
+              </BrowserRouter>
+            </CartProvider>
           </FavoritesProvider>
         </AuthProvider>
       </LocationProvider>

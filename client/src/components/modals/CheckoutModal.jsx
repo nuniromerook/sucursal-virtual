@@ -1,6 +1,6 @@
 // src/components/modals/CheckoutModal.jsx
 import { useState } from "react";
-import { X, Check, Loader2, AlertCircle, Store, Truck } from "lucide-react";
+import { X, ChevronLeft, Check, Loader2, AlertCircle, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useLocation, CASA_CENTRAL_BRANCH } from "@/context/LocationContext";
 import { useToast } from "@/context/ToastContext";
@@ -38,7 +38,7 @@ function getInitialCustomer() {
   };
 }
 
-export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
+export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => {
   const {
     cartItems,
     totalEstimado,
@@ -66,6 +66,14 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  const handleBackModal = () => {
+    if (isSubmitting) return;
+    if (registerFunnelStep) {
+      registerFunnelStep(currentStep, `cierre_${currentStep}`);
+    }
+    (onBack || onClose)();
+  };
+
   const handleCloseModal = () => {
     if (isSubmitting) return;
     if (registerFunnelStep) {
@@ -76,7 +84,7 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
 
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    handleCloseModal,
+    handleBackModal,
   );
 
   if (!isOpen) return null;
@@ -190,7 +198,6 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
       }
 
       clearCart();
-      onClose();
       onOrderConfirmed(data.pedido);
       showToast(
         `¡Pedido #${data.pedido?.id || ""} confirmado! Enviado al mostrador de corte 🥩`,
@@ -218,22 +225,34 @@ export const CheckoutModal = ({ isOpen, onClose, onOrderConfirmed }) => {
         {/* Barra táctil y cabecera deslizable */}
         <div {...dragHandleProps} className="touch-none select-none">
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Pago seguro - Abastecedora Valette
-              </span>
-              <h3 className="text-lg font-black text-slate-900 leading-tight">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+            <button
+              type="button"
+              onClick={handleBackModal}
+              disabled={isSubmitting}
+              aria-label="Volver al carrito"
+              title="Volver"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+            >
+              <ChevronLeft className="size-4 stroke-[2.25]" />
+            </button>
+            <div className="text-center">
+              <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight leading-tight">
                 Confirmá tu Pedido
               </h3>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Abastecedora Valette
+              </span>
             </div>
             <button
               type="button"
               onClick={handleCloseModal}
               disabled={isSubmitting}
-              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+              aria-label="Cerrar"
+              title="Cerrar"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
             >
-              <X className="size-4" />
+              <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
         </div>

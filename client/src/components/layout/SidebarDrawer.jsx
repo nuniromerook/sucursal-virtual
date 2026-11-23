@@ -26,7 +26,7 @@ import { useCart } from "@/context/CartContext";
 
 const DEFAULT_SIDEBAR_USER = {
   nombre: "Iniciar Sesión",
-  email: "Accedé al Club Valette",
+  email: "Y accedé a Club Valette",
 };
 
 export const SidebarDrawer = ({
@@ -48,12 +48,13 @@ export const SidebarDrawer = ({
 
   if (!isOpen) return null;
 
-  const userProfile = isAuthenticated && user
-    ? {
-        nombre: user.nombre || "Cliente Valette",
-        email: user.email || user.telefono || "Club Valette",
-      }
-    : DEFAULT_SIDEBAR_USER;
+  const userProfile =
+    isAuthenticated && user
+      ? {
+          nombre: user.nombre || "Cliente Valette",
+          email: user.email || user.telefono || "Club Valette",
+        }
+      : DEFAULT_SIDEBAR_USER;
 
   const handleNav = (action) => {
     onClose();
@@ -93,14 +94,13 @@ export const SidebarDrawer = ({
       id: "catalogo",
       label: "Catálogo",
       icon: Beef,
-      badge: categoryCounts.todos || 12,
+      badge: "¡Hay Promos!",
       action: () => handleNav(goToCatalogo),
     },
     {
       id: "parrilla",
       label: "Parrilla",
       icon: Flame,
-      badge: categoryCounts.asado || 6,
       action: () => handleCategoryNav("asado"),
     },
     {
@@ -115,7 +115,7 @@ export const SidebarDrawer = ({
       label: "Favoritos",
       icon: Heart,
       badge: favorites.length > 0 ? favorites.length : null,
-      action: () => handleNav(() => onOpenProfileModal?.("favorites")),
+      action: () => onOpenProfileModal?.("favorites"),
     },
   ];
 
@@ -124,20 +124,20 @@ export const SidebarDrawer = ({
       id: "pedidos",
       label: "Pedidos",
       icon: Truck,
-      badge: activeOrderId ? 1 : null,
-      action: () => handleNav(onOpenTrackingModal),
+      badge: activeOrderId ? 1 : "Seguir pedidos",
+      action: () => onOpenTrackingModal?.(),
     },
     {
       id: "sucursal",
       label: "Sucursal",
       icon: MapPin,
-      action: () => handleNav(onOpenBranchModal),
+      action: () => onOpenBranchModal?.(),
     },
     {
       id: "soporte",
       label: "Soporte",
       icon: MessageCircle,
-      action: () => handleNav(() => onOpenProfileModal?.("support")),
+      action: () => onOpenProfileModal?.("support"),
     },
   ];
 
@@ -151,7 +151,7 @@ export const SidebarDrawer = ({
         role="dialog"
         aria-modal="true"
         aria-label="Menú principal"
-        className="bg-white w-full max-w-[310px] sm:max-w-[330px] h-full shadow-2xl relative flex flex-col justify-between overflow-hidden animate-in slide-in-from-left duration-250 border-r border-slate-200/80"
+        className="bg-white w-full max-w-77.5 sm:max-w-82.5 h-full shadow-2xl relative flex flex-col justify-between overflow-hidden animate-in slide-in-from-left duration-250 border-r border-slate-200/80"
       >
         {/* 1. Header con Logo Oficial y Botón Cerrar (se mantiene intacto) */}
         <div className="relative p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
@@ -176,10 +176,10 @@ export const SidebarDrawer = ({
             type="button"
             onClick={onClose}
             aria-label="Cerrar menú"
-            className="absolute top-5 right-5 size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold cursor-pointer transition-colors"
+            className="absolute top-5 right-5 size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
             title="Cerrar menú"
           >
-            <X className="size-4" aria-hidden="true" />
+            <X className="size-4 stroke-[2.25]" aria-hidden="true" />
           </button>
         </div>
 
@@ -205,7 +205,7 @@ export const SidebarDrawer = ({
                   >
                     <span className="flex items-center gap-3.5">
                       <Icon
-                        className="size-[19px] text-slate-700 group-hover:text-slate-950 stroke-[1.9] shrink-0 transition-colors"
+                        className="size-5 text-slate-700 group-hover:text-slate-950 stroke-2 shrink-0"
                         aria-hidden="true"
                       />
                       <span className="text-[14px] font-medium tracking-tight text-slate-800 group-hover:text-slate-950">
@@ -240,7 +240,7 @@ export const SidebarDrawer = ({
                   >
                     <span className="flex items-center gap-3.5">
                       <Icon
-                        className="size-[19px] text-slate-700 group-hover:text-slate-950 stroke-[1.9] shrink-0 transition-colors"
+                        className="size-5 text-slate-700 group-hover:text-slate-950 stroke-2 shrink-0"
                         aria-hidden="true"
                       />
                       <span className="text-[14px] font-medium tracking-tight text-slate-800 group-hover:text-slate-950">
@@ -266,12 +266,12 @@ export const SidebarDrawer = ({
             <div className="space-y-1">
               <button
                 type="button"
-                onClick={() => handleNav(() => onOpenProfileModal?.("edit-profile"))}
+                onClick={() => onOpenProfileModal?.("edit-profile")}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-slate-800 hover:bg-slate-100/80 active:bg-slate-100 transition-colors cursor-pointer group"
               >
                 <span className="flex items-center gap-3.5">
                   <Wrench
-                    className="size-[19px] text-slate-700 group-hover:text-slate-950 stroke-[1.9] shrink-0 transition-colors"
+                    className="size-5 text-slate-700 group-hover:text-slate-950 stroke-2 shrink-0"
                     aria-hidden="true"
                   />
                   <span className="text-[14px] font-medium tracking-tight text-slate-800 group-hover:text-slate-950">
@@ -283,12 +283,12 @@ export const SidebarDrawer = ({
               {onOpenNotificationsModal && (
                 <button
                   type="button"
-                  onClick={() => handleNav(onOpenNotificationsModal)}
+                  onClick={() => onOpenNotificationsModal()}
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-slate-800 hover:bg-slate-100/80 active:bg-slate-100 transition-colors cursor-pointer group"
                 >
                   <span className="flex items-center gap-3.5">
                     <Bell
-                      className="size-[19px] text-slate-700 group-hover:text-slate-950 stroke-[1.9] shrink-0 transition-colors"
+                      className="size-5 text-slate-700 group-hover:text-slate-950 stroke-2 shrink-0"
                       aria-hidden="true"
                     />
                     <span className="text-[14px] font-medium tracking-tight text-slate-800 group-hover:text-slate-950">
@@ -306,19 +306,19 @@ export const SidebarDrawer = ({
               {/* Ítem destacado estilo "Manage" de la referencia */}
               <button
                 type="button"
-                onClick={() => handleNav(() => onOpenProfileModal?.("main"))}
+                onClick={() => onOpenProfileModal?.("main")}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/70 text-slate-900 transition-colors cursor-pointer group"
               >
                 <span className="flex items-center gap-3.5">
                   <CircleUser
-                    className="size-[20px] text-slate-800 stroke-[2] shrink-0"
+                    className="size-5 text-slate-800 stroke-2 shrink-0"
                     aria-hidden="true"
                   />
                   <span className="text-[14px] font-semibold tracking-tight text-slate-900">
                     Gestionar
                   </span>
                 </span>
-                <span className="flex items-center gap-1.5">
+                <span className="hidden items-center gap-1.5">
                   <span className="size-6 rounded-full bg-white text-slate-800 font-num font-bold text-xs shadow-2xs flex items-center justify-center">
                     2
                   </span>
@@ -336,15 +336,32 @@ export const SidebarDrawer = ({
         <div className="p-4 px-5 bg-white border-t border-slate-100 shrink-0">
           <button
             type="button"
-            onClick={() => handleNav(() => onOpenProfileModal?.("main"))}
+            onClick={() => onOpenProfileModal?.("main")}
             className="w-full flex items-center justify-between gap-3 text-left group cursor-pointer rounded-2xl py-1 transition-colors"
           >
             <div className="flex items-center gap-3.5 min-w-0">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80"
-                alt={userProfile.nombre}
-                className="size-11 rounded-full object-cover border border-slate-200/80 shrink-0 bg-slate-100"
-              />
+              {isAuthenticated && user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={userProfile.nombre}
+                  className="size-11 rounded-full object-cover border border-slate-200/80 shrink-0 bg-slate-100"
+                />
+              ) : (
+                <div className="size-11 rounded-full overflow-hidden bg-[#E4E6EB] border border-slate-200/80 shrink-0 flex items-end justify-center">
+                  <svg
+                    viewBox="0 0 36 36"
+                    fill="none"
+                    aria-hidden="true"
+                    className="size-full text-[#65676B]"
+                  >
+                    <circle cx="18" cy="13.5" r="6" fill="currentColor" />
+                    <path
+                      d="M6.5 34C6.5 26.8203 11.6487 22 18 22C24.3513 22 29.5 26.8203 29.5 34"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </div>
+              )}
               <div className="min-w-0">
                 <span className="block font-bold text-slate-900 text-[14px] leading-tight truncate group-hover:text-[#003366] transition-colors">
                   {userProfile.nombre}

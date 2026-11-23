@@ -1,9 +1,10 @@
 // src/components/modals/OrderTrackingModal.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { RotateCw, Check, ChevronLeft, X, Search } from "lucide-react";
+import { RotateCw, Check, ChevronLeft, X, Package } from "lucide-react";
 import { io } from "socket.io-client";
 import { useToast } from "@/context/ToastContext";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { formatPrecio } from "@/utils/formatters";
 import { API_URL } from "@/config/api";
@@ -67,17 +68,19 @@ function getHeroStatusInfo(pedido) {
   };
 }
 
-export const OrderTrackingModal = ({ isOpen, onClose }) => {
+export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
   const { showToast } = useToast();
-  const { activeOrderId, setActiveOrderId } = useCart();
+  const { activeOrderId } = useCart();
+  const { pedidosHistorial } = useAuth();
+  const targetOrderId = activeOrderId || pedidosHistorial?.[0]?.id || null;
+
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose,
+    onBack || onClose,
   );
 
   const [pedido, setPedido] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [lookupInput, setLookupInput] = useState("");
 
   const fetchPedido = useCallback(
     async (orderId, showNotification = false) => {
@@ -108,14 +111,14 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
     [showToast],
   );
 
-  // Cargar pedido activo al abrir el modal y conectar Socket.io en tiempo real
+  // Cargar pedido activo del usuario al abrir el modal y conectar Socket.io en tiempo real
   useEffect(() => {
-    if (!isOpen || !activeOrderId) return;
+    if (!isOpen || !targetOrderId) return;
 
     let isMounted = true;
     const loadOrder = async () => {
       try {
-        const res = await fetch(`${API_URL}/pedidos/${activeOrderId}`);
+        const res = await fetch(`${API_URL}/pedidos/${targetOrderId}`);
         if (res.ok && isMounted) {
           const data = await res.json();
           setPedido(data);
@@ -129,14 +132,14 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
     });
 
     socket.on("connect", () => {
-      socket.emit("join_pedido", activeOrderId);
+      socket.emit("join_pedido", targetOrderId);
     });
 
     socket.on("pedido_actualizado", (updated) => {
       if (
         isMounted &&
         updated &&
-        Number(updated.id) === Number(activeOrderId)
+        Number(updated.id) === Number(targetOrderId)
       ) {
         setPedido(updated);
         showToast(
@@ -150,24 +153,14 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
       isMounted = false;
       socket.disconnect();
     };
-  }, [isOpen, activeOrderId, showToast]);
+  }, [isOpen, targetOrderId, showToast]);
 
   if (!isOpen) return null;
 
   const handleRefresh = () => {
-    if (activeOrderId) {
-      fetchPedido(activeOrderId, true);
-    } else {
-      showToast("Ingresá tu número de pedido para consultar", "info");
+    if (targetOrderId) {
+      fetchPedido(targetOrderId, true);
     }
-  };
-
-  const handleLookupSubmit = (e) => {
-    e.preventDefault();
-    const cleanId = Number(String(lookupInput).replace(/\D/g, ""));
-    if (!cleanId) return;
-    setActiveOrderId(cleanId);
-    fetchPedido(cleanId, true);
   };
 
   const currentStep = getStepIndex(pedido?.estado_local || pedido?.estado);
@@ -243,86 +236,72 @@ export const OrderTrackingModal = ({ isOpen, onClose }) => {
         {/* Header con soporte de arrastre */}
         <div
           {...dragHandleProps}
-          className="flex flex-col w-full bg-white touch-none select-none shrink-0"
+          className="touch-none select-none sticky top-0 bg-white z-10 shrink-0 px-6 pt-3.5 pb-3 border-b border-slate-200/60"
         >
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-0 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-          <div className="flex items-center justify-between pb-3 pt-6 border-b border-slate-100">
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={onClose}
-              className="size-8 ml-6 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+              onClick={onBack || onClose}
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+              aria-label="Volver"
               title="Volver"
             >
-              <ChevronLeft className="size-4 stroke-[2.5]" />
+              <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
-            <span className="font-extrabold text-sm text-slate-800 pl-4 font-num">
+            <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight font-num">
               {pedido?.id
                 ? `Seguimiento #${String(pedido.id).padStart(4, "0")}`
-                : activeOrderId
-                  ? `Seguimiento #${String(activeOrderId).padStart(4, "0")}`
+                : targetOrderId
+                  ? `Seguimiento #${String(targetOrderId).padStart(4, "0")}`
                   : "Seguimiento en Vivo"}
-            </span>
-            <div className="flex items-center gap-1 mr-6">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
-                title="Actualizar estado"
-              >
-                <RotateCw
-                  className={`size-3.5 stroke-[2.5] ${
-                    isLoading ? "animate-spin" : ""
-                  }`}
-                />
-              </button>
+            </h3>
+            <div className="flex items-center gap-1.5">
+              {targetOrderId && (
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+                  aria-label="Actualizar estado"
+                  title="Actualizar estado"
+                >
+                  <RotateCw
+                    className={`size-3.5 stroke-[2.25] ${
+                      isLoading ? "animate-spin" : ""
+                    }`}
+                  />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onClose}
-                className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+                className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+                aria-label="Cerrar"
                 title="Cerrar"
               >
-                <X className="size-4" />
+                <X className="size-4 stroke-[2.25]" />
               </button>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col size-full overflow-y-auto">
-          {/* Buscador rápido de otro número de pedido */}
+          {/* Estado vacío cuando el usuario no tiene un pedido propio activo */}
           {!pedido && !isLoading ? (
-            <div className="p-6 space-y-4 text-center">
-              <div className="size-16 rounded-2xl bg-slate-100 text-3xl flex items-center justify-center mx-auto">
-                🥩
+            <div className="p-8 my-auto space-y-3 text-center">
+              <div className="size-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <Package className="size-7 stroke-[1.75]" />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Consultá tu pedido en tiempo real
+                <h3 className="text-sm font-extrabold text-slate-800">
+                  Todavía no tenés un pedido en curso
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Ingresá el número de comanda para ver el estado en mostrador y
-                  el ticket de balanza.
+                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                  Acá vas a poder seguir el estado de tu pedido cuando confirmes
+                  tu compra.
                 </p>
               </div>
-              <form
-                onSubmit={handleLookupSubmit}
-                className="flex items-center gap-2 pt-2"
-              >
-                <input
-                  type="text"
-                  value={lookupInput}
-                  onChange={(e) => setLookupInput(e.target.value)}
-                  placeholder="Ej: 15"
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold outline-none focus:bg-white focus:border-[#003366]"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-[#003366] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Search className="size-3.5" />
-                  <span>Buscar</span>
-                </button>
-              </form>
             </div>
           ) : (
             <>

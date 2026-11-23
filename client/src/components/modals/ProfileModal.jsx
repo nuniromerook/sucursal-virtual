@@ -45,6 +45,8 @@ import { useModalBehavior } from "@/hooks/useModalBehavior";
 export const ProfileModal = ({
   isOpen,
   initialView = "main",
+  originView = "main",
+  onBack,
   onClose,
   onOpenTrackingModal,
   onOpenBranchModal,
@@ -52,8 +54,12 @@ export const ProfileModal = ({
   onOpenProduct,
 }) => {
   const { showToast } = useToast();
-  const { selectedBranch, deliveryMode, customerAddress, updateCustomerAddress } =
-    useLocation();
+  const {
+    selectedBranch,
+    deliveryMode,
+    customerAddress,
+    updateCustomerAddress,
+  } = useLocation();
   const { favorites, toggleFavorite } = useFavorites();
   const { productos } = useCatalogo();
   const { unreadCount } = useNotifications();
@@ -103,7 +109,6 @@ export const ProfileModal = ({
   });
 
   // Preferencias operativas
-  const [whatsappAlerts, setWhatsappAlerts] = useState(true);
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Estado para cambio de contraseña
@@ -119,9 +124,23 @@ export const ProfileModal = ({
     onClose();
   };
 
+  const handleBackModal = () => {
+    setFormError(null);
+    if (activeView !== "main" && activeView !== originView) {
+      setActiveView("main");
+    } else if (onBack) {
+      setActiveView("main");
+      onBack();
+    } else if (activeView !== "main") {
+      setActiveView("main");
+    } else {
+      handleCloseModal();
+    }
+  };
+
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    handleCloseModal
+    handleBackModal,
   );
 
   if (!isOpen) return null;
@@ -140,7 +159,7 @@ export const ProfileModal = ({
   };
 
   const favoriteProducts = productos.filter((p) =>
-    favorites.includes(Number(p.id))
+    favorites.includes(Number(p.id)),
   );
 
   const handleCopyReferral = async () => {
@@ -152,7 +171,7 @@ export const ProfileModal = ({
       await navigator.clipboard.writeText(profileData.codigoReferido);
       setCopiedCode(true);
       showToast(
-        `¡Código ${profileData.codigoReferido} copiado al portapapeles! 🎁`
+        `¡Código ${profileData.codigoReferido} copiado al portapapeles! 🎁`,
       );
       setTimeout(() => setCopiedCode(false), 2500);
     } catch {
@@ -301,12 +320,12 @@ export const ProfileModal = ({
   const openWhatsAppSupport = (motivo = "consulta general") => {
     const rawPhone = (selectedBranch?.telefono || "1135534033").replace(
       /\D/g,
-      ""
+      "",
     );
     const fullPhone = rawPhone.startsWith("54") ? rawPhone : `549${rawPhone}`;
     const sucursalNombre = selectedBranch?.nombre || "Luis Guillón";
     const texto = encodeURIComponent(
-      `Hola Abastecedora Valette (Sucursal ${sucursalNombre})! Soy ${profileData.nombre} y me contacto desde la Sucursal Virtual por: ${motivo}.`
+      `Hola Abastecedora Valette (Sucursal ${sucursalNombre})! Soy ${profileData.nombre} y me contacto desde la Sucursal Virtual por: ${motivo}.`,
     );
     window.open(`https://wa.me/${fullPhone}?text=${texto}`, "_blank");
   };
@@ -340,16 +359,10 @@ export const ProfileModal = ({
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => {
-                setFormError(null);
-                if (activeView === "main") {
-                  handleCloseModal();
-                } else {
-                  setActiveView("main");
-                }
-              }}
+              onClick={handleBackModal}
               className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
               aria-label="Volver"
+              title="Volver"
             >
               <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
@@ -386,17 +399,40 @@ export const ProfileModal = ({
                 className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3.5 cursor-pointer hover:border-slate-300 transition-all group"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="relative size-15 rounded-full bg-[#003366] text-white flex items-center justify-center shrink-0 shadow-xs border-2 border-slate-100">
-                    <img
-                      src={user?.avatar_url || "/favicon.svg"}
-                      alt={profileData.nombre}
-                      className="size-full rounded-full object-cover"
-                    />
+                  <div className="relative size-15 rounded-full bg-[#E4E6EB] flex items-center justify-center shrink-0 shadow-xs border border-slate-200/90">
+                    {isAuthenticated && user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt={profileData.nombre}
+                        className="size-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="size-full rounded-full overflow-hidden bg-[#E4E6EB] flex items-end justify-center">
+                        <svg
+                          viewBox="0 0 36 36"
+                          fill="none"
+                          aria-hidden="true"
+                          className="size-full text-[#65676B]"
+                        >
+                          <circle cx="18" cy="13.5" r="6" fill="currentColor" />
+                          <path
+                            d="M6.5 34C6.5 26.8203 11.6487 22 18 22C24.3513 22 29.5 26.8203 29.5 34"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </div>
+                    )}
                     <span className="absolute -bottom-0.5 -right-0.5 size-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
                       {isAuthenticated ? (
-                        <Camera className="size-3 text-[#003366]" />
+                        <Camera
+                          className="size-3 text-[#003366]"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <LogIn className="size-3 text-[#003366]" />
+                        <LogIn
+                          className="size-3 text-[#003366]"
+                          aria-hidden="true"
+                        />
                       )}
                     </span>
                   </div>
@@ -446,10 +482,7 @@ export const ProfileModal = ({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      handleCloseModal();
-                      onOpenTrackingModal?.();
-                    }}
+                    onClick={() => onOpenTrackingModal?.(activeView)}
                     className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <span className="flex items-center gap-3">
@@ -461,11 +494,12 @@ export const ProfileModal = ({
                     <span className="flex items-center gap-2">
                       {profileData.pedidoActivoId ? (
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-extrabold font-num">
-                          #{String(profileData.pedidoActivoId).padStart(4, "0")} · Activo
+                          #{String(profileData.pedidoActivoId).padStart(4, "0")}{" "}
+                          · Activo
                         </span>
                       ) : (
                         <span className="text-xs text-slate-400 font-medium">
-                          Consultar
+                          Sin pedido
                         </span>
                       )}
                       <ChevronRight className="size-4 text-slate-400" />
@@ -585,10 +619,7 @@ export const ProfileModal = ({
                 <div className="bg-white border border-slate-200/70 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => {
-                      handleCloseModal();
-                      onOpenBranchModal?.();
-                    }}
+                    onClick={() => onOpenBranchModal?.(activeView)}
                     className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <span className="flex items-center gap-3">
@@ -608,10 +639,7 @@ export const ProfileModal = ({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      handleCloseModal();
-                      onOpenNotificationsModal?.();
-                    }}
+                    onClick={() => onOpenNotificationsModal?.(activeView)}
                     className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <span className="flex items-center gap-3">
@@ -633,29 +661,6 @@ export const ProfileModal = ({
                       <ChevronRight className="size-4 text-slate-400" />
                     </span>
                   </button>
-
-                  <label className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer">
-                    <span className="flex items-center gap-3">
-                      <MessageCircle className="size-[18px] text-slate-600 stroke-[1.75]" />
-                      <span className="text-[13px] font-semibold text-slate-800">
-                        Avisos de comanda por WhatsApp
-                      </span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={whatsappAlerts}
-                      onChange={(e) => {
-                        setWhatsappAlerts(e.target.checked);
-                        showToast(
-                          e.target.checked
-                            ? "Avisos por WhatsApp activados"
-                            : "Avisos por WhatsApp silenciados",
-                          "info"
-                        );
-                      }}
-                      className="accent-[#003366] size-4 cursor-pointer rounded"
-                    />
-                  </label>
                 </div>
               </div>
 
@@ -688,7 +693,7 @@ export const ProfileModal = ({
                       openWhatsAppSupport(
                         profileData.pedidoActivoId
                           ? `consulta sobre mi pedido #${profileData.pedidoActivoId}`
-                          : "consulta desde la Sucursal Virtual"
+                          : "consulta desde la Sucursal Virtual",
                       )
                     }
                     className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
@@ -1233,7 +1238,9 @@ export const ProfileModal = ({
 
                 <div className="flex items-center gap-2">
                   <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-300 font-black text-xs text-[#003366] tracking-wider font-num text-center">
-                    {isAuthenticated ? profileData.codigoReferido : "INGRESÁ PARA VER"}
+                    {isAuthenticated
+                      ? profileData.codigoReferido
+                      : "INGRESÁ PARA VER"}
                   </div>
                   <button
                     type="button"
@@ -1283,7 +1290,7 @@ export const ProfileModal = ({
                           <p className="text-[11px] text-slate-400 font-num">
                             {mov.creado_en
                               ? new Date(mov.creado_en).toLocaleDateString(
-                                  "es-AR"
+                                  "es-AR",
                                 )
                               : "Sucursal Luis Guillón"}
                           </p>
@@ -1333,8 +1340,7 @@ export const ProfileModal = ({
                         key={ped.id}
                         onClick={() => {
                           setActiveOrderId(ped.id);
-                          handleCloseModal();
-                          onOpenTrackingModal?.();
+                          onOpenTrackingModal?.(activeView);
                         }}
                         className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3 cursor-pointer hover:border-slate-300 transition-colors"
                       >
@@ -1350,7 +1356,7 @@ export const ProfileModal = ({
                           <p className="text-[11px] text-slate-400 mt-0.5 font-num">
                             {ped.creado_en
                               ? new Date(ped.creado_en).toLocaleDateString(
-                                  "es-AR"
+                                  "es-AR",
                                 )
                               : "Luis Guillón"}{" "}
                             ·{" "}
@@ -1395,10 +1401,7 @@ export const ProfileModal = ({
                       className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
                     >
                       <div
-                        onClick={() => {
-                          handleCloseModal();
-                          onOpenProduct?.(prod);
-                        }}
+                        onClick={() => onOpenProduct?.(prod, activeView)}
                         className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
                       >
                         <img
@@ -1423,7 +1426,7 @@ export const ProfileModal = ({
                         onClick={() =>
                           toggleFavorite(
                             prod.id,
-                            prod.nombre || prod.nombre_producto
+                            prod.nombre || prod.nombre_producto,
                           )
                         }
                         className="size-8 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer transition-colors"
@@ -1540,7 +1543,7 @@ export const ProfileModal = ({
                     type="button"
                     onClick={() =>
                       openWhatsAppSupport(
-                        `consulta sobre el pesaje o corte del pedido #${profileData.pedidoActivoId || ""}`
+                        `consulta sobre el pesaje o corte del pedido #${profileData.pedidoActivoId || ""}`,
                       )
                     }
                     className="w-full p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
@@ -1565,7 +1568,7 @@ export const ProfileModal = ({
                     type="button"
                     onClick={() =>
                       openWhatsAppSupport(
-                        `seguimiento de entrega de mi pedido #${profileData.pedidoActivoId || ""}`
+                        `seguimiento de entrega de mi pedido #${profileData.pedidoActivoId || ""}`,
                       )
                     }
                     className="w-full p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"

@@ -10,7 +10,7 @@ export const CATEGORY_SECTIONS = [
     id: "asado",
     titulo: "🔥 Sector Asado",
     descripcion:
-      "Selección de cortes parrilleros clásicos, cerdo y achuras, todo para el fuego.",
+      "Selección de cortes parrilleros clásicos, vacuno, cerdo, achuras y todo para el fuego.",
     badge: "Parrilla del Domingo",
     filter: (p) =>
       ["vacuno", "cerdo", "embutidos", "achuras"].includes(p.categoria) &&

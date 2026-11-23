@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import {
   X,
+  ChevronLeft,
   ShoppingCart,
   Plus,
   Minus,
@@ -16,7 +17,7 @@ import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 
-export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
+export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
@@ -114,15 +115,28 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
         className="bg-white w-full sm:max-w-2xl md:max-w-3xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
       >
         {/* Zona táctil de arrastre (celulares) y Header */}
-        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+        <div
+          {...dragHandleProps}
+          className="touch-none select-none shrink-0 px-6 pt-3.5 pb-3 border-b border-slate-200/60"
+        >
           {/* Barra táctil para deslizar en celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
           {/* Header Superior del Modal */}
-          <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack || onClose}
+              title="Volver"
+              aria-label="Volver"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+            >
+              <ChevronLeft className="size-4 stroke-[2.25]" />
+            </button>
+
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+              <span className="text-[12px] font-extrabold uppercase tracking-wider text-slate-600">
                 Combos especiales
               </span>
             </div>
@@ -131,9 +145,10 @@ export const ComboDetailModal = ({ isOpen, onClose, combo }) => {
               type="button"
               onClick={onClose}
               title="Cerrar ventana"
-              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+              aria-label="Cerrar ventana"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
             >
-              <X className="size-5" />
+              <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
         </div>

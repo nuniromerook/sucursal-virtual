@@ -2,6 +2,7 @@
 import React from "react";
 import {
   X,
+  ChevronLeft,
   Trash2,
   ArrowRight,
   Plus,
@@ -21,7 +22,7 @@ import { useModalBehavior } from "@/hooks/useModalBehavior";
 const DEFAULT_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
 
-export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
+export const CartDrawer = ({ isOpen, onClose, onBack, onOpenCheckout }) => {
   const {
     cartItems,
     totalItems,
@@ -39,6 +40,13 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
 
   const updateQty = updateItemCantidad || updateItemKg;
 
+  const handleBackDrawer = () => {
+    if (cartItems.length > 0 && registerFunnelStep) {
+      registerFunnelStep("carrito_abierto", "cierre_carrito");
+    }
+    (onBack || onClose)();
+  };
+
   const handleCloseDrawer = () => {
     if (cartItems.length > 0 && registerFunnelStep) {
       registerFunnelStep("carrito_abierto", "cierre_carrito");
@@ -49,7 +57,7 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
   // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    handleCloseDrawer
+    handleBackDrawer
   );
 
   if (!isOpen) return null;
@@ -68,7 +76,6 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
     if (registerFunnelStep) {
       registerFunnelStep("checkout_datos", null);
     }
-    onClose();
     onOpenCheckout();
   };
 
@@ -83,17 +90,30 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
         className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[80vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
       >
         {/* Zona táctil de arrastre (barra + header superior) */}
-        <div {...dragHandleProps} className="touch-none select-none shrink-0">
+        <div
+          {...dragHandleProps}
+          className="touch-none select-none shrink-0 px-6 pt-3.5 pb-3 border-b border-slate-200/60"
+        >
           {/* Barra táctil para deslizar en celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
           {/* Header Superior del Carrito */}
-          <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100">
-            <div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleBackDrawer}
+              title="Volver"
+              aria-label="Volver"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+            >
+              <ChevronLeft className="size-4 stroke-[2.25]" />
+            </button>
+
+            <div className="text-center">
+              <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight leading-none">
                 Tu Carrito
               </h3>
-              <span className="text-[11px] font-bold text-slate-400 block mt-0.5 font-num">
+              <span className="text-[11px] font-semibold text-slate-400 block mt-1 font-num">
                 {totalItems}{" "}
                 {totalItems === 1
                   ? "producto seleccionado"
@@ -106,9 +126,10 @@ export const CartDrawer = ({ isOpen, onClose, onOpenCheckout }) => {
               type="button"
               onClick={handleCloseDrawer}
               title="Cerrar carrito"
-              className="size-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 flex items-center justify-center font-bold transition-colors cursor-pointer"
+              aria-label="Cerrar carrito"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
             >
-              <X className="size-5" />
+              <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
         </div>

@@ -37,6 +37,7 @@ const formatTiempoRelativo = (fechaStr) => {
 export const NotificationsModal = ({
   isOpen,
   onClose,
+  onBack,
   onOpenTrackingModal,
   onOpenProfileModal,
 }) => {
@@ -48,7 +49,7 @@ export const NotificationsModal = ({
   const [filter, setFilter] = useState("todas"); // "todas" | "no_leidas"
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose,
+    onBack || onClose,
   );
 
   if (!isOpen) return null;
@@ -69,11 +70,17 @@ export const NotificationsModal = ({
       if (notif.pedido_id) {
         setActiveOrderId(notif.pedido_id);
       }
-      onClose();
-      if (onOpenTrackingModal) onOpenTrackingModal();
+      if (onOpenTrackingModal) {
+        onOpenTrackingModal();
+      } else {
+        onClose();
+      }
     } else if (notif.tipo === "puntos") {
-      onClose();
-      if (onOpenProfileModal) onOpenProfileModal("points");
+      if (onOpenProfileModal) {
+        onOpenProfileModal("points");
+      } else {
+        onClose();
+      }
     } else if (notif.tipo === "promo") {
       onClose();
       navigate(
@@ -96,24 +103,25 @@ export const NotificationsModal = ({
         {/* Barra táctil y Cabecera Deslizable */}
         <div
           {...dragHandleProps}
-          className="touch-none select-none sticky top-0 bg-white z-10 shrink-0 border-b border-slate-100"
+          className="touch-none select-none sticky top-0 bg-white z-10 shrink-0 border-b border-slate-200/60"
         >
           {/* Barra táctil para celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-4 mb-2 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-3.5 mb-2 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
           <div className="flex items-center justify-between px-6 py-3">
             <button
               type="button"
-              onClick={onClose}
-              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer transition-colors"
+              onClick={onBack || onClose}
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+              aria-label="Volver"
               title="Volver"
             >
-              <ChevronLeft className="size-4 stroke-[2.5]" />
+              <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
 
             <div className="flex items-center gap-2">
-              <Bell className="size-4.5 text-[#003366]" />
-              <h3 className="text-base font-extrabold text-slate-900">
+              <Bell className="size-4 text-[#003366]" />
+              <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight">
                 Notificaciones
               </h3>
               {unreadCount > 0 && (
@@ -126,10 +134,11 @@ export const NotificationsModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer transition-colors"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+              aria-label="Cerrar"
               title="Cerrar"
             >
-              <X className="size-4" />
+              <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
 

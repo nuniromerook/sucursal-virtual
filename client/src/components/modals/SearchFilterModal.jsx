@@ -1,9 +1,10 @@
-import { X } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 
 export const SearchFilterModal = ({
   isOpen,
   onClose,
+  onBack,
   sortBy,
   setSortBy,
   onlyStock,
@@ -12,7 +13,7 @@ export const SearchFilterModal = ({
 }) => {
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose,
+    onBack || onClose,
   );
 
   if (!isOpen) return null;
@@ -24,22 +25,33 @@ export const SearchFilterModal = ({
     >
       <div
         ref={modalRef}
-        className="bg-white w-full sm:max-w-sm rounded-t-4xl sm:rounded-3xl p-6 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="bg-white w-full sm:max-w-sm rounded-t-4xl sm:rounded-3xl p-6 pt-3.5 shadow-2xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
       >
         {/* Barra táctil y cabecera deslizable */}
         <div {...dragHandleProps} className="touch-none select-none">
           {/* Barra táctil para celulares */}
           <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-base font-extrabold text-slate-900">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+            <button
+              type="button"
+              onClick={onBack || onClose}
+              aria-label="Volver"
+              title="Volver"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
+            >
+              <ChevronLeft className="size-4 stroke-[2.25]" />
+            </button>
+            <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight">
               Filtros de Búsqueda
             </h3>
             <button
               type="button"
               onClick={onClose}
-              className="size-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+              aria-label="Cerrar"
+              title="Cerrar"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold cursor-pointer shadow-2xs transition-colors"
             >
-              <X className="size-4" />
+              <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
         </div>
@@ -89,11 +101,8 @@ export const SearchFilterModal = ({
 
         <button
           type="button"
-          onClick={() => {
-            onApply();
-            onClose();
-          }}
-          className="mt-2 w-full py-3 rounded-2xl bg-[#003366] hover:bg-valette-dark text-white font-bold text-xs transition-colors cursor-pointer"
+          onClick={onApply}
+          className="mt-2 w-full py-3.5 rounded-2xl bg-[#003366] hover:bg-valette-dark text-white font-bold text-xs transition-colors cursor-pointer shadow-sm"
         >
           Aplicar Filtros
         </button>
