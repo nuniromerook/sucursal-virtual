@@ -153,6 +153,17 @@ async function cleanupSchemaV1() {
                     if (c3) await db.query(`INSERT INTO combo_items (combo_id, catalogo_id, cantidad_o_peso, peso_kg, orden) VALUES ($1, $2, '1 kg', 1, 3);`, [ins[0].id, c3]);
                 }
             }
+        } else {
+            // Si ya existen combos (ej. en VPS), asegurar que tengan imagen_url de prueba si está vacía
+            await db.query(`
+                UPDATE combos
+                SET imagen_url = CASE
+                    WHEN orden = 1 THEN 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop'
+                    WHEN orden = 2 THEN 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?q=80&w=1000&auto=format&fit=crop'
+                    ELSE 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop'
+                END
+                WHERE imagen_url IS NULL OR BTRIM(imagen_url) = '';
+            `);
         }
 
         // 3. PEDIDOS: Asegurar columnas activas de v1.0 y eliminar columnas legacy duplicadas
