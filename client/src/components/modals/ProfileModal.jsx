@@ -285,7 +285,9 @@ export const ProfileModal = ({
   };
 
   const handleValidateReferral = async (rawCode) => {
-    const clean = String(rawCode || "").trim().toUpperCase();
+    const clean = String(rawCode || "")
+      .trim()
+      .toUpperCase();
     if (clean.length < 3) {
       setReferralStatus(null);
       return;
@@ -351,7 +353,10 @@ export const ProfileModal = ({
   const handleRedeemReward = async (rew) => {
     if (!isAuthenticated) {
       setActiveView("auth");
-      showToast("Iniciá sesión para canjear tus puntos del Club Valette ⭐", "info");
+      showToast(
+        "Iniciá sesión para canjear tus puntos del Club Valette ⭐",
+        "info",
+      );
       return;
     }
     if (redeemingId) return;
@@ -359,9 +364,7 @@ export const ProfileModal = ({
     setFormError(null);
     try {
       const res = await redeemReward(rew.id);
-      showToast(
-        res.message || `¡Canjeaste "${rew.titulo}" con éxito! 🎉`,
-      );
+      showToast(res.message || `¡Canjeaste "${rew.titulo}" con éxito! 🎉`);
     } catch (err) {
       setFormError(err.message || "No se pudo completar el canje.");
     } finally {
@@ -1241,7 +1244,9 @@ export const ProfileModal = ({
                           <button
                             type="button"
                             onClick={() =>
-                              handleValidateReferral(registerForm.codigo_referido)
+                              handleValidateReferral(
+                                registerForm.codigo_referido,
+                              )
                             }
                             className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer shrink-0"
                           >
@@ -1291,12 +1296,16 @@ export const ProfileModal = ({
 
           {/* SUB-VISTA: SOLICITAR RECUPERACIÓN DE CONTRASEÑA */}
           {activeView === "forgot-password" && (
-            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 pb-6">
+            <form
+              onSubmit={handleForgotPasswordSubmit}
+              className="space-y-4 pb-6"
+            >
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
                 <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
                   <Mail className="size-4 text-[#003366]" />
                   <span className="text-xs font-bold text-slate-700">
-                    Te enviaremos un enlace seguro a tu correo (válido por 15 min)
+                    Te enviaremos un enlace seguro a tu correo (válido por 15
+                    min)
                   </span>
                 </div>
                 <div>
@@ -1350,7 +1359,10 @@ export const ProfileModal = ({
 
           {/* SUB-VISTA: RESTABLECER CONTRASEÑA CON TOKEN */}
           {activeView === "reset-password" && (
-            <form onSubmit={handleConfirmResetSubmit} className="space-y-4 pb-6">
+            <form
+              onSubmit={handleConfirmResetSubmit}
+              className="space-y-4 pb-6"
+            >
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
                 <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
                   <ShieldCheck className="size-4 text-emerald-600" />
@@ -1374,7 +1386,10 @@ export const ProfileModal = ({
                     autoComplete="new-password"
                     value={resetForm.newPassword}
                     onChange={(e) =>
-                      setResetForm((s) => ({ ...s, newPassword: e.target.value }))
+                      setResetForm((s) => ({
+                        ...s,
+                        newPassword: e.target.value,
+                      }))
                     }
                     placeholder="Mínimo 6 caracteres"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
@@ -1626,20 +1641,24 @@ export const ProfileModal = ({
           {/* SUB-VISTA: CLUB VALETTE & PUNTOS REALES */}
           {activeView === "points" && (
             <div className="space-y-4 pb-6">
-              <div className="bg-[#003366] text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
+              <div className="bg-[#003366] text-white rounded-2xl shadow-sm relative overflow-hidden">
+                <div className="flex items-center mb-2 px-5 pt-5">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-amber-300">
-                    Club Valette Oficial
+                    Puntos Club Valette
                   </span>
-                  <Sparkles className="size-4 text-amber-300" />
+                  <p className="text-sm text-blue-100 ml-auto">
+                    Cliente: <b> {profileData.usuario}</b>
+                  </p>
                 </div>
-                <div className="text-3xl font-black font-num tracking-tight">
+                <div className="text-3xl font-black font-num tracking-tight px-5">
                   {profileData.puntos.toLocaleString("es-AR")} pts
                 </div>
-                <p className="text-xs text-blue-100 mt-1">
-                  Canjeá tus puntos por números de sorteos, cortes gratis, envíos
+                <p className="text-xs text-blue-100 px-5 mt-1">
+                  Canjeá tus puntos por premios, cortes gratis, envíos
                   bonificados y beneficios exclusivos de la casa.
                 </p>
+
+                <div className="flex w-full h-10 bg-black my-4" />
               </div>
 
               {/* Catálogo de Premios Canjeables Club Valette */}
@@ -1649,25 +1668,43 @@ export const ProfileModal = ({
                 </span>
                 {recompensas.length === 0 ? (
                   <div className="bg-white border border-slate-200/70 rounded-2xl p-5 text-center text-xs text-slate-500">
-                    Próximamente publicaremos nuevos premios y sorteos del Club Valette.
+                    Próximamente publicaremos nuevos premios y sorteos del Club
+                    Valette.
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     {recompensas.map((rew) => {
                       const costo = Number(rew.puntos_requeridos) || 0;
-                      const alcanza = isAuthenticated && profileData.puntos >= costo;
+                      const alcanza =
+                        isAuthenticated && profileData.puntos >= costo;
                       const sinStock =
                         rew.stock_disponible !== null &&
                         Number(rew.stock_disponible) <= 0;
                       const tipo = String(rew.tipo || "producto").toLowerCase();
                       const tipoBadge =
                         tipo === "sorteo"
-                          ? { label: "Sorteo", cls: "bg-purple-50 text-purple-700 border-purple-200", Icon: Ticket }
+                          ? {
+                              label: "Sorteo",
+                              cls: "bg-purple-50 text-purple-700 border-purple-200",
+                              Icon: Ticket,
+                            }
                           : tipo === "envio"
-                            ? { label: "Envío Gratis", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Truck }
+                            ? {
+                                label: "Envío Gratis",
+                                cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                Icon: Truck,
+                              }
                             : tipo === "descuento"
-                              ? { label: "Beneficio", cls: "bg-blue-50 text-[#003366] border-blue-200", Icon: Sparkles }
-                              : { label: "Corte / Producto", cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Gift };
+                              ? {
+                                  label: "Beneficio",
+                                  cls: "bg-blue-50 text-[#003366] border-blue-200",
+                                  Icon: Sparkles,
+                                }
+                              : {
+                                  label: "Corte / Producto",
+                                  cls: "bg-amber-50 text-amber-800 border-amber-200",
+                                  Icon: Gift,
+                                };
                       const BadgeIcon = tipoBadge.Icon;
 
                       return (
@@ -1733,7 +1770,9 @@ export const ProfileModal = ({
                               ) : alcanza ? (
                                 <span>Canjear ahora</span>
                               ) : (
-                                <span>Faltan {costo - profileData.puntos} pts</span>
+                                <span>
+                                  Faltan {costo - profileData.puntos} pts
+                                </span>
                               )}
                             </button>
                           </div>
@@ -1781,7 +1820,9 @@ export const ProfileModal = ({
                           type="button"
                           onClick={async () => {
                             try {
-                              await navigator.clipboard.writeText(c.codigo_canje);
+                              await navigator.clipboard.writeText(
+                                c.codigo_canje,
+                              );
                               showToast(`Código ${c.codigo_canje} copiado`);
                             } catch {
                               showToast(`Tu código: ${c.codigo_canje}`, "info");
