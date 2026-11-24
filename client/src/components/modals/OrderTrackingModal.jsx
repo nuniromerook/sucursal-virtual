@@ -1,7 +1,7 @@
 // src/components/modals/OrderTrackingModal.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { RotateCw, Check, ChevronLeft, X, Package } from "lucide-react";
-import { io } from "socket.io-client";
+import { getSocket } from "@/utils/socket";
 import { useToast } from "@/context/ToastContext";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -70,8 +70,8 @@ function getHeroStatusInfo(pedido) {
 
 export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
   const { showToast } = useToast();
-  const { activeOrderId } = useCart();
-  const { pedidosHistorial } = useAuth();
+  const { activeOrderId, sesionId } = useCart();
+  const { pedidosHistorial, token } = useAuth();
   const targetOrderId = activeOrderId || pedidosHistorial?.[0]?.id || null;
 
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
@@ -82,12 +82,21 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
   const [pedido, setPedido] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const buildOrderHeaders = useCallback(() => {
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (sesionId) headers["X-Sesion-Id"] = sesionId;
+    return headers;
+  }, [token, sesionId]);
+
   const fetchPedido = useCallback(
     async (orderId, showNotification = false) => {
       if (!orderId) return;
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_URL}/pedidos/${orderId}`);
+        const res = await fetch(`${API_URL}/pedidos/${orderId}`, {
+          headers: buildOrderHeaders(),
+        });
         if (res.ok) {
           const data = await res.json();
           setPedido(data);
@@ -108,17 +117,19 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
         setIsLoading(false);
       }
     },
-    [showToast],
+    [showToast, buildOrderHeaders],
   );
 
-  // Cargar pedido activo del usuario al abrir el modal y conectar Socket.io en tiempo real
+  // Cargar pedido activo del usuario al abrir el modal y suscribir en Socket singleton
   useEffect(() => {
     if (!isOpen || !targetOrderId) return;
 
     let isMounted = true;
     const loadOrder = async () => {
       try {
-        const res = await fetch(`${API_URL}/pedidos/${targetOrderId}`);
+        const res = await fetch(`${API_URL}/pedidos/${targetOrderId}`, {
+          headers: buildOrderHeaders(),
+        });
         if (res.ok && isMounted) {
           const data = await res.json();
           setPedido(data);
@@ -127,15 +138,16 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
     };
     loadOrder();
 
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-    });
+    const socket = getSocket();
 
-    socket.on("connect", () => {
+    const handleJoin = () => {
       socket.emit("join_pedido", targetOrderId);
-    });
+    };
+    if (socket.connected) {
+      handleJoin();
+    }
 
-    socket.on("pedido_actualizado", (updated) => {
+    const handleUpdated = (updated) => {
       if (
         isMounted &&
         updated &&
@@ -147,13 +159,17 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
           "info",
         );
       }
-    });
+    };
+
+    socket.on("connect", handleJoin);
+    socket.on("pedido_actualizado", handleUpdated);
 
     return () => {
       isMounted = false;
-      socket.disconnect();
+      socket.off("connect", handleJoin);
+      socket.off("pedido_actualizado", handleUpdated);
     };
-  }, [isOpen, targetOrderId, showToast]);
+  }, [isOpen, targetOrderId, showToast, buildOrderHeaders]);
 
   if (!isOpen) return null;
 
@@ -318,10 +334,16 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
                   </h3>
                   <p className="flex flex-col text-xs text-slate-500 mt-1 gap-0.5">
                     <span className="truncate">
-                      <b>{isPickup ? "Sucursal:" : "Dirección:"}</b>{" "}
-                      {pedido?.direccion_entrega ||
-                        "Av. Luciano Valette 1696, Luis Guillón"}
+                      <b>Modalidad:</b>{" "}
+                      {isPickup
+                        ? "Retiro en Sucursal Luis Guillón"
+                        : "Envío a Domicilio"}
                     </span>
+                    {isPickup && (
+                      <span className="truncate text-[11px] text-slate-400">
+                        Av. Luciano Valette 1696, Luis Guillón
+                      </span>
+                    )}
                     {pedido?.notas && (
                       <span className="line-clamp-2">
                         <b>Detalle:</b> {pedido.notas}

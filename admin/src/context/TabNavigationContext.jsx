@@ -1,5 +1,5 @@
 // admin/src/context/TabNavigationContext.jsx
-import React, {
+import {
   createContext,
   useContext,
   useRef,
@@ -12,7 +12,7 @@ import React, {
 const TabNavigationContext = createContext(null);
 
 export const TabNavigationProvider = ({ children }) => {
-  const [activeTab, setActiveTab] = useState("catalogo");
+  const [activeTab, setActiveTab] = useState("pedidos");
 
   // Almacén de coordenadas de scroll en píxeles para cada fragmento
   const scrollPositions = useRef({
@@ -21,6 +21,10 @@ export const TabNavigationProvider = ({ children }) => {
     combos: 0,
     banners: 0,
     metricas: 0,
+    clientes: 0,
+    notificaciones: 0,
+    equipo: 0,
+    ajustes: 0,
   });
 
   const isRestoringScroll = useRef(false);
@@ -35,7 +39,7 @@ export const TabNavigationProvider = ({ children }) => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
 
-  // 2. Monitoreo pasivo y continuo del scroll en window (idéntico a client)
+  // 2. Monitoreo pasivo y continuo del scroll en window
   useEffect(() => {
     const handleScroll = () => {
       if (isRestoringScroll.current) return;
@@ -75,7 +79,6 @@ export const TabNavigationProvider = ({ children }) => {
   const switchTab = useCallback((tabName) => {
     setActiveTab((current) => {
       if (current === tabName) {
-        // Si ya está en la pestaña activa, scroll suave hacia arriba (comportamiento dock nativo)
         window.scrollTo({ top: 0, behavior: "smooth" });
         return current;
       }
@@ -95,6 +98,7 @@ export const TabNavigationProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTabNavigation = () => {
   const context = useContext(TabNavigationContext);
   if (!context) {

@@ -10,9 +10,11 @@ import PesajeModal from "../components/kds/PesajeModal";
 export default function KdsPage() {
   const { selectedSucursal, setPedidosPendientesCount, showToast } = useAdmin();
   const { socket, joinSucursal } = useSocket();
-  const { authHeaders } = useAuth();
+  const { authHeaders, isManager } = useAuth();
+  const sucursalId = selectedSucursal?.id || 1;
 
   const [pedidos, setPedidos] = useState([]);
+  const [cortadores, setCortadores] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState("todos");
 
@@ -22,32 +24,35 @@ export default function KdsPage() {
   const [isSavingPesaje, setIsSavingPesaje] = useState(false);
 
   const fetchPedidosData = useCallback(async () => {
-    if (!selectedSucursal?.id) return [];
     try {
-      const res = await fetch(
-        `${VITE_API_URL}/sucursales/${selectedSucursal.id}/pedidos`,
-        {
+      const [pedRes, cortRes] = await Promise.all([
+        fetch(`${VITE_API_URL}/sucursales/${sucursalId}/pedidos`, {
           headers: authHeaders,
-        },
-      );
+        }),
+        fetch(`${VITE_API_URL}/sucursales/${sucursalId}/cortadores-carga`, {
+          headers: authHeaders,
+        }),
+      ]);
 
-      if (res.ok) {
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      }
+      const pedList = pedRes.ok ? await pedRes.json() : [];
+      const cortList = cortRes.ok ? await cortRes.json() : [];
+      return {
+        pedidos: Array.isArray(pedList) ? pedList : [],
+        cortadores: Array.isArray(cortList) ? cortList : [],
+      };
     } catch (err) {
       console.error("Error al cargar pedidos:", err);
     }
-    return [];
-  }, [selectedSucursal, authHeaders]);
+    return { pedidos: [], cortadores: [] };
+  }, [sucursalId, authHeaders]);
 
   // Recarga manual desde el botón
   const loadPedidos = async () => {
-    if (!selectedSucursal?.id) return;
     setIsLoading(true);
     try {
-      const items = await fetchPedidosData();
+      const { pedidos: items, cortadores: corts } = await fetchPedidosData();
       setPedidos(items);
+      setCortadores(corts);
       const pendientes = items.filter(
         (p) => p.estado === "solicitado" || p.estado === "en_corte",
       ).length;
@@ -60,15 +65,14 @@ export default function KdsPage() {
   };
 
   useEffect(() => {
-    if (!selectedSucursal?.id) return;
-
-    joinSucursal(selectedSucursal.id);
+    joinSucursal(sucursalId);
 
     let isMounted = true;
     fetchPedidosData()
-      .then((items) => {
+      .then(({ pedidos: items, cortadores: corts }) => {
         if (!isMounted) return;
         setPedidos(items);
+        setCortadores(corts);
         const pendientes = items.filter(
           (p) => p.estado === "solicitado" || p.estado === "en_corte",
         ).length;
@@ -88,7 +92,7 @@ export default function KdsPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedSucursal?.id, fetchPedidosData, joinSucursal, setPedidosPendientesCount]);
+  }, [sucursalId, fetchPedidosData, joinSucursal, setPedidosPendientesCount]);
 
   // Manejar eventos de socket en tiempo real
   useEffect(() => {
@@ -135,11 +139,15 @@ export default function KdsPage() {
     };
   }, [socket, showToast, setPedidosPendientesCount]);
 
-  const handleChangeStatus = async (orderId, newStatus) => {
+  const handleChangeStatus = async (orderId, newStatus, extraPayload = {}) => {
     setPedidos((prev) =>
       prev.map((p) =>
         p.id === orderId
-          ? { ...p, estado: newStatus, estado_local: newStatus }
+          ? {
+              ...p,
+              ...(newStatus ? { estado: newStatus, estado_local: newStatus } : {}),
+              ...extraPayload,
+            }
           : p
       ),
     );
@@ -148,7 +156,10 @@ export default function KdsPage() {
       const res = await fetch(`${VITE_API_URL}/pedidos/${orderId}/estado`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ estado: newStatus }),
+        body: JSON.stringify({
+          ...(newStatus ? { estado: newStatus } : {}),
+          ...extraPayload,
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -158,10 +169,24 @@ export default function KdsPage() {
           );
         }
       }
-      showToast(`Pedido #${orderId} actualizado a ${newStatus.toUpperCase()}`);
+      if (extraPayload.cortador_id) {
+        showToast(`Cortador asignado al pedido #${orderId}`);
+      } else if (newStatus) {
+        showToast(`Pedido #${orderId} actualizado a ${newStatus.toUpperCase()}`);
+      }
     } catch (err) {
       console.error("Error al actualizar estado:", err);
     }
+  };
+
+  const handleAssignCortador = async (orderId, cortadorId) => {
+    await handleChangeStatus(orderId, null, { cortador_id: Number(cortadorId) });
+  };
+
+  const handleCancelOrder = async (orderId, motivo) => {
+    await handleChangeStatus(orderId, "cancelado", {
+      notas: motivo || "Cancelado desde mostrador",
+    });
   };
 
   const handleOpenPesaje = (pedido) => {
@@ -312,8 +337,12 @@ export default function KdsPage() {
             <ComandaCard
               key={pedido.id}
               pedido={pedido}
+              cortadores={cortadores}
+              canSeePrivateData={isManager}
               onOpenPesaje={handleOpenPesaje}
               onChangeStatus={handleChangeStatus}
+              onAssignCortador={handleAssignCortador}
+              onCancelOrder={handleCancelOrder}
             />
           ))}
         </div>

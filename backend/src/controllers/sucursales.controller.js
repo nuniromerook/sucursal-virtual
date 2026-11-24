@@ -1,5 +1,6 @@
 // src/controllers/sucursales.controller.js
 const pool = require("../db");
+const { MANAGER_ROLES } = require("../utils/auth");
 
 // GET /sucursales
 // Listado liviano — lo usa la Sidebar para armar el menú dinámico
@@ -74,6 +75,68 @@ const createSucursal = async (req, res) => {
   } catch (error) {
     console.log(error.message);
     res.json({ error: "Error al crear la sucursal" });
+  }
+};
+
+// PUT /sucursales/:id
+// Actualiza datos y horarios de apertura de la sucursal (Admin)
+const updateSucursal = async (req, res) => {
+  const { id } = req.params;
+  const {
+    nombre,
+    direccion,
+    ciudad,
+    telefono,
+    horario_atencion,
+    horarios_apertura,
+    activa,
+    latitud,
+    longitud,
+  } = req.body;
+
+  try {
+    const horariosPayload =
+      horarios_apertura !== undefined
+        ? typeof horarios_apertura === "string"
+          ? horarios_apertura
+          : JSON.stringify(horarios_apertura)
+        : null;
+
+    const result = await pool.query(
+      `UPDATE sucursales
+       SET nombre = COALESCE($1, nombre),
+           direccion = COALESCE($2, direccion),
+           ciudad = COALESCE($3, ciudad),
+           telefono = COALESCE($4, telefono),
+           horario_atencion = COALESCE($5, horario_atencion),
+           horarios_apertura = COALESCE($6::jsonb, horarios_apertura),
+           activa = COALESCE($7, activa),
+           latitud = COALESCE($8, latitud),
+           longitud = COALESCE($9, longitud)
+       WHERE id::text = $10 OR slug = $10
+       RETURNING *`,
+      [
+        nombre !== undefined ? nombre.trim() : null,
+        direccion !== undefined ? direccion.trim() : null,
+        ciudad !== undefined ? ciudad.trim() : null,
+        telefono !== undefined ? telefono.trim() : null,
+        horario_atencion !== undefined ? horario_atencion.trim() : null,
+        horariosPayload,
+        activa !== undefined ? Boolean(activa) : null,
+        latitud !== undefined && latitud !== "" ? Number(latitud) : null,
+        longitud !== undefined && longitud !== "" ? Number(longitud) : null,
+        id,
+      ],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Sucursal no encontrada" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error al actualizar sucursal:", error.message);
+    res.status(500).json({ error: "Error al actualizar la sucursal" });
   }
 };
 
@@ -281,8 +344,20 @@ const getPedidosSucursal = async (req, res) => {
     query += ` ORDER BY p.creado_en DESC LIMIT 100`;
 
     const result = await pool.query(query, params);
+    const canSeePrivateData = MANAGER_ROLES.includes(
+      String(req.user?.rol || "").toLowerCase()
+    );
 
-    res.json(result.rows);
+    const rows = canSeePrivateData
+      ? result.rows
+      : result.rows.map((p) => ({
+          ...p,
+          direccion_entrega: null,
+          cliente_telefono: null,
+          cliente_email: null,
+        }));
+
+    res.json(rows);
   } catch (error) {
     console.error("Error al obtener pedidos de sucursal:", error);
     res.status(500).json({ error: "Error al obtener pedidos de la sucursal" });
@@ -293,6 +368,7 @@ module.exports = {
   getAllSucursales,
   getSucursal,
   createSucursal,
+  updateSucursal,
   getMetricasSucursal,
   getPedidosSucursal,
 };

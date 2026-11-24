@@ -124,6 +124,14 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
 
     try {
       const token = localStorage.getItem("valette_token");
+      let attributedBannerId = null;
+      try {
+        const rawBid = sessionStorage.getItem("valette_last_banner_id");
+        if (rawBid && Number.isFinite(Number(rawBid))) {
+          attributedBannerId = Number(rawBid);
+        }
+      } catch {}
+
       const direccionFinal =
         deliveryMode === "pickup"
           ? `Retiro en ${CASA_CENTRAL_BRANCH.direccion}`
@@ -141,6 +149,7 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(sesionId ? { "X-Sesion-Id": sesionId } : {}),
         },
         body: JSON.stringify({
           cliente: {
@@ -156,6 +165,7 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
           notas: notasFinal,
           monto_total_estimado: totalEstimado,
           sesion_id: sesionId,
+          banner_id: attributedBannerId,
           items: cartItems.map((it) => ({
             id: it.id,
             catalogo_id: it.catalogo_id || it.id,
@@ -176,6 +186,10 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
           data.error || data.detalles || "No se pudo registrar el pedido.",
         );
       }
+
+      try {
+        sessionStorage.removeItem("valette_last_banner_id");
+      } catch {}
 
       // Guardar datos del cliente para próximas compras
       try {

@@ -5,6 +5,7 @@ const {
   getCatalogoItem,
   createCatalogoItem,
   updateCatalogoItem,
+  toggleStockCatalogoItem,
   toggleActivoCatalogoItem,
   deleteCatalogoItem,
   createPromo,
@@ -17,7 +18,7 @@ const {
   generarFichaIA,
 } = require("../controllers/catalogo.controller");
 
-const { requireAuth } = require("../utils/auth");
+const { requireStaff, requireAdmin } = require("../utils/auth");
 const { aiLimiter } = require("../middlewares/rateLimiter");
 
 const router = Router();
@@ -26,17 +27,18 @@ router.get("/catalogo", getCatalogo);
 router.get("/catalogo/favoritos/ranking", getFavoritosRanking);
 router.get("/catalogo/favoritos/cliente/:clienteId", getFavoritosCliente);
 router.post("/catalogo/favoritos/sincronizar", sincronizarFavoritos);
-router.post("/catalogo/generar-ficha-ia", requireAuth, aiLimiter, generarFichaIA);
+router.post("/catalogo/generar-ficha-ia", requireAdmin, aiLimiter, generarFichaIA);
 router.get("/catalogo/:id", getCatalogoItem);
-router.post("/catalogo", requireAuth, createCatalogoItem);
-router.put("/catalogo/:id", requireAuth, updateCatalogoItem);
-router.patch("/catalogo/:id/estado", requireAuth, toggleActivoCatalogoItem);
-router.delete("/catalogo/:id", requireAuth, deleteCatalogoItem);
+router.post("/catalogo", requireAdmin, createCatalogoItem);
+router.put("/catalogo/:id", requireAdmin, updateCatalogoItem);
+router.patch("/catalogo/:id/stock", requireStaff, toggleStockCatalogoItem);
+router.patch("/catalogo/:id/estado", requireStaff, toggleActivoCatalogoItem);
+router.delete("/catalogo/:id", requireAdmin, deleteCatalogoItem);
 
 router.post("/catalogo/:id/favorito", toggleFavorito);
 
-router.post("/catalogo/:id/promos", requireAuth, createPromo);
-router.put("/catalogo/:id/promos/:promoId", requireAuth, updatePromo);
-router.delete("/catalogo/:id/promos/:promoId", requireAuth, deletePromo);
+router.post("/catalogo/:id/promos", requireAdmin, createPromo);
+router.put("/catalogo/:id/promos/:promoId", requireAdmin, updatePromo);
+router.delete("/catalogo/:id/promos/:promoId", requireAdmin, deletePromo);
 
 module.exports = router;

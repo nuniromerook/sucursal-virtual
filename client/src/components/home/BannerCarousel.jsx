@@ -1,16 +1,35 @@
 // src/components/home/BannerCarousel.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useCatalogo } from "@/context/CatalogoContext";
+import { useCart } from "@/context/CartContext";
+import { API_URL } from "@/config/api";
 
 export const BannerCarousel = ({ onSelectCategory }) => {
   const { banners } = useCatalogo();
+  const { sesionId } = useCart();
   const [currentSlide, setCurrentSlide] = useState(0);
   const containerRef = useRef(null);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const isHorizontalSwipe = useRef(null);
+  const trackedImpressionsRef = useRef(new Set());
 
   const bannerList = banners && banners.length > 0 ? banners : [];
+  const activeBanner = bannerList[currentSlide] || bannerList[0] || null;
+  const activeBannerId = activeBanner?.id || null;
+
+  // Registrar impresión única por dispositivo cuando un banner se vuelve visible
+  useEffect(() => {
+    if (!activeBannerId) return;
+    if (trackedImpressionsRef.current.has(activeBannerId)) return;
+    trackedImpressionsRef.current.add(activeBannerId);
+
+    fetch(`${API_URL}/banners/${activeBannerId}/impresion`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: sesionId || "anon" }),
+    }).catch(() => {});
+  }, [activeBannerId, sesionId]);
 
   useEffect(() => {
     if (bannerList.length <= 1) return;
@@ -102,6 +121,16 @@ export const BannerCarousel = ({ onSelectCategory }) => {
   const btnText = banner.boton_texto || banner.botonTexto || "Ver oferta";
 
   const handleAction = () => {
+    if (banner?.id) {
+      try {
+        sessionStorage.setItem("valette_last_banner_id", String(banner.id));
+      } catch {}
+      fetch(`${API_URL}/banners/${banner.id}/click`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).catch(() => {});
+    }
+
     if (onSelectCategory) {
       if (banner.categoria) {
         onSelectCategory(banner.categoria);
@@ -109,11 +138,20 @@ export const BannerCarousel = ({ onSelectCategory }) => {
         onSelectCategory("asado");
       } else if (banner.enlace_url && banner.enlace_url.includes("vacuno")) {
         onSelectCategory("vacuno");
+      } else if (banner.enlace_url && banner.enlace_url.includes("cerdo")) {
+        onSelectCategory("cerdo");
+      } else if (banner.enlace_url && banner.enlace_url.includes("pollo")) {
+        onSelectCategory("pollo");
       } else {
-        onSelectCategory("todos");
+        onSelectCategory("combos");
       }
     }
   };
+
+  const desktopImg =
+    banner.imagen_desktop_url || banner.imagenUrl || banner.imagen_mobile_url;
+  const mobileImg =
+    banner.imagen_mobile_url || banner.imagen_desktop_url || banner.imagenUrl;
 
   return (
     <div
@@ -125,18 +163,17 @@ export const BannerCarousel = ({ onSelectCategory }) => {
           banner.bgClass || "from-valette-dark via-[#003366] to-slate-900"
         } transition-all duration-500`}
       >
-        {/* Imagen de Fondo en Mobile (4:5 Post) / Imagen Lateral en Desktop */}
-        <img
-          src={
-            banner.imagen_desktop_url ||
-            banner.imagenUrl ||
-            banner.imagen_mobile_url
-          }
-          alt={banner.titulo}
-          fetchPriority="high"
-          loading="eager"
-          className="absolute inset-0 w-full h-full sm:relative sm:inset-auto sm:w-60 md:w-80 lg:w-2xl sm:aspect-4/5 lg:aspect-video object-cover"
-        />
+        {/* Imagen Mobile (4:5) / Desktop (16:9) */}
+        <picture className="absolute inset-0 w-full h-full sm:relative sm:inset-auto sm:w-60 md:w-80 lg:w-2xl sm:aspect-4/5 lg:aspect-video block shrink-0">
+          {mobileImg && <source media="(max-width: 639px)" srcSet={mobileImg} />}
+          <img
+            src={desktopImg}
+            alt={banner.titulo}
+            fetchPriority="high"
+            loading="eager"
+            className="w-full h-full object-cover"
+          />
+        </picture>
 
         {/* Gradiente de contraste en Mobile: sin blur para 60fps en celulares */}
         <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/65 to-black/25 sm:hidden pointer-events-none" />

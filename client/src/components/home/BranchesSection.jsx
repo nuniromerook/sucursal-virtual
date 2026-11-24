@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import { useLocation, CASA_CENTRAL_BRANCH } from "@/context/LocationContext";
 import { useToast } from "@/context/ToastContext";
+import { getBranchOpenStatus } from "@/utils/horarios";
 
 export const BranchesSection = () => {
   const { selectedBranch, deliveryMode, setDeliveryMode } = useLocation();
   const { showToast } = useToast();
 
   const branch = selectedBranch || CASA_CENTRAL_BRANCH;
+  const openStatus = getBranchOpenStatus(branch);
 
   const handleModeChange = (mode) => {
     setDeliveryMode(mode);
@@ -72,12 +74,18 @@ export const BranchesSection = () => {
       <div className="pt-5">
         <div className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2.5">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-md bg-[#003366]/10 text-[#003366] text-[11px] font-black uppercase tracking-wide">
                 Casa Central Oficial
               </span>
-              <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                ● Abierto Ahora
+              <span
+                className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                  openStatus.isOpen
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-900"
+                }`}
+              >
+                ● {openStatus.badgeText}
               </span>
             </div>
 
@@ -89,15 +97,16 @@ export const BranchesSection = () => {
               <p className="flex items-center gap-1.5 font-medium">
                 <MapPin className="size-4 text-[#003366] shrink-0" />
                 <span>
-                  Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos
-                  Aires
+                  {branch.direccion ||
+                    "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires"}
                 </span>
               </p>
               <p className="flex items-center gap-1.5 font-medium">
                 <Clock className="size-4 text-[#003366] shrink-0" />
                 <span>
-                  Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a
-                  13:00hs
+                  {branch.horario_atencion ||
+                    branch.horario ||
+                    "Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs"}
                 </span>
               </p>
             </div>

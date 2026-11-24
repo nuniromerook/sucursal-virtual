@@ -10,20 +10,20 @@ const {
   cambiarPasswordEmpleado,
   getCortadoresConCarga,
 } = require("../controllers/empleados.controller");
-const { requireAuth } = require("../utils/auth");
+const { requireStaff, requireAdmin } = require("../utils/auth");
 const { authLimiter } = require("../middlewares/rateLimiter");
 
 const router = Router();
 
 router.post("/empleados/login", authLimiter, loginEmpleado);
 router.post("/empleados/recuperar-maestro", authLimiter, recuperarConMasterPin);
-router.get("/empleados/me", requireAuth, getMeEmpleado);
-router.put("/empleados/cambiar-password", requireAuth, cambiarPasswordEmpleado);
+router.get("/empleados/me", requireStaff, getMeEmpleado);
+router.put("/empleados/cambiar-password", requireStaff, cambiarPasswordEmpleado);
 
-router.get("/sucursales/:id/empleados", requireAuth, getEmpleadosBySucursal);
-router.get("/sucursales/:id/cortadores-carga", requireAuth, getCortadoresConCarga);
-router.post("/sucursales/:id/empleados", requireAuth, createEmpleado);
-router.put("/empleados/:id", requireAuth, updateEmpleado);
-router.delete("/empleados/:id", requireAuth, deleteEmpleado);
+router.get("/sucursales/:id/empleados", requireAdmin, getEmpleadosBySucursal);
+router.get("/sucursales/:id/cortadores-carga", requireStaff, getCortadoresConCarga);
+router.post("/sucursales/:id/empleados", requireAdmin, createEmpleado);
+router.put("/empleados/:id", requireAdmin, updateEmpleado);
+router.delete("/empleados/:id", requireAdmin, deleteEmpleado);
 
 module.exports = router;

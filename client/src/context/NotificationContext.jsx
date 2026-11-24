@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { io } from "socket.io-client";
+import { getSocket } from "@/utils/socket";
 import { API_URL } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -191,22 +191,24 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [fetchNotifications]);
 
-  // 2. Suscripción en tiempo real vía Socket.io (join_cliente + join_pedido + nueva_notificacion)
+  // 2. Suscripción en tiempo real vía Socket.io singleton (join_cliente + join_pedido + nueva_notificacion)
   useEffect(() => {
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-    });
+    const socket = getSocket();
 
-    socket.on("connect", () => {
+    const joinRooms = () => {
       if (userId) {
         socket.emit("join_cliente", userId);
       }
       if (activeOrderId) {
         socket.emit("join_pedido", activeOrderId);
       }
-    });
+    };
 
-    socket.on("nueva_notificacion", (rawNotif) => {
+    if (socket.connected) {
+      joinRooms();
+    }
+
+    const handleNewNotif = (rawNotif) => {
       const notif = normalizeNotification(rawNotif);
       if (!notif) return;
 
@@ -225,10 +227,14 @@ export const NotificationProvider = ({ children }) => {
       if (notif.titulo) {
         showToast(notif.titulo, "info");
       }
-    });
+    };
+
+    socket.on("connect", joinRooms);
+    socket.on("nueva_notificacion", handleNewNotif);
 
     return () => {
-      socket.disconnect();
+      socket.off("connect", joinRooms);
+      socket.off("nueva_notificacion", handleNewNotif);
     };
   }, [userId, activeOrderId, showToast]);
 

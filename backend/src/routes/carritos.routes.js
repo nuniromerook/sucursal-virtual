@@ -9,6 +9,7 @@ const {
   registrarPasoCarrito,
   getCarritosActivos,
 } = require("../controllers/carritos.controller");
+const { requireAdmin } = require("../utils/auth");
 
 // Sincronizar carrito local con DB (por sesion_id de dispositivo y/o JWT de cliente)
 router.post("/carritos/sincronizar", sincronizarCarrito);
@@ -20,7 +21,8 @@ router.post("/carritos/paso", registrarPasoCarrito);
 router.get("/carritos/mi-carrito", getCarrito);
 
 // Obtener carritos activos y embudo de abandono para inspección administrativa
-router.get("/carritos/activos", getCarritosActivos);
+router.get("/carritos/activos", requireAdmin, getCarritosActivos);
+router.get("/carritos/abandonados", requireAdmin, getCarritosActivos);
 
 // Actualizar cantidad de un ítem
 router.patch("/carritos/mi-carrito/item/:catalogoId", updateItemCarrito);

@@ -72,7 +72,15 @@ app.use(
       callback(new Error(`CORS bloqueado: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "X-Sesion-Id",
+      "x-sesion-id",
+      "X-Device-Id",
+      "x-device-id",
+    ],
     credentials: true,
   })
 );

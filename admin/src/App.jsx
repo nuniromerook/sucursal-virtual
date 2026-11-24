@@ -1,5 +1,5 @@
 // admin/src/App.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
@@ -16,10 +16,14 @@ import KdsPage from "./pages/KdsPage";
 import CombosPage from "./pages/CombosPage";
 import BannersPage from "./pages/BannersPage";
 import MetricasPage from "./pages/MetricasPage";
+import EquipoPage from "./pages/EquipoPage";
+import NotificacionesPage from "./pages/NotificacionesPage";
+import ClientesClubPage from "./pages/ClientesClubPage";
+import AjustesSucursalPage from "./pages/AjustesSucursalPage";
 import LoginPage from "./pages/LoginPage";
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isManager } = useAuth();
   const { activeTab } = useTabNavigation();
   const [totalCortes, setTotalCortes] = useState(0);
 
@@ -34,47 +38,67 @@ function AppContent() {
     );
   }
 
-  // Si no está autenticado, mostrar pantalla de Login
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
+  // Si es rol cortador y por algún motivo quedara en un tab de gestión, mostrar KDS
+  const effectiveTab =
+    !isManager && activeTab !== "pedidos" && activeTab !== "catalogo"
+      ? "pedidos"
+      : activeTab;
+
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA] antialiased">
-      {/* 1. Navbar Sticky con Logo Oficial y Selector */}
       <Navbar />
 
-      {/* 2. Contenedor Principal con Layout Compartido (Sidebar Escritorio + Main Fragments) */}
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-4 flex gap-6">
         <Sidebar totalCortes={totalCortes} />
 
         <main className="flex-1 min-w-0">
-          <div style={{ display: activeTab === "catalogo" ? "block" : "none" }}>
-            <CatalogoPage onProductsLoaded={(cnt) => setTotalCortes(cnt)} />
-          </div>
-
-          <div style={{ display: activeTab === "pedidos" ? "block" : "none" }}>
+          <div style={{ display: effectiveTab === "pedidos" ? "block" : "none" }}>
             <KdsPage />
           </div>
 
-          <div style={{ display: activeTab === "combos" ? "block" : "none" }}>
-            <CombosPage />
+          <div style={{ display: effectiveTab === "catalogo" ? "block" : "none" }}>
+            <CatalogoPage onProductsLoaded={(cnt) => setTotalCortes(cnt)} />
           </div>
 
-          <div style={{ display: activeTab === "banners" ? "block" : "none" }}>
-            <BannersPage />
-          </div>
+          {isManager && (
+            <>
+              <div style={{ display: effectiveTab === "combos" ? "block" : "none" }}>
+                <CombosPage />
+              </div>
 
-          <div style={{ display: activeTab === "metricas" ? "block" : "none" }}>
-            <MetricasPage />
-          </div>
+              <div style={{ display: effectiveTab === "banners" ? "block" : "none" }}>
+                <BannersPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "clientes" ? "block" : "none" }}>
+                <ClientesClubPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "notificaciones" ? "block" : "none" }}>
+                <NotificacionesPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "metricas" ? "block" : "none" }}>
+                <MetricasPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "equipo" ? "block" : "none" }}>
+                <EquipoPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "ajustes" ? "block" : "none" }}>
+                <AjustesSucursalPage />
+              </div>
+            </>
+          )}
         </main>
       </div>
 
-      {/* 3. Dock Inferior Móvil Estilo App Nativa */}
       <BottomNav />
-
-      {/* 4. Notificaciones Toast */}
       <Toast />
     </div>
   );

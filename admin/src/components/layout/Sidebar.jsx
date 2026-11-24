@@ -6,45 +6,84 @@ import {
   Image as ImageIcon,
   BarChart3,
   Database,
+  Users,
+  BellRing,
+  UserCog,
+  Store,
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
+import { useAuth } from "../../context/AuthContext";
 import { useTabNavigation } from "../../context/TabNavigationContext";
 
 export default function Sidebar({ totalCortes = 0 }) {
   const { pedidosPendientesCount } = useAdmin();
+  const { isManager } = useAuth();
   const { activeTab, switchTab } = useTabNavigation();
 
-  const navItems = [
-    {
-      id: "catalogo",
-      label: "Catálogo & Cortes",
-      icon: Layers,
-      badge: totalCortes > 0 ? totalCortes : null,
-      badgeClass: "bg-white/20 text-white",
-    },
+  const allNavItems = [
     {
       id: "pedidos",
       label: "Mesa de Corte (KDS)",
       icon: ClipboardList,
       badge: pedidosPendientesCount > 0 ? pedidosPendientesCount : null,
       badgeClass: "bg-red-100 text-red-700",
+      staffAllowed: true,
+    },
+    {
+      id: "catalogo",
+      label: "Catálogo & Cortes",
+      icon: Layers,
+      badge: totalCortes > 0 ? totalCortes : null,
+      badgeClass: "bg-slate-100 text-slate-700",
+      staffAllowed: true,
     },
     {
       id: "combos",
       label: "Combos & Promos",
       icon: Tag,
+      staffAllowed: false,
     },
     {
       id: "banners",
       label: "Banners Portada",
       icon: ImageIcon,
+      staffAllowed: false,
+    },
+    {
+      id: "clientes",
+      label: "Clientes & Club",
+      icon: Users,
+      staffAllowed: false,
+    },
+    {
+      id: "notificaciones",
+      label: "Difusión Push",
+      icon: BellRing,
+      staffAllowed: false,
     },
     {
       id: "metricas",
       label: "Cierre Operativo",
       icon: BarChart3,
+      staffAllowed: false,
+    },
+    {
+      id: "equipo",
+      label: "Equipo & Roles",
+      icon: UserCog,
+      staffAllowed: false,
+    },
+    {
+      id: "ajustes",
+      label: "Sucursal & Horarios",
+      icon: Store,
+      staffAllowed: false,
     },
   ];
+
+  const navItems = isManager
+    ? allNavItems
+    : allNavItems.filter((item) => item.staffAllowed);
 
   return (
     <aside className="hidden lg:flex sticky top-24 left-0 w-60 shrink-0 flex-col space-y-4">

@@ -1,5 +1,5 @@
 // admin/src/components/catalogo/ProductDrawer.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   X,
   Plus,
@@ -13,11 +13,12 @@ import {
 } from "lucide-react";
 import { useModalBehavior } from "../../hooks/useModalBehavior";
 import { uploadImageToCloudinary } from "../../utils/cloudinary";
+import { VITE_API_URL } from "../../config/api";
+import { useAuth } from "../../context/AuthContext";
 
 function getInitialFormData(product) {
   if (product) {
     const promos = Array.isArray(product.promos) ? product.promos : [];
-    const firstPromo = promos[0] || {};
 
     return {
       id: product.id,
@@ -40,13 +41,16 @@ function getInitialFormData(product) {
         : [],
       sin_stock: Boolean(product.sin_stock),
       activo: product.activo !== false,
+      destacar: Boolean(product.destacar),
+      gana_puntos: product.gana_puntos !== false,
+      puntos: product.puntos != null ? String(product.puntos) : "15",
+      calorias: product.calorias != null ? String(product.calorias) : "",
+      proteinas: product.proteinas != null ? String(product.proteinas) : "",
+      grasas: product.grasas != null ? String(product.grasas) : "",
       imagen_url: product.imagen_url || "",
-      promo_min: firstPromo.cantidad_kg || firstPromo.cantidad_minima
-        ? String(firstPromo.cantidad_kg || firstPromo.cantidad_minima)
-        : "",
-      promo_precio: firstPromo.precio_promocional
-        ? String(firstPromo.precio_promocional)
-        : "",
+      existingPromos: promos,
+      newPromos: [],
+      deletedPromoIds: [],
     };
   }
 
@@ -65,20 +69,94 @@ function getInitialFormData(product) {
     opciones_corte: ["Pieza Entera", "Corte Grueso"],
     sin_stock: false,
     activo: true,
+    destacar: false,
+    gana_puntos: true,
+    puntos: "15",
+    calorias: "",
+    proteinas: "",
+    grasas: "",
     imagen_url: "",
-    promo_min: "",
-    promo_precio: "",
+    existingPromos: [],
+    newPromos: [],
+    deletedPromoIds: [],
   };
 }
 
 function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
+  const { authHeaders } = useAuth();
   const [formData, setFormData] = useState(() => getInitialFormData(product));
   const [newCorteInput, setNewCorteInput] = useState("");
+  const [promoDraft, setPromoDraft] = useState({ cantidad_kg: "", precio_promocional: "" });
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   // Estados de Drag & Drop y Subida de Imagen a Cloudinary
   const [isDragging, setIsDragging] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageError, setImageError] = useState(null);
+
+  const handleGenerateAI = async () => {
+    if (!formData.nombre_producto.trim() || isGeneratingAI) return;
+    setIsGeneratingAI(true);
+    setAiError(null);
+    try {
+      const res = await fetch(`${VITE_API_URL}/catalogo/generar-ficha-ia`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          nombre_producto: formData.nombre_producto.trim(),
+          especie_sugerida: formData.categoria,
+          unidad_sugerida: formData.unidad_medida,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.data) {
+        throw new Error(json.error || "No se pudo generar la ficha con IA.");
+      }
+      const d = json.data;
+      setFormData((prev) => ({
+        ...prev,
+        slug: d.slug || prev.slug,
+        especie: d.especie || prev.especie,
+        categoria: d.categoria || prev.categoria,
+        unidad_medida: d.unidad_medida || prev.unidad_medida,
+        descripcion: d.descripcion || prev.descripcion,
+        calorias: d.calorias != null ? String(d.calorias) : prev.calorias,
+        proteinas: d.proteinas != null ? String(d.proteinas) : prev.proteinas,
+        grasas: d.grasas != null ? String(d.grasas) : prev.grasas,
+      }));
+    } catch (err) {
+      setAiError(err.message || "Error al consultar IA.");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleAddPromoScale = () => {
+    const kg = Number(promoDraft.cantidad_kg);
+    const pr = Number(promoDraft.precio_promocional);
+    if (!Number.isFinite(kg) || kg <= 0 || !Number.isFinite(pr) || pr <= 0) return;
+    setFormData((prev) => ({
+      ...prev,
+      newPromos: [...prev.newPromos, { cantidad_kg: kg, precio_promocional: pr }],
+    }));
+    setPromoDraft({ cantidad_kg: "", precio_promocional: "" });
+  };
+
+  const handleRemoveExistingPromo = (promoId) => {
+    setFormData((prev) => ({
+      ...prev,
+      existingPromos: prev.existingPromos.filter((p) => p.id !== promoId),
+      deletedPromoIds: [...prev.deletedPromoIds, promoId],
+    }));
+  };
+
+  const handleRemoveNewPromo = (idx) => {
+    setFormData((prev) => ({
+      ...prev,
+      newPromos: prev.newPromos.filter((_, i) => i !== idx),
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -250,9 +328,29 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">
-                  Nombre del Producto *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">
+                    Nombre del Producto *
+                  </label>
+                  <button
+                    type="button"
+                    disabled={isGeneratingAI || !formData.nombre_producto.trim()}
+                    onClick={handleGenerateAI}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-extrabold text-[11px] disabled:opacity-50 cursor-pointer transition-colors"
+                  >
+                    {isGeneratingAI ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Generando ficha...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 text-amber-600" />
+                        <span>Autocompletar con IA</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <input
                   type="text"
                   name="nombre_producto"
@@ -262,6 +360,11 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
                   placeholder="ej: Asado de Tira Especial"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#002244] outline-none font-bold text-slate-900 text-sm transition-colors"
                 />
+                {aiError && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">
+                    {aiError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -372,44 +475,184 @@ function ProductDrawerContent({ product, onClose, onSave, isSaving }) {
               </div>
             </div>
 
-            {/* Escala por volumen */}
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+            {/* Escalas de Promociones por Volumen (Múltiples) */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-800">
-                  Promoción por Volumen (Escala)
+                  Promociones por Volumen (Escalas)
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  Aplica descuento automático llevando cantidad mínima
+                  Podés agregar varias escalas (ej: x2, x5 kg)
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {(formData.existingPromos.length > 0 || formData.newPromos.length > 0) && (
+                <div className="space-y-1.5">
+                  {formData.existingPromos.map((pr) => (
+                    <div
+                      key={pr.id}
+                      className="flex items-center justify-between px-3 py-1.5 bg-white border border-slate-200 rounded-xl"
+                    >
+                      <span className="font-bold text-slate-800">
+                        Llevando {pr.cantidad_kg} {formData.unidad_medida} →{" "}
+                        <b className="text-emerald-700 font-mono">
+                          ${Number(pr.precio_promocional).toLocaleString("es-AR")}
+                        </b>{" "}
+                        c/u
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingPromo(pr.id)}
+                        className="text-slate-400 hover:text-rose-600 cursor-pointer p-1"
+                        title="Eliminar escala"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {formData.newPromos.map((pr, idx) => (
+                    <div
+                      key={`new-${idx}`}
+                      className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl"
+                    >
+                      <span className="font-bold text-emerald-900">
+                        (Nueva) Llevando {pr.cantidad_kg} {formData.unidad_medida} →{" "}
+                        <b className="font-mono">
+                          ${Number(pr.precio_promocional).toLocaleString("es-AR")}
+                        </b>{" "}
+                        c/u
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewPromo(idx)}
+                        className="text-emerald-700 hover:text-rose-600 cursor-pointer p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                    Llevando desde (cantidad)
+                    Desde (cantidad)
                   </label>
                   <input
                     type="number"
-                    name="promo_min"
-                    value={formData.promo_min}
-                    onChange={handleChange}
+                    value={promoDraft.cantidad_kg}
+                    onChange={(e) =>
+                      setPromoDraft((p) => ({ ...p, cantidad_kg: e.target.value }))
+                    }
                     placeholder="ej: 3"
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-white font-num font-bold text-slate-900 outline-none focus:border-[#002244]"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                    Precio promocional c/u ($)
+                    Precio c/u ($)
                   </label>
                   <input
                     type="number"
-                    name="promo_precio"
-                    value={formData.promo_precio}
-                    onChange={handleChange}
+                    value={promoDraft.precio_promocional}
+                    onChange={(e) =>
+                      setPromoDraft((p) => ({
+                        ...p,
+                        precio_promocional: e.target.value,
+                      }))
+                    }
                     placeholder="ej: 11900"
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-white font-num font-bold text-slate-900 outline-none focus:border-[#002244]"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleAddPromoScale}
+                  className="px-3 py-1.5 rounded-xl bg-[#002244] hover:bg-slate-800 text-white font-bold flex items-center justify-center gap-1 cursor-pointer h-[34px]"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Agregar</span>
+                </button>
               </div>
+            </div>
+
+            {/* Club Valette & Nutrición */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Puntos Club
+                </label>
+                <input
+                  type="number"
+                  name="puntos"
+                  value={formData.puntos}
+                  onChange={handleChange}
+                  min={0}
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 font-mono font-bold text-slate-900 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Calorías (kcal)
+                </label>
+                <input
+                  type="number"
+                  name="calorias"
+                  value={formData.calorias}
+                  onChange={handleChange}
+                  placeholder="220"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 font-mono text-slate-900 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Proteínas (g)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  name="proteinas"
+                  value={formData.proteinas}
+                  onChange={handleChange}
+                  placeholder="20.5"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 font-mono text-slate-900 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Grasas (g)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  name="grasas"
+                  value={formData.grasas}
+                  onChange={handleChange}
+                  placeholder="14.0"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 font-mono text-slate-900 outline-none"
+                />
+              </div>
+              <label className="col-span-2 flex items-center gap-2 font-bold text-slate-700 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  name="gana_puntos"
+                  checked={formData.gana_puntos}
+                  onChange={handleChange}
+                  className="rounded"
+                />
+                <span>Suma puntos Club Valette</span>
+              </label>
+              <label className="col-span-2 flex items-center gap-2 font-bold text-slate-700 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  name="destacar"
+                  checked={formData.destacar}
+                  onChange={handleChange}
+                  className="rounded"
+                />
+                <span>Corte Destacado en portada</span>
+              </label>
             </div>
           </div>
 

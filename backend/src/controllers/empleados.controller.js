@@ -23,14 +23,14 @@ const getEmpleadosBySucursal = async (req, res) => {
 
     const result = await pool.query(
       `SELECT 
-         e.*,
+         e.id, e.nombre, e.apodo, e.rol, e.email, e.sucursal_id, e.telefono, e.activo, e.creado_en,
          COALESCE(
            (
              SELECT COUNT(p.id) 
              FROM pedidos p 
              WHERE p.cortador_id = e.id AND p.creado_en >= CURRENT_DATE AND p.estado_local != 'cancelado'
            ), 0
-         ) AS pedidos_hoy
+         )::int AS pedidos_hoy
        FROM empleados e
        WHERE e.sucursal_id = $1
        ORDER BY e.rol, e.nombre`,
@@ -56,6 +56,14 @@ const createEmpleado = async (req, res) => {
     return res.status(400).json({ error: "Nombre y rol son requeridos." });
   }
 
+  const { STAFF_ROLES } = require("../utils/auth");
+  const normalizedRol = String(rol).trim().toLowerCase();
+  if (!STAFF_ROLES.includes(normalizedRol)) {
+    return res.status(400).json({
+      error: `Rol inválido. Roles permitidos: ${STAFF_ROLES.join(", ")}.`,
+    });
+  }
+
   try {
     const sucRes = await pool.query(
       `SELECT id FROM sucursales WHERE id::text = $1 OR slug = $1 LIMIT 1`,
@@ -77,7 +85,7 @@ const createEmpleado = async (req, res) => {
       [
         nombre.trim(),
         apodo ? apodo.trim() : null,
-        rol,
+        normalizedRol,
         email ? email.trim().toLowerCase() : null,
         passHash,
         sucursalId,
@@ -102,14 +110,21 @@ const updateEmpleado = async (req, res) => {
   const { nombre, apodo, rol, email, password, telefono, activo } = req.body;
 
   try {
-    const { hashPassword } = require("../utils/auth");
-    let passClause = "";
-    let values = [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, telefono, activo, id];
+    const { hashPassword, STAFF_ROLES } = require("../utils/auth");
+    let normalizedRol = rol;
+    if (rol !== undefined && rol !== null && String(rol).trim() !== "") {
+      normalizedRol = String(rol).trim().toLowerCase();
+      if (!STAFF_ROLES.includes(normalizedRol)) {
+        return res.status(400).json({
+          error: `Rol inválido. Roles permitidos: ${STAFF_ROLES.join(", ")}.`,
+        });
+      }
+    }
+    let values = [nombre, apodo, normalizedRol, email ? email.trim().toLowerCase() : null, telefono, activo, id];
 
     if (password && password.trim().length > 0) {
       const passHash = hashPassword(password.trim());
-      values = [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, passHash, telefono, activo, id];
-      passClause = ", password = COALESCE($5, password)";
+      values = [nombre, apodo, normalizedRol, email ? email.trim().toLowerCase() : null, passHash, telefono, activo, id];
       
       const result = await pool.query(
         `UPDATE empleados
@@ -141,7 +156,7 @@ const updateEmpleado = async (req, res) => {
            activo = COALESCE($6, activo)
        WHERE id = $7
        RETURNING id, nombre, apodo, rol, email, sucursal_id, telefono, activo, creado_en`,
-      [nombre, apodo, rol, email ? email.trim().toLowerCase() : null, telefono, activo, id]
+      [nombre, apodo, normalizedRol, email ? email.trim().toLowerCase() : null, telefono, activo, id]
     );
 
     if (result.rows.length === 0) {
@@ -276,6 +291,7 @@ const loginEmpleado = async (req, res) => {
 
     const token = generateToken({
       id: emp.id,
+      tipo: "staff",
       email: emp.email,
       nombre: emp.nombre,
       rol: emp.rol,
@@ -379,21 +395,40 @@ const recuperarConMasterPin = async (req, res) => {
       [cleanIdent]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "No se encontró ningún usuario con ese correo o nombre." });
-    }
-
-    const emp = result.rows[0];
+    let emp = result.rows[0] || null;
     const { hashPassword, generateToken } = require("../utils/auth");
     const newHash = hashPassword(newPassword);
 
-    await pool.query(
-      `UPDATE empleados SET password = $1 WHERE id = $2`,
-      [newHash, emp.id]
-    );
+    if (!emp) {
+      const superAdminEmail = (
+        process.env.SUPER_ADMIN_EMAIL || "juancnunz.contacto@gmail.com"
+      )
+        .trim()
+        .toLowerCase();
+
+      if (cleanIdent === superAdminEmail) {
+        const created = await pool.query(
+          `INSERT INTO empleados (nombre, apodo, rol, email, password, sucursal_id, activo)
+           VALUES ('Juan Núñez', 'Juan', 'propietario', $1, $2, 1, true)
+           RETURNING id, nombre, apodo, rol, email, sucursal_id, telefono, activo`,
+          [superAdminEmail, newHash]
+        );
+        emp = created.rows[0];
+      } else {
+        return res
+          .status(404)
+          .json({ error: "No se encontró ningún usuario con ese correo o nombre." });
+      }
+    } else {
+      await pool.query(
+        `UPDATE empleados SET password = $1, activo = true WHERE id = $2`,
+        [newHash, emp.id]
+      );
+    }
 
     const token = generateToken({
       id: emp.id,
+      tipo: "staff",
       email: emp.email,
       nombre: emp.nombre,
       rol: emp.rol,

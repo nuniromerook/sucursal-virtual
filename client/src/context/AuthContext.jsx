@@ -56,6 +56,8 @@ export const AuthProvider = ({ children }) => {
 
   const [puntosHistorial, setPuntosHistorial] = useState([]);
   const [pedidosHistorial, setPedidosHistorial] = useState([]);
+  const [canjesHistorial, setCanjesHistorial] = useState([]);
+  const [recompensas, setRecompensas] = useState([]);
 
   const persistSession = useCallback((nextToken, nextUser) => {
     const normalized = normalizeUser(nextUser);
@@ -74,6 +76,39 @@ export const AuthProvider = ({ children }) => {
     } catch {}
   }, []);
 
+  const refreshRecompensas = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/recompensas`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setRecompensas(data);
+        }
+      }
+    } catch {
+      // Silencioso si no hay red
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRewards = async () => {
+      try {
+        const res = await fetch(`${API_URL}/recompensas`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setRecompensas(data);
+          }
+        }
+      } catch {}
+    };
+    loadRewards();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const refreshProfile = useCallback(
     async (overrideToken) => {
       const activeToken = overrideToken ?? token;
@@ -81,16 +116,18 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const headers = { Authorization: `Bearer ${activeToken}` };
-        const [perfilRes, puntosRes, pedidosRes] = await Promise.all([
+        const [perfilRes, puntosRes, pedidosRes, canjesRes] = await Promise.all([
           fetch(`${API_URL}/clientes/perfil`, { headers }),
           fetch(`${API_URL}/clientes/puntos/historial`, { headers }),
           fetch(`${API_URL}/clientes/pedidos`, { headers }),
+          fetch(`${API_URL}/clientes/canjes`, { headers }),
         ]);
 
         if (perfilRes.status === 401) {
           persistSession(null, null);
           setPuntosHistorial([]);
           setPedidosHistorial([]);
+          setCanjesHistorial([]);
           return null;
         }
 
@@ -115,6 +152,13 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
+        if (canjesRes.ok) {
+          const canjesData = await canjesRes.json();
+          if (Array.isArray(canjesData)) {
+            setCanjesHistorial(canjesData);
+          }
+        }
+
         return updatedUser;
       } catch {
         return null;
@@ -123,7 +167,7 @@ export const AuthProvider = ({ children }) => {
     [token, persistSession]
   );
 
-  // Hidratar perfil real, puntos y pedidos desde PostgreSQL al iniciar con token
+  // Hidratar perfil real, puntos, canjes y pedidos desde PostgreSQL al iniciar con token
   useEffect(() => {
     if (!token) return;
     let isMounted = true;
@@ -131,10 +175,11 @@ export const AuthProvider = ({ children }) => {
     const loadInitial = async () => {
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const [perfilRes, puntosRes, pedidosRes] = await Promise.all([
+        const [perfilRes, puntosRes, pedidosRes, canjesRes] = await Promise.all([
           fetch(`${API_URL}/clientes/perfil`, { headers }),
           fetch(`${API_URL}/clientes/puntos/historial`, { headers }),
           fetch(`${API_URL}/clientes/pedidos`, { headers }),
+          fetch(`${API_URL}/clientes/canjes`, { headers }),
         ]);
 
         if (!isMounted) return;
@@ -162,6 +207,13 @@ export const AuthProvider = ({ children }) => {
           const pedData = await pedidosRes.json();
           if (isMounted && Array.isArray(pedData)) {
             setPedidosHistorial(pedData);
+          }
+        }
+
+        if (canjesRes.ok) {
+          const canjesData = await canjesRes.json();
+          if (isMounted && Array.isArray(canjesData)) {
+            setCanjesHistorial(canjesData);
           }
         }
       } catch {}
@@ -224,9 +276,20 @@ export const AuthProvider = ({ children }) => {
     usuario,
     telefono,
     direccion_default,
+    avatar_url,
   }) => {
     if (!token) {
       throw new Error("Iniciá sesión para guardar cambios en tu perfil.");
+    }
+
+    const payload = {
+      nombre,
+      usuario,
+      telefono,
+      direccion_default,
+    };
+    if (avatar_url !== undefined) {
+      payload.avatar_url = avatar_url;
     }
 
     const res = await fetch(`${API_URL}/clientes/perfil`, {
@@ -235,12 +298,7 @@ export const AuthProvider = ({ children }) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        nombre,
-        usuario,
-        telefono,
-        direccion_default,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -274,10 +332,71 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const requestPasswordReset = async (email) => {
+    const res = await fetch(`${API_URL}/clientes/solicitar-recuperacion`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "No se pudo enviar el enlace de recuperación.");
+    }
+    return data;
+  };
+
+  const confirmPasswordReset = async ({ token: resetToken, newPassword }) => {
+    const res = await fetch(`${API_URL}/clientes/restablecer-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: resetToken, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "El enlace expiró o no es válido.");
+    }
+    if (data.token && data.user) {
+      persistSession(data.token, data.user);
+      await refreshProfile(data.token);
+    }
+    return data;
+  };
+
+  const validateReferralCode = async (codigo) => {
+    const res = await fetch(`${API_URL}/clientes/referido/validar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codigo }),
+    });
+    const data = await res.json().catch(() => ({ valido: false }));
+    return data;
+  };
+
+  const redeemReward = async (recompensaId, notas = "") => {
+    if (!token) {
+      throw new Error("Iniciá sesión para canjear recompensas del Club Valette.");
+    }
+    const res = await fetch(`${API_URL}/clientes/canjear`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ recompensa_id: recompensaId, notas }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "No se pudo completar el canje.");
+    }
+    await Promise.all([refreshProfile(token), refreshRecompensas()]);
+    return data;
+  };
+
   const logout = useCallback(() => {
     persistSession(null, null);
     setPuntosHistorial([]);
     setPedidosHistorial([]);
+    setCanjesHistorial([]);
   }, [persistSession]);
 
   return (
@@ -288,11 +407,18 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: Boolean(token && user),
         puntosHistorial,
         pedidosHistorial,
+        canjesHistorial,
+        recompensas,
         login,
         register,
         updateProfile,
         changePassword,
+        requestPasswordReset,
+        confirmPasswordReset,
+        validateReferralCode,
+        redeemReward,
         refreshProfile,
+        refreshRecompensas,
         logout,
       }}
     >

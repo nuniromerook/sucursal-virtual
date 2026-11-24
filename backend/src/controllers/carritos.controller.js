@@ -90,8 +90,8 @@ async function findOrCreateCarrito(
 
   if (!carritoRow) {
     const insertRes = await db.query(
-      `INSERT INTO carritos (sesion_id, cliente_id, sucursal_id, dispositivo, ultimo_paso, motivo_abandono, actualizado_en)
-       VALUES ($1, $2, 1, $3, $4, $5, NOW())
+      `INSERT INTO carritos (sesion_id, cliente_id, dispositivo, ultimo_paso, motivo_abandono, actualizado_en)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
       [
         effectiveSesionId,

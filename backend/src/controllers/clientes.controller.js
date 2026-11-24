@@ -5,6 +5,7 @@ const {
   verifyPassword,
   generateToken,
 } = require("../utils/auth");
+const { emitirNotificacion } = require("../socket");
 
 const crypto = require("crypto");
 
@@ -182,6 +183,7 @@ const registroCliente = async (req, res) => {
 
     const token = generateToken({
       id: nuevoCliente.id,
+      tipo: "cliente",
       email: nuevoCliente.email,
       nombre: nuevoCliente.nombre,
     });
@@ -256,6 +258,7 @@ const loginCliente = async (req, res) => {
 
     const token = generateToken({
       id: cliente.id,
+      tipo: "cliente",
       email: cliente.email,
       nombre: cliente.nombre,
     });
@@ -331,6 +334,7 @@ const googleAuth = async (req, res) => {
 
     const token = generateToken({
       id: cliente.id,
+      tipo: "cliente",
       email: cliente.email,
       nombre: cliente.nombre,
     });
@@ -387,10 +391,19 @@ const getPerfil = async (req, res) => {
  */
 const updatePerfil = async (req, res) => {
   const clienteId = req.user.id;
-  const { nombre, usuario, telefono, direccion_default, latitud, longitud } = req.body;
+  const { nombre, usuario, telefono, direccion_default, latitud, longitud, avatar_url } = req.body;
 
   const usuarioClean = usuario ? usuario.trim().replace(/^@/, "").toLowerCase() : null;
   const telefonoClean = telefono ? telefono.trim() : null;
+  const shouldUpdateAvatar = avatar_url !== undefined;
+  let avatarClean = null;
+  if (shouldUpdateAvatar && avatar_url !== null && String(avatar_url).trim() !== "") {
+    const rawAvatar = String(avatar_url).trim();
+    if (!/^https?:\/\//i.test(rawAvatar)) {
+      return res.status(400).json({ error: "La URL de la foto de perfil no es válida." });
+    }
+    avatarClean = rawAvatar;
+  }
 
   try {
     // 1. Obtener estado previo
@@ -431,8 +444,9 @@ const updatePerfil = async (req, res) => {
            perfil_completo = $6,
            latitud = COALESCE($7, latitud),
            longitud = COALESCE($8, longitud),
+           avatar_url = CASE WHEN $9::boolean THEN $10 ELSE avatar_url END,
            actualizado_en = NOW()
-       WHERE id = $9
+       WHERE id = $11
        RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code, latitud, longitud`,
       [
         nombre ? nombre.trim() : null,
@@ -443,6 +457,8 @@ const updatePerfil = async (req, res) => {
         nuevoEstadoCompleto,
         latitud !== undefined ? latitud : null,
         longitud !== undefined ? longitud : null,
+        shouldUpdateAvatar,
+        avatarClean,
         clienteId,
       ]
     );
@@ -706,8 +722,8 @@ const solicitarRecuperacionPassword = async (req, res) => {
     // Determinar la URL del frontend (origen de la petición o variable de entorno)
     const origin = req.headers.origin || req.headers.referer;
     let baseUrl = origin ? origin.replace(/\/$/, "") : "";
-    if (!baseUrl || baseUrl.includes("render.com")) {
-      baseUrl = process.env.FRONTEND_URL || "https://sucursal-virtual-git-main-nuniromerooks-projects.vercel.app";
+    if (!baseUrl || baseUrl.includes("render.com") || baseUrl.includes("vercel.app")) {
+      baseUrl = process.env.FRONTEND_URL || "https://abastecedoravalette.digital";
     }
 
     const resetUrl = `${baseUrl}/restablecer-password?token=${token}`;
@@ -772,6 +788,7 @@ const restablecerPassword = async (req, res) => {
 
     const jwtToken = generateToken({
       id: cliente.id,
+      tipo: "cliente",
       email: cliente.email,
       nombre: cliente.nombre,
     });
@@ -797,7 +814,7 @@ const getFavoritos = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT f.catalogo_id
-       FROM favoritos f
+       FROM cliente_favoritos f
        JOIN catalogo c ON c.id = f.catalogo_id
        WHERE f.cliente_id = $1 AND c.activo = true
        ORDER BY f.creado_en DESC`,
@@ -825,7 +842,7 @@ const sincronizarFavoritos = async (req, res) => {
   try {
     if (localFavs.length > 0) {
       await pool.query(
-        `INSERT INTO favoritos (cliente_id, catalogo_id)
+        `INSERT INTO cliente_favoritos (cliente_id, catalogo_id)
          SELECT $1, c.id
          FROM catalogo c
          WHERE c.id = ANY($2::int[]) AND c.activo = true
@@ -836,7 +853,7 @@ const sincronizarFavoritos = async (req, res) => {
 
     const result = await pool.query(
       `SELECT f.catalogo_id
-       FROM favoritos f
+       FROM cliente_favoritos f
        JOIN catalogo c ON c.id = f.catalogo_id
        WHERE f.cliente_id = $1 AND c.activo = true
        ORDER BY f.creado_en DESC`,
@@ -866,20 +883,20 @@ const toggleFavorito = async (req, res) => {
 
   try {
     const existing = await pool.query(
-      `SELECT id FROM favoritos WHERE cliente_id = $1 AND catalogo_id = $2 LIMIT 1`,
+      `SELECT id FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2 LIMIT 1`,
       [clienteId, catalogoId]
     );
 
     let favorito = false;
     if (existing.rows.length > 0) {
       await pool.query(
-        `DELETE FROM favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
+        `DELETE FROM cliente_favoritos WHERE cliente_id = $1 AND catalogo_id = $2`,
         [clienteId, catalogoId]
       );
       favorito = false;
     } else {
       await pool.query(
-        `INSERT INTO favoritos (cliente_id, catalogo_id)
+        `INSERT INTO cliente_favoritos (cliente_id, catalogo_id)
          SELECT $1, c.id FROM catalogo c WHERE c.id = $2
          ON CONFLICT (cliente_id, catalogo_id) DO NOTHING`,
         [clienteId, catalogoId]
@@ -888,7 +905,7 @@ const toggleFavorito = async (req, res) => {
     }
 
     const listRes = await pool.query(
-      `SELECT catalogo_id FROM favoritos WHERE cliente_id = $1 ORDER BY creado_en DESC`,
+      `SELECT catalogo_id FROM cliente_favoritos WHERE cliente_id = $1 ORDER BY creado_en DESC`,
       [clienteId]
     );
 
@@ -900,6 +917,496 @@ const toggleFavorito = async (req, res) => {
   } catch (error) {
     console.error("Error en toggleFavorito:", error.message);
     res.status(500).json({ error: "Error al actualizar favorito." });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLUB VALETTE — RECOMPENSAS ESTRATÉGICAS, CANJES Y GESTIÓN DE CLIENTES (ADMIN)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const getRecompensas = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, titulo, descripcion, tipo, puntos_requeridos, stock_disponible, imagen_url, activo, orden
+       FROM recompensas_club
+       WHERE activo = true
+       ORDER BY orden ASC, puntos_requeridos ASC, id ASC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error getRecompensas:", error.message);
+    res.status(500).json({ error: "Error al obtener recompensas del Club Valette." });
+  }
+};
+
+const getRecompensasAdmin = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*,
+              COALESCE((SELECT COUNT(*)::int FROM canjes_club cc WHERE cc.recompensa_id = r.id), 0) AS total_canjes
+       FROM recompensas_club r
+       ORDER BY r.orden ASC, r.puntos_requeridos ASC, r.id ASC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error getRecompensasAdmin:", error.message);
+    res.status(500).json({ error: "Error al obtener recompensas." });
+  }
+};
+
+const createRecompensa = async (req, res) => {
+  const {
+    titulo,
+    descripcion = "",
+    tipo = "producto",
+    puntos_requeridos,
+    stock_disponible = null,
+    imagen_url = null,
+    activo = true,
+    orden = 0,
+  } = req.body;
+
+  if (!titulo || !puntos_requeridos || Number(puntos_requeridos) <= 0) {
+    return res.status(400).json({ error: "Título y puntos requeridos (>0) son obligatorios." });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO recompensas_club (titulo, descripcion, tipo, puntos_requeridos, stock_disponible, imagen_url, activo, orden)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        titulo.trim(),
+        descripcion.trim(),
+        String(tipo).trim().toLowerCase(),
+        Math.round(Number(puntos_requeridos)),
+        stock_disponible === "" || stock_disponible === null ? null : Math.max(0, Number(stock_disponible)),
+        imagen_url || null,
+        Boolean(activo),
+        Number(orden) || 0,
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error createRecompensa:", error.message);
+    res.status(500).json({ error: "Error al crear recompensa." });
+  }
+};
+
+const updateRecompensa = async (req, res) => {
+  const { id } = req.params;
+  const {
+    titulo,
+    descripcion,
+    tipo,
+    puntos_requeridos,
+    stock_disponible,
+    imagen_url,
+    activo,
+    orden,
+  } = req.body;
+
+  try {
+    const hasStockField = stock_disponible !== undefined;
+    const parsedStock =
+      stock_disponible === "" || stock_disponible === null
+        ? null
+        : Math.max(0, Number(stock_disponible));
+
+    const result = await pool.query(
+      `UPDATE recompensas_club
+       SET titulo = COALESCE($1, titulo),
+           descripcion = COALESCE($2, descripcion),
+           tipo = COALESCE($3, tipo),
+           puntos_requeridos = COALESCE($4, puntos_requeridos),
+           stock_disponible = CASE WHEN $5::boolean THEN $6::int ELSE stock_disponible END,
+           imagen_url = COALESCE($7, imagen_url),
+           activo = COALESCE($8, activo),
+           orden = COALESCE($9, orden),
+           actualizado_en = NOW()
+       WHERE id = $10
+       RETURNING *`,
+      [
+        titulo !== undefined ? titulo.trim() : null,
+        descripcion !== undefined ? descripcion.trim() : null,
+        tipo !== undefined ? String(tipo).trim().toLowerCase() : null,
+        puntos_requeridos !== undefined ? Math.round(Number(puntos_requeridos)) : null,
+        hasStockField,
+        hasStockField ? parsedStock : null,
+        imagen_url !== undefined ? imagen_url : null,
+        activo !== undefined ? Boolean(activo) : null,
+        orden !== undefined ? Number(orden) : null,
+        id,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Recompensa no encontrada." });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updateRecompensa:", error.message);
+    res.status(500).json({ error: "Error al actualizar recompensa." });
+  }
+};
+
+const deleteRecompensa = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM recompensas_club WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Recompensa no encontrada." });
+    }
+    res.json({ success: true, message: "Recompensa eliminada." });
+  } catch (error) {
+    console.error("Error deleteRecompensa:", error.message);
+    res.status(500).json({ error: "Error al eliminar recompensa." });
+  }
+};
+
+const getMisCanjes = async (req, res) => {
+  const clienteId = req.user.id;
+  try {
+    const result = await pool.query(
+      `SELECT id, recompensa_id, titulo_recompensa, tipo_recompensa, puntos_gastados, codigo_canje, estado, notas, creado_en, actualizado_en
+       FROM canjes_club
+       WHERE cliente_id = $1
+       ORDER BY creado_en DESC
+       LIMIT 40`,
+      [clienteId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error getMisCanjes:", error.message);
+    res.status(500).json({ error: "Error al consultar tus canjes." });
+  }
+};
+
+const canjearRecompensa = async (req, res) => {
+  const clienteId = req.user.id;
+  const recompensaId = Number(req.body.recompensa_id);
+  const notas = req.body.notas ? String(req.body.notas).trim() : null;
+
+  if (!Number.isFinite(recompensaId) || recompensaId <= 0) {
+    return res.status(400).json({ error: "Recompensa inválida." });
+  }
+
+  const dbClient = await pool.connect();
+  try {
+    await dbClient.query("BEGIN");
+
+    const rewRes = await dbClient.query(
+      `SELECT * FROM recompensas_club WHERE id = $1 FOR UPDATE`,
+      [recompensaId]
+    );
+    if (rewRes.rows.length === 0 || !rewRes.rows[0].activo) {
+      await dbClient.query("ROLLBACK");
+      return res.status(404).json({ error: "Esta recompensa ya no está disponible." });
+    }
+
+    const rew = rewRes.rows[0];
+    if (rew.stock_disponible !== null && Number(rew.stock_disponible) <= 0) {
+      await dbClient.query("ROLLBACK");
+      return res.status(400).json({ error: "Se agotó el stock de esta recompensa." });
+    }
+
+    const cliRes = await dbClient.query(
+      `SELECT id, nombre, puntos_acumulados FROM clientes WHERE id = $1 FOR UPDATE`,
+      [clienteId]
+    );
+    if (cliRes.rows.length === 0) {
+      await dbClient.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente no encontrado." });
+    }
+
+    const cliente = cliRes.rows[0];
+    const saldoActual = Number(cliente.puntos_acumulados) || 0;
+    const costoPuntos = Number(rew.puntos_requeridos) || 0;
+
+    if (saldoActual < costoPuntos) {
+      await dbClient.query("ROLLBACK");
+      return res.status(400).json({
+        error: `Te faltan ${costoPuntos - saldoActual} puntos para canjear "${rew.titulo}".`,
+      });
+    }
+
+    const nuevoSaldo = saldoActual - costoPuntos;
+    await dbClient.query(
+      `UPDATE clientes SET puntos_acumulados = $1, actualizado_en = NOW() WHERE id = $2`,
+      [nuevoSaldo, clienteId]
+    );
+
+    if (rew.stock_disponible !== null) {
+      await dbClient.query(
+        `UPDATE recompensas_club SET stock_disponible = stock_disponible - 1, actualizado_en = NOW() WHERE id = $1`,
+        [recompensaId]
+      );
+    }
+
+    const codigoCanje = `VAL-${crypto.randomBytes(3).toString("hex").toUpperCase().slice(0, 5)}`;
+
+    const canjeRes = await dbClient.query(
+      `INSERT INTO canjes_club (cliente_id, recompensa_id, titulo_recompensa, tipo_recompensa, puntos_gastados, codigo_canje, estado, notas)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pendiente', $7)
+       RETURNING *`,
+      [clienteId, rew.id, rew.titulo, rew.tipo, costoPuntos, codigoCanje, notas]
+    );
+
+    await dbClient.query(
+      `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+       VALUES ($1, 'canje', $2, $3)`,
+      [clienteId, -costoPuntos, `Canje Club Valette: ${rew.titulo} (${codigoCanje})`]
+    );
+
+    await dbClient.query("COMMIT");
+
+    const canjeCreado = canjeRes.rows[0];
+
+    try {
+      const notifRes = await pool.query(
+        `INSERT INTO notificaciones (cliente_id, titulo, mensaje, tipo, icono, enlace)
+         VALUES ($1, $2, $3, 'puntos', 'sparkles', '/perfil?tab=puntos')
+         RETURNING *`,
+        [
+          clienteId,
+          `¡Canje confirmado: ${rew.titulo}!`,
+          `Presentá tu código ${codigoCanje} en mostrador o en las notas de tu próximo pedido.`,
+        ]
+      );
+      if (notifRes.rows[0]) emitirNotificacion(notifRes.rows[0]);
+    } catch {
+      // Non-blocking
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `¡Canje realizado! Tu código es ${codigoCanje}`,
+      canje: canjeCreado,
+      puntos_restantes: nuevoSaldo,
+    });
+  } catch (error) {
+    await dbClient.query("ROLLBACK").catch(() => {});
+    console.error("Error canjearRecompensa:", error.message);
+    res.status(500).json({ error: "No se pudo procesar el canje." });
+  } finally {
+    dbClient.release();
+  }
+};
+
+const getClientesAdmin = async (req, res) => {
+  const q = req.query.q ? `%${String(req.query.q).trim().toLowerCase()}%` : null;
+  try {
+    const params = [];
+    let where = "";
+    if (q) {
+      params.push(q);
+      where = `WHERE LOWER(COALESCE(c.nombre, '')) LIKE $1
+                  OR LOWER(COALESCE(c.email, '')) LIKE $1
+                  OR LOWER(COALESCE(c.usuario, '')) LIKE $1
+                  OR LOWER(COALESCE(c.telefono, '')) LIKE $1`;
+    }
+
+    const result = await pool.query(
+      `SELECT
+         c.id, c.nombre, c.email, c.telefono, c.usuario, c.avatar_url,
+         c.puntos_acumulados, c.referral_code, c.perfil_completo, c.creado_en,
+         COALESCE((SELECT COUNT(*)::int FROM pedidos p WHERE p.cliente_id = c.id AND p.estado_local != 'cancelado'), 0) AS pedidos_count,
+         COALESCE((SELECT SUM(COALESCE(p.monto_total_final, p.monto_total_estimado, 0))::numeric(12,2) FROM pedidos p WHERE p.cliente_id = c.id AND p.estado_local != 'cancelado'), 0) AS total_gastado,
+         COALESCE((SELECT COUNT(*)::int FROM canjes_club cc WHERE cc.cliente_id = c.id), 0) AS canjes_count
+       FROM clientes c
+       ${where}
+       ORDER BY c.puntos_acumulados DESC, c.creado_en DESC
+       LIMIT 200`,
+      params
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error getClientesAdmin:", error.message);
+    res.status(500).json({ error: "Error al listar clientes." });
+  }
+};
+
+const ajustarPuntosClienteAdmin = async (req, res) => {
+  const clienteId = Number(req.params.id);
+  const delta = Math.round(Number(req.body.puntos));
+  const descripcion = String(req.body.descripcion || "").trim();
+
+  if (!Number.isFinite(clienteId) || clienteId <= 0) {
+    return res.status(400).json({ error: "Cliente inválido." });
+  }
+  if (!Number.isFinite(delta) || delta === 0) {
+    return res.status(400).json({ error: "Ingresá una cantidad de puntos distinta de 0." });
+  }
+  if (!descripcion) {
+    return res.status(400).json({ error: "Ingresá un motivo para el ajuste de puntos." });
+  }
+
+  const dbClient = await pool.connect();
+  try {
+    await dbClient.query("BEGIN");
+
+    const cliRes = await dbClient.query(
+      `SELECT id, nombre, puntos_acumulados FROM clientes WHERE id = $1 FOR UPDATE`,
+      [clienteId]
+    );
+    if (cliRes.rows.length === 0) {
+      await dbClient.query("ROLLBACK");
+      return res.status(404).json({ error: "Cliente no encontrado." });
+    }
+
+    const saldoPrevio = Number(cliRes.rows[0].puntos_acumulados) || 0;
+    const nuevoSaldo = Math.max(0, saldoPrevio + delta);
+
+    await dbClient.query(
+      `UPDATE clientes SET puntos_acumulados = $1, actualizado_en = NOW() WHERE id = $2`,
+      [nuevoSaldo, clienteId]
+    );
+
+    await dbClient.query(
+      `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+       VALUES ($1, 'ajuste_admin', $2, $3)`,
+      [clienteId, delta, descripcion]
+    );
+
+    await dbClient.query("COMMIT");
+
+    try {
+      const notifRes = await pool.query(
+        `INSERT INTO notificaciones (cliente_id, titulo, mensaje, tipo, icono, enlace)
+         VALUES ($1, $2, $3, 'puntos', 'sparkles', '/perfil?tab=puntos')
+         RETURNING *`,
+        [
+          clienteId,
+          delta > 0 ? `¡Sumaste ${delta} Puntos Valette!` : `Ajuste de ${delta} Puntos Valette`,
+          descripcion,
+        ]
+      );
+      if (notifRes.rows[0]) emitirNotificacion(notifRes.rows[0]);
+    } catch {
+      // Non-blocking
+    }
+
+    res.json({
+      success: true,
+      cliente_id: clienteId,
+      puntos_acumulados: nuevoSaldo,
+      message: "Saldo de puntos actualizado correctamente.",
+    });
+  } catch (error) {
+    await dbClient.query("ROLLBACK").catch(() => {});
+    console.error("Error ajustarPuntosClienteAdmin:", error.message);
+    res.status(500).json({ error: "Error al ajustar puntos del cliente." });
+  } finally {
+    dbClient.release();
+  }
+};
+
+const getCanjesAdmin = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT cc.*, c.nombre AS cliente_nombre, c.email AS cliente_email, c.telefono AS cliente_telefono, c.usuario AS cliente_usuario
+       FROM canjes_club cc
+       JOIN clientes c ON c.id = cc.cliente_id
+       ORDER BY CASE WHEN cc.estado = 'pendiente' THEN 0 ELSE 1 END, cc.creado_en DESC
+       LIMIT 200`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error getCanjesAdmin:", error.message);
+    res.status(500).json({ error: "Error al consultar los canjes." });
+  }
+};
+
+const actualizarEstadoCanjeAdmin = async (req, res) => {
+  const canjeId = Number(req.params.id);
+  const nuevoEstado = String(req.body.estado || "").trim().toLowerCase();
+  const notas = req.body.notas ? String(req.body.notas).trim() : null;
+
+  if (!["pendiente", "entregado", "cancelado"].includes(nuevoEstado)) {
+    return res.status(400).json({ error: "Estado inválido. Use pendiente, entregado o cancelado." });
+  }
+
+  const dbClient = await pool.connect();
+  try {
+    await dbClient.query("BEGIN");
+
+    const curRes = await dbClient.query(
+      `SELECT * FROM canjes_club WHERE id = $1 FOR UPDATE`,
+      [canjeId]
+    );
+    if (curRes.rows.length === 0) {
+      await dbClient.query("ROLLBACK");
+      return res.status(404).json({ error: "Canje no encontrado." });
+    }
+
+    const canje = curRes.rows[0];
+    const reembolsar = canje.estado === "pendiente" && nuevoEstado === "cancelado";
+
+    const updRes = await dbClient.query(
+      `UPDATE canjes_club
+       SET estado = $1, notas = COALESCE($2, notas), actualizado_en = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [nuevoEstado, notas, canjeId]
+    );
+
+    if (reembolsar) {
+      await dbClient.query(
+        `UPDATE clientes SET puntos_acumulados = puntos_acumulados + $1, actualizado_en = NOW() WHERE id = $2`,
+        [canje.puntos_gastados, canje.cliente_id]
+      );
+      if (canje.recompensa_id) {
+        await dbClient.query(
+          `UPDATE recompensas_club
+           SET stock_disponible = CASE WHEN stock_disponible IS NOT NULL THEN stock_disponible + 1 ELSE NULL END
+           WHERE id = $1`,
+          [canje.recompensa_id]
+        );
+      }
+      await dbClient.query(
+        `INSERT INTO puntos_historial (cliente_id, tipo, puntos, descripcion)
+         VALUES ($1, 'reembolso_canje', $2, $3)`,
+        [
+          canje.cliente_id,
+          canje.puntos_gastados,
+          `Reembolso por cancelación del canje ${canje.codigo_canje} (${canje.titulo_recompensa})`,
+        ]
+      );
+    }
+
+    await dbClient.query("COMMIT");
+
+    try {
+      const notifRes = await pool.query(
+        `INSERT INTO notificaciones (cliente_id, titulo, mensaje, tipo, icono, enlace)
+         VALUES ($1, $2, $3, 'puntos', 'sparkles', '/perfil?tab=puntos')
+         RETURNING *`,
+        [
+          canje.cliente_id,
+          nuevoEstado === "entregado"
+            ? `¡Beneficio entregado: ${canje.titulo_recompensa}!`
+            : `Canje ${canje.codigo_canje} actualizado (${nuevoEstado})`,
+          reembolsar
+            ? `Te devolvimos ${canje.puntos_gastados} puntos a tu cuenta de Club Valette.`
+            : `Tu código ${canje.codigo_canje} pasó a estado: ${nuevoEstado}.`,
+        ]
+      );
+      if (notifRes.rows[0]) emitirNotificacion(notifRes.rows[0]);
+    } catch {
+      // Non-blocking
+    }
+
+    res.json({ success: true, canje: updRes.rows[0], reembolsado: reembolsar });
+  } catch (error) {
+    await dbClient.query("ROLLBACK").catch(() => {});
+    console.error("Error actualizarEstadoCanjeAdmin:", error.message);
+    res.status(500).json({ error: "Error al actualizar estado del canje." });
+  } finally {
+    dbClient.release();
   }
 };
 
@@ -918,5 +1425,16 @@ module.exports = {
   getFavoritos,
   sincronizarFavoritos,
   toggleFavorito,
+  getRecompensas,
+  getRecompensasAdmin,
+  createRecompensa,
+  updateRecompensa,
+  deleteRecompensa,
+  getMisCanjes,
+  canjearRecompensa,
+  getClientesAdmin,
+  ajustarPuntosClienteAdmin,
+  getCanjesAdmin,
+  actualizarEstadoCanjeAdmin,
 };
 

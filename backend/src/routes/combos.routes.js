@@ -9,15 +9,15 @@ const {
   deleteCombo,
 } = require("../controllers/combos.controller");
 
-const { requireAuth } = require("../utils/auth");
+const { requireAdmin } = require("../utils/auth");
 
 const router = Router();
 
 router.get("/combos", getCombos);
 router.get("/combos/:id", getComboById);
-router.post("/combos", requireAuth, createCombo);
-router.put("/combos/:id", requireAuth, updateCombo);
-router.patch("/combos/:id/estado", requireAuth, toggleActivoCombo);
-router.delete("/combos/:id", requireAuth, deleteCombo);
+router.post("/combos", requireAdmin, createCombo);
+router.put("/combos/:id", requireAdmin, updateCombo);
+router.patch("/combos/:id/estado", requireAdmin, toggleActivoCombo);
+router.delete("/combos/:id", requireAdmin, deleteCombo);
 
 module.exports = router;

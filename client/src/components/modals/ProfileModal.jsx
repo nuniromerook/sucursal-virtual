@@ -1,5 +1,5 @@
 // src/components/modals/ProfileModal.jsx
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   X,
   ChevronRight,
@@ -31,6 +31,9 @@ import {
   Loader2,
   AlertCircle,
   ClipboardList,
+  Ticket,
+  Truck,
+  Mail,
 } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { useLocation } from "@/context/LocationContext";
@@ -41,11 +44,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { formatPrecio } from "@/utils/formatters";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
+import { uploadAvatarToCloudinary } from "@/utils/cloudinary";
 
 export const ProfileModal = ({
   isOpen,
   initialView = "main",
   originView = "main",
+  resetToken = "",
+  onClearResetToken,
   onBack,
   onClose,
   onOpenTrackingModal,
@@ -68,20 +74,30 @@ export const ProfileModal = ({
     isAuthenticated,
     puntosHistorial,
     pedidosHistorial,
+    canjesHistorial,
+    recompensas,
     login,
     register,
     updateProfile,
     changePassword,
+    requestPasswordReset,
+    confirmPasswordReset,
+    validateReferralCode,
+    redeemReward,
     logout,
   } = useAuth();
   const { activeOrderId, setActiveOrderId } = useCart();
 
-  // Vista interna: "main" | "auth" | "edit-profile" | "points" | "orders" | "favorites" | "security" | "support"
+  // Vista interna: "main" | "auth" | "forgot-password" | "reset-password" | "edit-profile" | "points" | "orders" | "favorites" | "security" | "support"
   const [activeView, setActiveView] = useState(initialView);
   const [authTab, setAuthTab] = useState("login"); // "login" | "register"
   const [showPass, setShowPass] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [redeemingId, setRedeemingId] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [formSuccess, setFormSuccess] = useState(null);
+  const avatarInputRef = useRef(null);
 
   // Estado formulario Login
   const [loginForm, setLoginForm] = useState({
@@ -89,7 +105,14 @@ export const ProfileModal = ({
     password: "",
   });
 
-  // Estado formulario Registro
+  // Estado recuperación de contraseña
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetForm, setResetForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // Estado formulario Registro + validación en vivo de referido
   const [registerForm, setRegisterForm] = useState({
     nombre: "",
     email: "",
@@ -98,6 +121,7 @@ export const ProfileModal = ({
     password: "",
     codigo_referido: "",
   });
+  const [referralStatus, setReferralStatus] = useState(null); // null | { checking } | { valido, nombre, usuario }
 
   // Formulario de edición de perfil
   const [formState, setFormState] = useState({
@@ -106,6 +130,7 @@ export const ProfileModal = ({
     usuario: user?.usuario || "",
     telefono: user?.telefono || "",
     direccion: user?.direccion_default || customerAddress || "",
+    avatar_url: user?.avatar_url || "",
   });
 
   // Preferencias operativas
@@ -203,6 +228,7 @@ export const ProfileModal = ({
 
   const handleOpenEditProfile = () => {
     setFormError(null);
+    setFormSuccess(null);
     if (!isAuthenticated) {
       setActiveView("auth");
       return;
@@ -213,8 +239,134 @@ export const ProfileModal = ({
       usuario: user?.usuario || "",
       telefono: user?.telefono || "",
       direccion: user?.direccion_default || customerAddress || "",
+      avatar_url: user?.avatar_url || "",
     });
     setActiveView("edit-profile");
+  };
+
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    setFormError(null);
+    try {
+      const uploadedUrl = await uploadAvatarToCloudinary(file);
+      setFormState((s) => ({ ...s, avatar_url: uploadedUrl }));
+      await updateProfile({
+        nombre: formState.nombre || user?.nombre || undefined,
+        usuario: formState.usuario || user?.usuario || undefined,
+        telefono: formState.telefono || user?.telefono || undefined,
+        direccion_default:
+          formState.direccion || user?.direccion_default || undefined,
+        avatar_url: uploadedUrl,
+      });
+      showToast("¡Foto de perfil actualizada! 📸");
+    } catch (err) {
+      setFormError(err.message || "No se pudo subir la imagen.");
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (isUploadingAvatar) return;
+    setIsUploadingAvatar(true);
+    setFormError(null);
+    try {
+      setFormState((s) => ({ ...s, avatar_url: "" }));
+      await updateProfile({ avatar_url: "" });
+      showToast("Foto de perfil quitada", "info");
+    } catch (err) {
+      setFormError(err.message || "No se pudo quitar la foto.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleValidateReferral = async (rawCode) => {
+    const clean = String(rawCode || "").trim().toUpperCase();
+    if (clean.length < 3) {
+      setReferralStatus(null);
+      return;
+    }
+    setReferralStatus({ checking: true });
+    try {
+      const data = await validateReferralCode(clean);
+      setReferralStatus(data);
+    } catch {
+      setReferralStatus({ valido: false });
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (isBusy || !forgotEmail.trim()) return;
+    setIsBusy(true);
+    setFormError(null);
+    setFormSuccess(null);
+    try {
+      const data = await requestPasswordReset(forgotEmail.trim());
+      setFormSuccess(
+        data.message ||
+          "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña.",
+      );
+      showToast("Revisá tu correo electrónico 📧");
+    } catch (err) {
+      setFormError(err.message || "Error al solicitar la recuperación.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleConfirmResetSubmit = async (e) => {
+    e.preventDefault();
+    if (isBusy) return;
+    if (resetForm.newPassword.length < 6) {
+      setFormError("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (resetForm.newPassword !== resetForm.confirmPassword) {
+      setFormError("Las contraseñas no coinciden.");
+      return;
+    }
+    setIsBusy(true);
+    setFormError(null);
+    try {
+      const data = await confirmPasswordReset({
+        token: resetToken,
+        newPassword: resetForm.newPassword,
+      });
+      showToast(data.message || "¡Contraseña restablecida con éxito! 🔒");
+      setResetForm({ newPassword: "", confirmPassword: "" });
+      onClearResetToken?.();
+      setActiveView("main");
+    } catch (err) {
+      setFormError(err.message || "El enlace expiró o es inválido.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleRedeemReward = async (rew) => {
+    if (!isAuthenticated) {
+      setActiveView("auth");
+      showToast("Iniciá sesión para canjear tus puntos del Club Valette ⭐", "info");
+      return;
+    }
+    if (redeemingId) return;
+    setRedeemingId(rew.id);
+    setFormError(null);
+    try {
+      const res = await redeemReward(rew.id);
+      showToast(
+        res.message || `¡Canjeaste "${rew.titulo}" con éxito! 🎉`,
+      );
+    } catch (err) {
+      setFormError(err.message || "No se pudo completar el canje.");
+    } finally {
+      setRedeemingId(null);
+    }
   };
 
   const handleLoginSubmit = async (e) => {
@@ -276,6 +428,7 @@ export const ProfileModal = ({
         usuario: formState.usuario.trim(),
         telefono: formState.telefono.trim(),
         direccion_default: formState.direccion.trim(),
+        avatar_url: formState.avatar_url,
       });
       if (formState.direccion.trim()) {
         updateCustomerAddress(formState.direccion.trim());
@@ -333,6 +486,8 @@ export const ProfileModal = ({
   const viewTitles = {
     main: "Mi Perfil",
     auth: authTab === "login" ? "Iniciar Sesión" : "Crear Cuenta Club Valette",
+    "forgot-password": "Recuperar Contraseña",
+    "reset-password": "Nueva Contraseña",
     "edit-profile": "Gestionar Perfil",
     points: "Club Valette",
     orders: "Mis Pedidos",
@@ -388,6 +543,13 @@ export const ProfileModal = ({
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="size-4 shrink-0" />
               <span>{formError}</span>
+            </div>
+          )}
+
+          {formSuccess && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <Check className="size-4 shrink-0" />
+              <span>{formSuccess}</span>
             </div>
           )}
 
@@ -866,6 +1028,25 @@ export const ProfileModal = ({
                       <span>Iniciar Sesión</span>
                     )}
                   </button>
+
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormError(null);
+                        setFormSuccess(null);
+                        setForgotEmail(
+                          loginForm.identificador.includes("@")
+                            ? loginForm.identificador
+                            : "",
+                        );
+                        setActiveView("forgot-password");
+                      }}
+                      className="text-xs font-bold text-[#003366] hover:underline cursor-pointer"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <form onSubmit={handleRegisterSubmit} className="space-y-4">
@@ -1036,22 +1217,56 @@ export const ProfileModal = ({
                       >
                         Código de Invitación (Opcional · +50 pts)
                       </label>
-                      <input
-                        id="signup-referral"
-                        name="referral_code"
-                        type="text"
-                        spellCheck={false}
-                        enterKeyHint="done"
-                        value={registerForm.codigo_referido}
-                        onChange={(e) =>
-                          setRegisterForm((s) => ({
-                            ...s,
-                            codigo_referido: e.target.value,
-                          }))
-                        }
-                        placeholder="Ej: 48291"
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num uppercase"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          id="signup-referral"
+                          name="referral_code"
+                          type="text"
+                          spellCheck={false}
+                          enterKeyHint="done"
+                          value={registerForm.codigo_referido}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setRegisterForm((s) => ({
+                              ...s,
+                              codigo_referido: val,
+                            }));
+                            setReferralStatus(null);
+                          }}
+                          onBlur={(e) => handleValidateReferral(e.target.value)}
+                          placeholder="Ej: 48291"
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num uppercase"
+                        />
+                        {registerForm.codigo_referido.trim().length >= 3 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleValidateReferral(registerForm.codigo_referido)
+                            }
+                            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer shrink-0"
+                          >
+                            Validar
+                          </button>
+                        )}
+                      </div>
+                      {referralStatus?.checking && (
+                        <p className="text-[11px] text-slate-400 mt-1 font-medium">
+                          Verificando código...
+                        </p>
+                      )}
+                      {referralStatus && !referralStatus.checking && (
+                        <p
+                          className={`text-[11px] mt-1 font-bold ${
+                            referralStatus.valido
+                              ? "text-emerald-700"
+                              : "text-rose-600"
+                          }`}
+                        >
+                          {referralStatus.valido
+                            ? `✓ Código válido · Invitado por ${referralStatus.nombre || referralStatus.usuario} (+50 pts)`
+                            : "Código de invitación no encontrado."}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1074,9 +1289,215 @@ export const ProfileModal = ({
             </div>
           )}
 
+          {/* SUB-VISTA: SOLICITAR RECUPERACIÓN DE CONTRASEÑA */}
+          {activeView === "forgot-password" && (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 pb-6">
+              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
+                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+                  <Mail className="size-4 text-[#003366]" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Te enviaremos un enlace seguro a tu correo (válido por 15 min)
+                  </span>
+                </div>
+                <div>
+                  <label
+                    htmlFor="forgot-email"
+                    className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Correo Electrónico Registrado
+                  </label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isBusy}
+                className="w-full py-3.5 rounded-2xl bg-[#003366] hover:bg-valette-dark disabled:opacity-60 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isBusy ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Enviando enlace...</span>
+                  </>
+                ) : (
+                  <span>Enviar Enlace de Recuperación</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormError(null);
+                  setFormSuccess(null);
+                  setActiveView("auth");
+                }}
+                className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+              >
+                Volver a Iniciar Sesión
+              </button>
+            </form>
+          )}
+
+          {/* SUB-VISTA: RESTABLECER CONTRASEÑA CON TOKEN */}
+          {activeView === "reset-password" && (
+            <form onSubmit={handleConfirmResetSubmit} className="space-y-4 pb-6">
+              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
+                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+                  <ShieldCheck className="size-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Definí tu nueva contraseña para ingresar a Club Valette
+                  </span>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="reset-new-password"
+                    className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Nueva Contraseña
+                  </label>
+                  <input
+                    id="reset-new-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={resetForm.newPassword}
+                    onChange={(e) =>
+                      setResetForm((s) => ({ ...s, newPassword: e.target.value }))
+                    }
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="reset-confirm-password"
+                    className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Confirmar Nueva Contraseña
+                  </label>
+                  <input
+                    id="reset-confirm-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={resetForm.confirmPassword}
+                    onChange={(e) =>
+                      setResetForm((s) => ({
+                        ...s,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
+                    placeholder="Repetí tu nueva contraseña"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isBusy}
+                className="w-full py-3.5 rounded-2xl bg-[#003366] hover:bg-valette-dark disabled:opacity-60 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isBusy ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Guardando contraseña...</span>
+                  </>
+                ) : (
+                  <span>Guardar Nueva Contraseña</span>
+                )}
+              </button>
+            </form>
+          )}
+
           {/* SUB-VISTA: GESTIONAR PERFIL */}
           {activeView === "edit-profile" && (
             <form onSubmit={handleSaveProfile} className="space-y-4 pb-6">
+              {/* Selector y subida de Foto de Perfil con Cloudinary */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center gap-4">
+                <div className="relative size-18 rounded-full bg-[#E4E6EB] flex items-center justify-center shrink-0 border border-slate-200/90 overflow-hidden">
+                  {formState.avatar_url ? (
+                    <img
+                      src={formState.avatar_url}
+                      alt={formState.nombre || "Avatar"}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <svg
+                      viewBox="0 0 36 36"
+                      fill="none"
+                      aria-hidden="true"
+                      className="size-full text-[#65676B]"
+                    >
+                      <circle cx="18" cy="13.5" r="6" fill="currentColor" />
+                      <path
+                        d="M6.5 34C6.5 26.8203 11.6487 22 18 22C24.3513 22 29.5 26.8203 29.5 34"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  )}
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center">
+                      <Loader2 className="size-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-2">
+                  <p className="text-xs font-extrabold text-slate-900">
+                    Foto de Perfil
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingAvatar}
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-xl bg-[#003366] hover:bg-valette-dark disabled:opacity-60 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Camera className="size-3.5" />
+                      <span>
+                        {isUploadingAvatar
+                          ? "Subiendo..."
+                          : formState.avatar_url
+                            ? "Cambiar foto"
+                            : "Subir foto"}
+                      </span>
+                    </button>
+                    {formState.avatar_url && (
+                      <button
+                        type="button"
+                        disabled={isUploadingAvatar}
+                        onClick={handleRemoveAvatar}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-[11px] font-bold cursor-pointer transition-colors"
+                      >
+                        Quitar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {!user?.perfil_completo && (
                 <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 text-[11px] text-amber-900 font-semibold flex items-center gap-2">
                   <Sparkles className="size-4 text-amber-600 shrink-0" />
@@ -1216,13 +1637,166 @@ export const ProfileModal = ({
                   {profileData.puntos.toLocaleString("es-AR")} pts
                 </div>
                 <p className="text-xs text-blue-100 mt-1">
-                  Equivalen a{" "}
-                  <strong className="text-white font-num">
-                    {formatPrecio(profileData.equivalenciaPesos)}
-                  </strong>{" "}
-                  acumulados en tu cuenta Club Valette.
+                  Canjeá tus puntos por números de sorteos, cortes gratis, envíos
+                  bonificados y beneficios exclusivos de la casa.
                 </p>
               </div>
+
+              {/* Catálogo de Premios Canjeables Club Valette */}
+              <div>
+                <span className="text-xs font-semibold text-slate-400 mb-2 pl-1 block">
+                  Catálogo de Premios y Sorteos
+                </span>
+                {recompensas.length === 0 ? (
+                  <div className="bg-white border border-slate-200/70 rounded-2xl p-5 text-center text-xs text-slate-500">
+                    Próximamente publicaremos nuevos premios y sorteos del Club Valette.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {recompensas.map((rew) => {
+                      const costo = Number(rew.puntos_requeridos) || 0;
+                      const alcanza = isAuthenticated && profileData.puntos >= costo;
+                      const sinStock =
+                        rew.stock_disponible !== null &&
+                        Number(rew.stock_disponible) <= 0;
+                      const tipo = String(rew.tipo || "producto").toLowerCase();
+                      const tipoBadge =
+                        tipo === "sorteo"
+                          ? { label: "Sorteo", cls: "bg-purple-50 text-purple-700 border-purple-200", Icon: Ticket }
+                          : tipo === "envio"
+                            ? { label: "Envío Gratis", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Truck }
+                            : tipo === "descuento"
+                              ? { label: "Beneficio", cls: "bg-blue-50 text-[#003366] border-blue-200", Icon: Sparkles }
+                              : { label: "Corte / Producto", cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Gift };
+                      const BadgeIcon = tipoBadge.Icon;
+
+                      return (
+                        <div
+                          key={rew.id}
+                          className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-2.5"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border mb-1.5 ${tipoBadge.cls}`}
+                              >
+                                <BadgeIcon className="size-3" />
+                                <span>{tipoBadge.label}</span>
+                              </span>
+                              <h4 className="text-xs font-extrabold text-slate-900 leading-snug">
+                                {rew.titulo}
+                              </h4>
+                              {rew.descripcion && (
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                  {rew.descripcion}
+                                </p>
+                              )}
+                            </div>
+                            <span className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-black font-num shrink-0">
+                              {costo} pts
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-400">
+                              {sinStock
+                                ? "Agotado temporalmente"
+                                : rew.stock_disponible !== null
+                                  ? `Quedan ${rew.stock_disponible} disponibles`
+                                  : "Disponible para canje inmediato"}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={
+                                sinStock ||
+                                redeemingId === rew.id ||
+                                (isAuthenticated && !alcanza)
+                              }
+                              onClick={() => handleRedeemReward(rew)}
+                              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                sinStock
+                                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                  : !isAuthenticated
+                                    ? "bg-[#003366] text-white hover:bg-valette-dark"
+                                    : alcanza
+                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                      : "bg-slate-100 text-slate-500 cursor-not-allowed"
+                              }`}
+                            >
+                              {redeemingId === rew.id ? (
+                                <>
+                                  <Loader2 className="size-3 animate-spin" />
+                                  <span>Canjeando...</span>
+                                </>
+                              ) : !isAuthenticated ? (
+                                <span>Ingresar para canjear</span>
+                              ) : alcanza ? (
+                                <span>Canjear ahora</span>
+                              ) : (
+                                <span>Faltan {costo - profileData.puntos} pts</span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Mis Canjes y Vouchers activos */}
+              {isAuthenticated && canjesHistorial.length > 0 && (
+                <div>
+                  <span className="text-xs font-semibold text-slate-400 mb-2 pl-1 block">
+                    Mis Códigos de Canje
+                  </span>
+                  <div className="bg-white border border-slate-200/70 rounded-2xl divide-y divide-slate-100 shadow-2xs text-xs">
+                    {canjesHistorial.map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-3.5 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 truncate">
+                            {c.titulo_recompensa}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="px-2 py-0.5 rounded-md bg-[#003366]/10 text-[#003366] font-black font-num text-[11px]">
+                              {c.codigo_canje}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                c.estado === "entregado"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : c.estado === "cancelado"
+                                    ? "bg-rose-50 text-rose-700"
+                                    : "bg-amber-50 text-amber-800"
+                              }`}
+                            >
+                              {c.estado}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(c.codigo_canje);
+                              showToast(`Código ${c.codigo_canje} copiado`);
+                            } catch {
+                              showToast(`Tu código: ${c.codigo_canje}`, "info");
+                            }
+                          }}
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer shrink-0"
+                          title="Copiar código"
+                        >
+                          <Copy className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Tarjeta de Código de Referido */}
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">

@@ -1,7 +1,6 @@
 // src/context/CatalogoContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
-import { io } from "socket.io-client";
-import { API_URL } from "@/config/api";
+import { getSocket } from "@/utils/socket";
 import {
   CORTES_MOCK,
   DEFAULT_BANNERS,
@@ -58,26 +57,29 @@ export const CatalogoProvider = ({ children }) => {
 
     runFetch();
 
-    // Suscripción en tiempo real a cambios de catálogo o stock desde el panel Admin
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-    });
+    // Suscripción en tiempo real a cambios de catálogo o stock vía Socket singleton
+    const socket = getSocket();
 
-    socket.on("connect", () => {
+    const handleConnect = () => {
       socket.emit("join_stock");
-    });
-
-    socket.on("catalogo_actualizado", () => {
+    };
+    const handleRefresh = () => {
       runFetch();
-    });
+    };
 
-    socket.on("stock_actualizado", () => {
-      runFetch();
-    });
+    if (socket.connected) {
+      handleConnect();
+    }
+
+    socket.on("connect", handleConnect);
+    socket.on("catalogo_actualizado", handleRefresh);
+    socket.on("stock_actualizado", handleRefresh);
 
     return () => {
       isCancelled = true;
-      socket.disconnect();
+      socket.off("connect", handleConnect);
+      socket.off("catalogo_actualizado", handleRefresh);
+      socket.off("stock_actualizado", handleRefresh);
     };
   }, []);
 

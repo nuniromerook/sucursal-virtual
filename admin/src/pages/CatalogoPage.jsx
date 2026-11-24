@@ -1,6 +1,6 @@
 // admin/src/pages/CatalogoPage.jsx
 import { useState, useEffect } from "react";
-import { Plus, Search, RefreshCw, AlertTriangle, X } from "lucide-react";
+import { Plus, Search, RefreshCw, AlertTriangle } from "lucide-react";
 import { VITE_API_URL } from "../config/api";
 import { useAdmin } from "../context/AdminContext";
 import { useAuth } from "../context/AuthContext";
@@ -23,7 +23,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { showToast } = useAdmin();
-  const { authHeaders } = useAuth();
+  const { authHeaders, isManager } = useAuth();
 
   const fetchCatalogItems = async () => {
     const res = await fetch(
@@ -100,12 +100,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
       });
 
       if (!res.ok) {
-        // Fallback endpoint general si no existe /stock
-        await fetch(`${VITE_API_URL}/catalogo/${product.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ sin_stock: nextSinStock }),
-        });
+        throw new Error("No se pudo actualizar el stock.");
       }
 
       showToast(
@@ -115,7 +110,8 @@ export default function CatalogoPage({ onProductsLoaded }) {
       );
     } catch (err) {
       console.error("Error al alternar stock:", err);
-      showToast("Se actualizó el estado de stock.", "success");
+      await loadProducts();
+      showToast("Error al actualizar el estado de stock.", "error");
     }
   };
 
@@ -175,6 +171,12 @@ export default function CatalogoPage({ onProductsLoaded }) {
         metodos_coccion: formData.metodos_coccion || [],
         sin_stock: Boolean(formData.sin_stock),
         activo: Boolean(formData.activo),
+        destacar: Boolean(formData.destacar),
+        gana_puntos: Boolean(formData.gana_puntos),
+        puntos: Number(formData.puntos) || 0,
+        calorias: formData.calorias !== "" ? Number(formData.calorias) : null,
+        proteinas: formData.proteinas !== "" ? Number(formData.proteinas) : null,
+        grasas: formData.grasas !== "" ? Number(formData.grasas) : null,
         imagen_url: formData.imagen_url || null,
       };
 
@@ -192,20 +194,28 @@ export default function CatalogoPage({ onProductsLoaded }) {
       const savedData = await res.json();
       const savedId = savedData.id || formData.id;
 
-      // Si se configuró promoción por volumen, sincronizarla
-      if (formData.promo_min && formData.promo_precio && savedId) {
-        try {
+      // Eliminar promos quitadas por el usuario
+      if (Array.isArray(formData.deletedPromoIds) && savedId) {
+        for (const promoId of formData.deletedPromoIds) {
+          await fetch(`${VITE_API_URL}/catalogo/${savedId}/promos/${promoId}`, {
+            method: "DELETE",
+            headers: authHeaders,
+          }).catch(() => {});
+        }
+      }
+
+      // Crear nuevas escalas de promoción agregadas
+      if (Array.isArray(formData.newPromos) && savedId) {
+        for (const pr of formData.newPromos) {
           await fetch(`${VITE_API_URL}/catalogo/${savedId}/promos`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders },
             body: JSON.stringify({
-              cantidad_kg: Number(formData.promo_min),
-              precio_promocional: Number(formData.promo_precio),
+              cantidad_kg: Number(pr.cantidad_kg),
+              precio_promocional: Number(pr.precio_promocional),
               activa: true,
             }),
-          });
-        } catch (promoErr) {
-          console.warn("Advertencia al sincronizar promo:", promoErr);
+          }).catch(() => {});
         }
       }
 
@@ -290,17 +300,19 @@ export default function CatalogoPage({ onProductsLoaded }) {
             />
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setEditingProduct(null);
-              setDrawerOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Nuevo Corte / Producto</span>
-          </button>
+          {isManager && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingProduct(null);
+                setDrawerOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Nuevo Corte / Producto</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -403,11 +415,15 @@ export default function CatalogoPage({ onProductsLoaded }) {
       {/* Tabla y Cards de Productos */}
       <ProductTable
         products={products}
-        onEditProduct={(p) => {
-          setEditingProduct(p);
-          setDrawerOpen(true);
-        }}
-        onDeleteProduct={(p) => setDeletingProduct(p)}
+        onEditProduct={
+          isManager
+            ? (p) => {
+                setEditingProduct(p);
+                setDrawerOpen(true);
+              }
+            : null
+        }
+        onDeleteProduct={isManager ? (p) => setDeletingProduct(p) : null}
         onToggleStock={handleToggleStock}
         onToggleActivo={handleToggleActivo}
         searchTerm={searchTerm}

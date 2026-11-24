@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { BrowserRouter, useSearchParams, useLocation } from "react-router-dom";
+import { BrowserRouter, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { trackPageView, trackEvent } from "@/utils/analytics";
 import { ToastProvider } from "@/context/ToastContext";
 import { LocationProvider } from "@/context/LocationContext";
@@ -38,6 +38,21 @@ function AppContent() {
   const { isNotificationsOpen, setIsNotificationsOpen } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Detectar enlace de recuperación de contraseña (?token=... o /restablecer-password?token=...)
+  const resetTokenParam = searchParams.get("token") || "";
+  const isResetRoute =
+    Boolean(resetTokenParam) &&
+    (location.pathname.includes("restablecer") || Boolean(resetTokenParam));
+
+  const clearResetTokenUrl = useCallback(() => {
+    if (!resetTokenParam && !location.pathname.includes("restablecer")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("token");
+    const qs = next.toString();
+    navigate(qs ? `/?${qs}` : "/", { replace: true });
+  }, [resetTokenParam, location.pathname, searchParams, navigate]);
 
   // Estados de Búsqueda y Filtros
   const searchQuery = searchParams.get("q") || "";
@@ -129,13 +144,19 @@ function AppContent() {
     setIsBranchModalOpen(false);
     setIsFiltersModalOpen(false);
     closeProductInUrl();
-  }, [setIsNotificationsOpen, setIsCartOpen, closeProductInUrl]);
+    clearResetTokenUrl();
+  }, [setIsNotificationsOpen, setIsCartOpen, closeProductInUrl, clearResetTokenUrl]);
 
   const handleOpenProfile = (view = "main") => {
     const targetView = typeof view === "string" ? view : "main";
     setProfileInitialView(targetView);
     setIsProfileModalOpen(true);
   };
+
+  const effectiveProfileOpen = isProfileModalOpen || isResetRoute;
+  const effectiveProfileView = isResetRoute
+    ? "reset-password"
+    : profileInitialView;
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
@@ -231,13 +252,16 @@ function AppContent() {
       />
 
       <ProfileModal
-        key={`profile-modal-${isProfileModalOpen ? profileInitialView : "closed"}`}
-        isOpen={isProfileModalOpen}
-        initialView={profileInitialView}
-        originView={profileInitialView}
+        key={`profile-modal-${effectiveProfileOpen ? effectiveProfileView : "closed"}`}
+        isOpen={effectiveProfileOpen}
+        initialView={effectiveProfileView}
+        originView={effectiveProfileView}
+        resetToken={resetTokenParam}
+        onClearResetToken={clearResetTokenUrl}
         onBack={() => {
           setIsProfileModalOpen(false);
           setProfileInitialView("main");
+          clearResetTokenUrl();
         }}
         onClose={closeAllModals}
         onOpenTrackingModal={() => setIsTrackingModalOpen(true)}

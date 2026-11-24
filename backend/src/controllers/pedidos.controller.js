@@ -6,7 +6,22 @@ const {
   emitirActualizacionPedido,
   emitirNotificacion,
 } = require("../socket");
-const { verifyToken } = require("../utils/auth");
+const {
+  verifyToken,
+  getOptionalAuth,
+  STAFF_ROLES,
+  MANAGER_ROLES,
+} = require("../utils/auth");
+
+const sanitizePedidoPrivacidad = (pedido, canSeePrivateData) => {
+  if (!pedido || canSeePrivateData) return pedido;
+  return {
+    ...pedido,
+    direccion_entrega: null,
+    cliente_telefono: null,
+    cliente_email: null,
+  };
+};
 
 /**
  * POST /pedidos
@@ -120,13 +135,25 @@ const createPedido = async (req, res) => {
       clienteId = nuevoCliente.rows[0].id;
     }
 
-    // 2. Validar precios y calcular total directamente desde la DB (Seguridad + soporte Combos)
+    // 2. Validar precios y puntos directamente desde PostgreSQL (Catálogo + Combos)
     const rawCatalogoIds = items
+      .filter((i) => !Boolean(i.es_combo) && !String(i.id || "").startsWith("combo-"))
       .map((i) => Number(i.catalogo_id || i.id))
       .filter((n) => Number.isFinite(n) && n > 0);
 
+    const rawComboIds = items
+      .filter((i) => Boolean(i.es_combo) || String(i.id || "").startsWith("combo-"))
+      .map((i) => {
+        if (Number.isFinite(Number(i.combo_id)) && Number(i.combo_id) > 0) {
+          return Number(i.combo_id);
+        }
+        const stripped = String(i.id || "").replace(/^combo-/i, "");
+        return Number(stripped);
+      })
+      .filter((n) => Number.isFinite(n) && n > 0);
+
     const catalogoRes = await dbClient.query(
-      `SELECT c.id, c.precio,
+      `SELECT c.id, c.precio, c.gana_puntos, c.puntos,
          COALESCE(
            (
              SELECT jsonb_agg(
@@ -141,27 +168,77 @@ const createPedido = async (req, res) => {
            '[]'::jsonb
          ) AS promos
        FROM catalogo c WHERE c.id = ANY($1::int[])`,
-      [rawCatalogoIds.length > 0 ? rawCatalogoIds : [1]]
+      [rawCatalogoIds.length > 0 ? rawCatalogoIds : [0]]
     );
 
-    const catalogoMap = new Map(catalogoRes.rows.map((r) => [r.id, r]));
+    const combosRes =
+      rawComboIds.length > 0
+        ? await dbClient.query(
+            `SELECT id, nombre, precio, puntos, activo FROM combos WHERE id = ANY($1::int[])`,
+            [rawComboIds]
+          )
+        : { rows: [] };
+
+    const catalogoMap = new Map(catalogoRes.rows.map((r) => [Number(r.id), r]));
+    const combosMap = new Map(combosRes.rows.map((r) => [Number(r.id), r]));
+
     let fallbackCatRow = catalogoRes.rows[0] || null;
-    if (!fallbackCatRow) {
+    if (!fallbackCatRow && rawComboIds.length > 0) {
       const firstCat = await dbClient.query(
         `SELECT id, precio FROM catalogo ORDER BY id ASC LIMIT 1`
       );
-      fallbackCatRow = firstCat.rows[0] || { id: 1, precio: 10000, promos: [] };
+      fallbackCatRow = firstCat.rows[0] || { id: 1, precio: 0, promos: [] };
     }
 
     let montoTotalVerificado = 0;
+    let puntosGanadosCalculados = 0;
     const itemsProcesados = [];
 
     for (const item of items) {
-      const parsedId = Number(item.catalogo_id || item.id);
       const isCombo =
         Boolean(item.es_combo) || String(item.id || "").startsWith("combo-");
-      const catData =
-        catalogoMap.get(parsedId) || (isCombo ? fallbackCatRow : null);
+
+      if (isCombo) {
+        const comboId = Number(
+          item.combo_id || String(item.id || "").replace(/^combo-/i, "")
+        );
+        const comboRow = combosMap.get(comboId);
+        if (!comboRow || !comboRow.activo) {
+          await dbClient.query("ROLLBACK");
+          return res
+            .status(400)
+            .json({ error: `El combo solicitado ya no está disponible (ID: ${comboId}).` });
+        }
+
+        const cantidadCombos = Math.max(
+          1,
+          Math.round(Number(item.cantidad_kg || item.cantidad) || 1)
+        );
+        const precioComboVerificado = Number(comboRow.precio);
+        const precioEstimado = Math.round(precioComboVerificado * cantidadCombos);
+        montoTotalVerificado += precioEstimado;
+
+        if (Number(comboRow.puntos) > 0) {
+          puntosGanadosCalculados += Number(comboRow.puntos);
+        }
+
+        const opcionesCorte =
+          item.corte ||
+          item.opciones_corte_seleccionada ||
+          `${comboRow.nombre}${item.items_combo ? ` (${item.items_combo})` : ""}`;
+
+        itemsProcesados.push({
+          catalogoId: Number(fallbackCatRow.id),
+          cantidadKg: cantidadCombos,
+          precioPorKg: precioComboVerificado,
+          precioEstimado,
+          opcionesCorte,
+        });
+        continue;
+      }
+
+      const parsedId = Number(item.catalogo_id || item.id);
+      const catData = catalogoMap.get(parsedId) || null;
 
       if (!catData) {
         await dbClient.query("ROLLBACK");
@@ -177,26 +254,24 @@ const createPedido = async (req, res) => {
       );
 
       let precioPorKg = Number(catData.precio);
-      if (isCombo && Number(item.precio) > 0) {
-        precioPorKg = Number(item.precio);
-      } else {
-        const promos = Array.isArray(catData.promos) ? catData.promos : [];
-        for (const promo of promos) {
-          if (cantidadKg >= Number(promo.cantidad_kg)) {
-            precioPorKg = Number(promo.precio_promocional);
-          }
+      const promos = Array.isArray(catData.promos) ? catData.promos : [];
+      for (const promo of promos) {
+        if (cantidadKg >= Number(promo.cantidad_kg)) {
+          precioPorKg = Number(promo.precio_promocional);
         }
       }
 
       const precioEstimado = Math.round(precioPorKg * cantidadKg);
       montoTotalVerificado += precioEstimado;
 
+      if (catData.gana_puntos && Number(catData.puntos) > 0) {
+        puntosGanadosCalculados += Number(catData.puntos);
+      }
+
       const opcionesCorte =
         item.corte ||
         item.opciones_corte_seleccionada ||
-        (isCombo
-          ? `${item.nombre || "Combo"}${item.items_combo ? ` (${item.items_combo})` : ""}`
-          : "Corte tradicional");
+        "Corte tradicional";
 
       itemsProcesados.push({
         catalogoId,
@@ -206,6 +281,11 @@ const createPedido = async (req, res) => {
         opcionesCorte,
       });
     }
+
+    const effectiveSesionId =
+      (sesion_id && String(sesion_id).trim()) ||
+      (req.headers["x-sesion-id"] && String(req.headers["x-sesion-id"]).trim()) ||
+      null;
 
     // 3. Insertar el Pedido maestro (siempre en Sucursal 1: Luis Guillón Casa Central)
     const insertPedidoRes = await dbClient.query(
@@ -221,8 +301,9 @@ const createPedido = async (req, res) => {
          monto_total_estimado,
          direccion_entrega,
          notas,
-         banner_id
-       ) VALUES ($1, $2, 'web', $3, $4, 'solicitado', $5, false, $6, $7, $8, $9)
+         banner_id,
+         sesion_id
+       ) VALUES ($1, $2, 'web', $3, $4, 'solicitado', $5, false, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         clienteId,
@@ -234,6 +315,7 @@ const createPedido = async (req, res) => {
         direccion_entrega || null,
         notas || null,
         banner_id ? Number(banner_id) : null,
+        effectiveSesionId,
       ]
     );
 
@@ -291,17 +373,10 @@ const createPedido = async (req, res) => {
 
     await dbClient.query("COMMIT");
 
-    // 4. Acreditar puntos al cliente autenticado por los productos del pedido
-    //    Regla: 1 vez los puntos del producto (campo fijo, sin multiplicar por kg)
+    // 4. Acreditar puntos al cliente por cortes y combos verificados desde PostgreSQL
+    //    Regla: 1 vez los puntos del corte o combo (campo fijo, sin multiplicar por kg)
     try {
-      const puntosRes = await pool.query(
-        `SELECT COALESCE(SUM(c.puntos), 0) AS total_puntos
-         FROM pedido_items pi
-         JOIN catalogo c ON c.id = pi.catalogo_id
-         WHERE pi.pedido_id = $1 AND c.gana_puntos = true AND c.puntos > 0`,
-        [pedidoCreado.id],
-      );
-      const puntosGanados = Number(puntosRes.rows[0].total_puntos);
+      const puntosGanados = Number(puntosGanadosCalculados) || 0;
 
       if (puntosGanados > 0 && clienteId) {
         await pool.query(
@@ -460,7 +535,27 @@ const getPedidoById = async (req, res) => {
       return res.status(404).json({ error: "Pedido no encontrado." });
     }
 
-    res.json(pedido);
+    const decoded = getOptionalAuth(req);
+    const rol = String(decoded?.rol || "").toLowerCase();
+    const isStaff = Boolean(decoded && STAFF_ROLES.includes(rol));
+    const isManager = Boolean(decoded && MANAGER_ROLES.includes(rol));
+    const isOwnerByJwt = Boolean(
+      decoded && !isStaff && Number(decoded.id) === Number(pedido.cliente_id)
+    );
+    const reqSesion = String(
+      req.headers["x-sesion-id"] || req.query.sesion_id || ""
+    ).trim();
+    const isOwnerBySession = Boolean(
+      reqSesion && pedido.sesion_id && reqSesion === pedido.sesion_id
+    );
+
+    if (!isStaff && !isOwnerByJwt && !isOwnerBySession) {
+      return res.status(403).json({
+        error: "No tenés permisos para consultar este pedido.",
+      });
+    }
+
+    res.json(sanitizePedidoPrivacidad(pedido, isManager));
   } catch (error) {
     console.error("Error al obtener pedido:", error.message);
     res.status(500).json({ error: "Error al obtener el pedido." });
@@ -644,10 +739,13 @@ const actualizarEstadoPedido = async (req, res) => {
       }
     }
 
+    const callerIsManager = MANAGER_ROLES.includes(
+      String(req.user?.rol || "").toLowerCase()
+    );
     res.json({
       success: true,
       message: `Estado de pedido actualizado a '${estado}'`,
-      pedido: pedidoActualizado,
+      pedido: sanitizePedidoPrivacidad(pedidoActualizado, callerIsManager),
     });
   } catch (error) {
     console.error("Error al actualizar estado del pedido:", error.message);

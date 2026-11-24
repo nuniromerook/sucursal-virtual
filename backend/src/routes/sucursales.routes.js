@@ -3,18 +3,20 @@ const {
   getAllSucursales,
   getSucursal,
   createSucursal,
+  updateSucursal,
   getMetricasSucursal,
   getPedidosSucursal,
 } = require("../controllers/sucursales.controller");
 
-const { requireAuth } = require("../utils/auth");
+const { requireStaff, requireAdmin } = require("../utils/auth");
 
 const router = Router();
 
 router.get("/sucursales", getAllSucursales);
-router.get("/sucursales/:id/metricas", requireAuth, getMetricasSucursal);
-router.get("/sucursales/:id/pedidos", requireAuth, getPedidosSucursal);
+router.get("/sucursales/:id/metricas", requireAdmin, getMetricasSucursal);
+router.get("/sucursales/:id/pedidos", requireStaff, getPedidosSucursal);
 router.get("/sucursales/:slug", getSucursal);
-router.post("/sucursales", requireAuth, createSucursal);
+router.post("/sucursales", requireAdmin, createSucursal);
+router.put("/sucursales/:id", requireAdmin, updateSucursal);
 
 module.exports = router;

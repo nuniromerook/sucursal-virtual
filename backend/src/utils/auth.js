@@ -1,6 +1,10 @@
 // backend/src/utils/auth.js
 const crypto = require("crypto");
 
+const STAFF_ROLES = ["propietario", "admin", "encargado", "cortador"];
+const MANAGER_ROLES = ["propietario", "admin", "encargado"];
+const OWNER_ADMIN_ROLES = ["propietario", "admin"];
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   if (process.env.NODE_ENV === "production") {
@@ -81,8 +85,7 @@ function generateToken(payload, expiresInHours = 720) {
 }
 
 /**
- * Verifica un token JWT
- * Utiliza comparación en tiempo constante (crypto.timingSafeEqual)
+ * Verifica un token JWT con comparación en tiempo constante
  */
 function verifyToken(token) {
   if (!token) return null;
@@ -115,45 +118,114 @@ function verifyToken(token) {
     ).toString("utf8");
     const payload = JSON.parse(payloadStr);
 
-    // Validar expiración
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
 
     return payload;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
 /**
- * Middleware para requerir autenticación
+ * Extrae y valida un token JWT opcional sin rechazar la petición
+ */
+function getOptionalAuth(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.split(" ")[1];
+  return verifyToken(token);
+}
+
+/**
+ * Middleware: requiere sesión válida (cliente o personal)
  */
 function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const decoded = getOptionalAuth(req);
+  if (!decoded) {
     return res
       .status(401)
       .json({ error: "Acceso no autorizado. Debe iniciar sesión." });
   }
-
-  const token = authHeader.split(" ")[1];
-  const decoded = verifyToken(token);
-
-  if (!decoded) {
-    return res
-      .status(401)
-      .json({ error: "Token inválido o expirado. Inicie sesión nuevamente." });
-  }
-
   req.user = decoded;
   next();
 }
 
+/**
+ * Middleware: requiere personal interno autenticado (propietario, admin, encargado o cortador)
+ */
+function requireStaff(req, res, next) {
+  const decoded = getOptionalAuth(req);
+  if (!decoded) {
+    return res
+      .status(401)
+      .json({ error: "Acceso no autorizado. Inicie sesión en el panel." });
+  }
+  const rol = String(decoded.rol || "").toLowerCase();
+  if (!STAFF_ROLES.includes(rol)) {
+    return res.status(403).json({
+      error: "Permisos insuficientes. Esta operación es exclusiva del personal de sucursal.",
+    });
+  }
+  req.user = decoded;
+  next();
+}
+
+/**
+ * Middleware: requiere nivel de gestión (propietario, admin o encargado)
+ */
+function requireAdmin(req, res, next) {
+  const decoded = getOptionalAuth(req);
+  if (!decoded) {
+    return res
+      .status(401)
+      .json({ error: "Acceso no autorizado. Inicie sesión en el panel." });
+  }
+  const rol = String(decoded.rol || "").toLowerCase();
+  if (!MANAGER_ROLES.includes(rol)) {
+    return res.status(403).json({
+      error: "Permisos insuficientes. Se requiere rol de Propietario, Admin o Encargado.",
+    });
+  }
+  req.user = decoded;
+  next();
+}
+
+/**
+ * Middleware parametrizable por lista de roles permitidos
+ */
+function requireRoles(...allowedRoles) {
+  const lower = allowedRoles.map((r) => String(r).toLowerCase());
+  return (req, res, next) => {
+    const decoded = getOptionalAuth(req);
+    if (!decoded) {
+      return res
+        .status(401)
+        .json({ error: "Acceso no autorizado. Inicie sesión en el panel." });
+    }
+    const rol = String(decoded.rol || "").toLowerCase();
+    if (!lower.includes(rol)) {
+      return res.status(403).json({
+        error: "No tenés permisos suficientes para realizar esta acción.",
+      });
+    }
+    req.user = decoded;
+    next();
+  };
+}
+
 module.exports = {
+  STAFF_ROLES,
+  MANAGER_ROLES,
+  OWNER_ADMIN_ROLES,
   hashPassword,
   verifyPassword,
   generateToken,
   verifyToken,
+  getOptionalAuth,
   requireAuth,
+  requireStaff,
+  requireAdmin,
+  requireRoles,
 };

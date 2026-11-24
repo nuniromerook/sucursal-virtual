@@ -255,7 +255,10 @@ export const CartProvider = ({ children }) => {
       } else {
         kgSum += itemCant;
       }
-      ptsSum += (item.puntos || 10) * Math.ceil(itemCant);
+      // Regla Club Valette alineada al backend: 1x puntos por corte/combo (sin multiplicar por kg)
+      if (item.gana_puntos !== false) {
+        ptsSum += Number(item.puntos) || 0;
+      }
     });
 
     return {

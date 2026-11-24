@@ -1,6 +1,6 @@
 // src/components/home/CombosSection.jsx
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { io } from "socket.io-client";
+import { getSocket } from "@/utils/socket";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
@@ -193,17 +193,16 @@ export const CombosSection = ({ searchQuery = "" }) => {
 
     fetchCombos();
 
-    const socket = io(API_URL, {
-      transports: ["websocket", "polling"],
-    });
-
-    socket.on("catalogo_actualizado", () => {
+    const socket = getSocket();
+    const handleUpdate = () => {
       fetchCombos();
-    });
+    };
+
+    socket.on("catalogo_actualizado", handleUpdate);
 
     return () => {
       isMounted = false;
-      socket.disconnect();
+      socket.off("catalogo_actualizado", handleUpdate);
     };
   }, []);
 

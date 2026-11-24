@@ -104,9 +104,16 @@ export default function Navbar() {
             <div className="w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center text-xs font-bold border border-white/20">
               {user?.nombre ? user.nombre.slice(0, 2).toUpperCase() : "AV"}
             </div>
-            <span className="text-xs font-semibold text-slate-200 hidden lg:inline">
-              {user?.nombre || "Encargado"}
-            </span>
+            <div className="hidden lg:flex flex-col leading-tight">
+              <span className="text-xs font-semibold text-slate-100">
+                {user?.nombre || "Personal"}
+              </span>
+              {user?.rol && (
+                <span className="text-[9px] uppercase font-extrabold tracking-wider text-amber-300">
+                  {user.rol}
+                </span>
+              )}
+            </div>
 
             <button
               type="button"

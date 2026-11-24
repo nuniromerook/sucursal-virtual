@@ -12,19 +12,19 @@ const {
   resetSingleBannerAnalytics,
 } = require("../controllers/banners.controller");
 
-const { requireAuth } = require("../utils/auth");
+const { requireAdmin } = require("../utils/auth");
 
 const router = Router();
 
 router.get("/banners", getBanners);
-router.get("/banners/admin", requireAuth, getBannersAdmin);
-router.post("/banners/reset-analytics", requireAuth, resetBannersAnalytics);
-router.post("/banners/:id/reset-analytics", requireAuth, resetSingleBannerAnalytics);
+router.get("/banners/admin", requireAdmin, getBannersAdmin);
+router.post("/banners/reset-analytics", requireAdmin, resetBannersAnalytics);
+router.post("/banners/:id/reset-analytics", requireAdmin, resetSingleBannerAnalytics);
 router.post("/banners/:id/impresion", registrarImpresionBanner);
 router.post("/banners/:id/click", registrarClickBanner);
-router.post("/banners", requireAuth, createBanner);
-router.put("/banners/:id", requireAuth, updateBanner);
-router.patch("/banners/:id/estado", requireAuth, toggleActivoBanner);
-router.delete("/banners/:id", requireAuth, deleteBanner);
+router.post("/banners", requireAdmin, createBanner);
+router.put("/banners/:id", requireAdmin, updateBanner);
+router.patch("/banners/:id/estado", requireAdmin, toggleActivoBanner);
+router.delete("/banners/:id", requireAdmin, deleteBanner);
 
 module.exports = router;

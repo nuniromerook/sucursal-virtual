@@ -1,6 +1,6 @@
 // backend/src/controllers/catalogo.controller.js
 const pool = require("../db");
-const { emitirCambioCatalogo } = require("../socket");
+const { emitirCambioCatalogo, emitirCambioStock } = require("../socket");
 
 // Subconsulta reutilizada: arma el array de promos activas de un producto
 // como jsonb, para no tener que hacer un segundo fetch desde el frontend.
@@ -258,23 +258,23 @@ const updateCatalogoItem = async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE catalogo SET
-         nombre_producto = $1,
-         slug = $2,
-         descripcion = $3,
-         especie = $4,
-         categoria = $5,
-         imagen_url = $6,
-         unidad_medida = $7,
-         calorias = $8,
-         proteinas = $9,
-         grasas = $10,
-         precio = $11,
-         precio_anterior = $12,
-         activo = $13,
-         destacar = $14,
-         gana_puntos = $15,
-         puntos = $16,
-         sin_stock = $17,
+         nombre_producto = COALESCE($1, nombre_producto),
+         slug = COALESCE($2, slug),
+         descripcion = COALESCE($3, descripcion),
+         especie = COALESCE($4, especie),
+         categoria = COALESCE($5, categoria),
+         imagen_url = COALESCE($6, imagen_url),
+         unidad_medida = COALESCE($7, unidad_medida),
+         calorias = COALESCE($8, calorias),
+         proteinas = COALESCE($9, proteinas),
+         grasas = COALESCE($10, grasas),
+         precio = COALESCE($11, precio),
+         precio_anterior = COALESCE($12, precio_anterior),
+         activo = COALESCE($13, activo),
+         destacar = COALESCE($14, destacar),
+         gana_puntos = COALESCE($15, gana_puntos),
+         puntos = COALESCE($16, puntos),
+         sin_stock = COALESCE($17, sin_stock),
          opciones_corte = COALESCE($18, opciones_corte),
          metodos_coccion = COALESCE($19, metodos_coccion),
          rinde_personas = COALESCE($20, rinde_personas),
@@ -283,23 +283,23 @@ const updateCatalogoItem = async (req, res) => {
        WHERE id = $22
        RETURNING *`,
       [
-        nombre_producto,
-        slug,
-        descripcion || null,
-        especie,
-        categoria || null,
-        imagen_url || null,
-        unidad_medida || "kg",
-        calorias ?? null,
-        proteinas ?? null,
-        grasas ?? null,
-        precio ?? 0,
-        precio_anterior ?? 0,
-        activo ?? true,
-        destacar ?? false,
-        gana_puntos ?? false,
-        puntos ?? 0,
-        sin_stock ?? false,
+        nombre_producto !== undefined ? nombre_producto : null,
+        slug !== undefined ? slug : null,
+        descripcion !== undefined ? descripcion : null,
+        especie !== undefined ? especie : null,
+        categoria !== undefined ? categoria : null,
+        imagen_url !== undefined ? imagen_url : null,
+        unidad_medida !== undefined ? unidad_medida : null,
+        calorias !== undefined && calorias !== "" ? Number(calorias) : null,
+        proteinas !== undefined && proteinas !== "" ? Number(proteinas) : null,
+        grasas !== undefined && grasas !== "" ? Number(grasas) : null,
+        precio !== undefined && precio !== "" ? Number(precio) : null,
+        precio_anterior !== undefined && precio_anterior !== "" ? Number(precio_anterior) : null,
+        activo !== undefined ? Boolean(activo) : null,
+        destacar !== undefined ? Boolean(destacar) : null,
+        gana_puntos !== undefined ? Boolean(gana_puntos) : null,
+        puntos !== undefined && puntos !== "" ? Number(puntos) : null,
+        sin_stock !== undefined ? Boolean(sin_stock) : null,
         opciones_corte !== undefined ? (Array.isArray(opciones_corte) ? JSON.stringify(opciones_corte) : opciones_corte) : null,
         metodos_coccion !== undefined ? (Array.isArray(metodos_coccion) ? JSON.stringify(metodos_coccion) : metodos_coccion) : null,
         rinde_personas !== undefined ? rinde_personas : null,
@@ -326,6 +326,46 @@ const updateCatalogoItem = async (req, res) => {
       error: "Error al actualizar el producto",
       detalle: error.message,
     });
+  }
+};
+
+// PATCH /catalogo/:id/stock
+const toggleStockCatalogoItem = async (req, res) => {
+  const { id } = req.params;
+  let nextSinStock;
+
+  if (typeof req.body.sin_stock === "boolean") {
+    nextSinStock = req.body.sin_stock;
+  } else if (typeof req.body.en_stock === "boolean") {
+    nextSinStock = !req.body.en_stock;
+  } else {
+    return res
+      .status(400)
+      .json({ error: "Debe enviar 'sin_stock' o 'en_stock' como booleano" });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE catalogo SET sin_stock = $1, actualizado_en = now() WHERE id = $2 RETURNING *, NOT sin_stock AS en_stock`,
+      [nextSinStock, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    const producto = result.rows[0];
+    res.json(producto);
+    emitirCambioStock(1, {
+      catalogo_id: Number(id),
+      sin_stock: producto.sin_stock,
+      en_stock: producto.en_stock,
+      producto,
+    });
+    emitirCambioCatalogo({ tipo: "stock", producto });
+  } catch (error) {
+    console.error("Error al actualizar stock del producto:", error.message);
+    res.status(500).json({ error: "Error al actualizar stock del producto" });
   }
 };
 
@@ -702,6 +742,7 @@ module.exports = {
   getCatalogoItem,
   createCatalogoItem,
   updateCatalogoItem,
+  toggleStockCatalogoItem,
   toggleActivoCatalogoItem,
   deleteCatalogoItem,
   createPromo,

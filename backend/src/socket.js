@@ -149,16 +149,25 @@ const emitirNuevoPedido = (sucursalId, pedido) => {
  */
 const emitirActualizacionPedido = (clienteId, sucursalId, pedido) => {
   if (!io) return;
-  
+
+  const pedidoPublico = pedido
+    ? {
+        ...pedido,
+        direccion_entrega: null,
+        cliente_telefono: null,
+        cliente_email: null,
+      }
+    : pedido;
+
   if (clienteId) {
     const roomCliente = `sala_cliente_${clienteId}`;
     console.log(`📢 Emitiendo 'pedido_actualizado' a ${roomCliente}`);
-    io.to(roomCliente).emit("pedido_actualizado", pedido);
+    io.to(roomCliente).emit("pedido_actualizado", pedidoPublico);
   }
 
   if (pedido && pedido.id) {
     const roomPedido = `sala_pedido_${pedido.id}`;
-    io.to(roomPedido).emit("pedido_actualizado", pedido);
+    io.to(roomPedido).emit("pedido_actualizado", pedidoPublico);
   }
 
   if (sucursalId) {

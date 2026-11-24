@@ -1,5 +1,5 @@
 // admin/src/components/catalogo/ProductTable.jsx
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { Edit2, Trash2 } from "lucide-react";
 import { formatMoney } from "../../utils/formatters";
 
@@ -133,14 +133,16 @@ export default function ProductTable({
                 </button>
 
                 <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => onEditProduct(p)}
-                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Editar</span>
-                  </button>
+                  {onEditProduct && (
+                    <button
+                      type="button"
+                      onClick={() => onEditProduct(p)}
+                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Editar</span>
+                    </button>
+                  )}
 
                   {onDeleteProduct && (
                     <button
@@ -277,14 +279,16 @@ export default function ProductTable({
                     {/* Acciones */}
                     <td className="py-3 px-4 text-right">
                       <div className="inline-flex items-center gap-1.5 justify-end">
-                        <button
-                          type="button"
-                          onClick={() => onEditProduct(p)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
-                        >
-                          <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Editar</span>
-                        </button>
+                        {onEditProduct && (
+                          <button
+                            type="button"
+                            onClick={() => onEditProduct(p)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer active:scale-95"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Editar</span>
+                          </button>
+                        )}
 
                         {onDeleteProduct && (
                           <button

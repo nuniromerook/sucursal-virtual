@@ -28,6 +28,7 @@ npm install
 node scripts/migrate_horarios.js || true
 node scripts/migrate_single_branch.js || true
 node scripts/cleanup_schema_v1.js || true
+node scripts/seed_super_admin.js || true
 pm2 restart valette-backend --update-env
 
 # 4. Frontend Cliente (Tienda v1.0)

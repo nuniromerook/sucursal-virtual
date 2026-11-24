@@ -53,7 +53,7 @@ export default function MetricasPage() {
       fetch(`${VITE_API_URL}/analytics/resumen?rango=${rango}`, {
         headers: authHeaders,
       }),
-      fetch(`${VITE_API_URL}/carritos/abandonados`, {
+      fetch(`${VITE_API_URL}/carritos/activos`, {
         headers: authHeaders,
       }),
     ]);
@@ -71,9 +71,12 @@ export default function MetricasPage() {
       if (dataSuc) setSucursalStats(dataSuc);
       if (dataAna) setAnalyticsStats(dataAna);
       if (dataCarts) {
-        setCloudCarts(
-          Array.isArray(dataCarts?.carritos) ? dataCarts.carritos : []
-        );
+        const list = Array.isArray(dataCarts)
+          ? dataCarts
+          : Array.isArray(dataCarts?.carritos)
+            ? dataCarts.carritos
+            : [];
+        setCloudCarts(list);
       }
     } catch (err) {
       console.error("Error al cargar métricas:", err);
@@ -90,9 +93,12 @@ export default function MetricasPage() {
         if (dataSuc) setSucursalStats(dataSuc);
         if (dataAna) setAnalyticsStats(dataAna);
         if (dataCarts) {
-          setCloudCarts(
-            Array.isArray(dataCarts?.carritos) ? dataCarts.carritos : []
-          );
+          const list = Array.isArray(dataCarts)
+            ? dataCarts
+            : Array.isArray(dataCarts?.carritos)
+              ? dataCarts.carritos
+              : [];
+          setCloudCarts(list);
         }
       })
       .catch((err) => {
@@ -470,7 +476,16 @@ export default function MetricasPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 font-mono font-black text-slate-900 whitespace-nowrap">
-                        {formatMoney(cart.total_estimado || 0)}
+                        {formatMoney(
+                          cart.total_estimado ||
+                            items.reduce(
+                              (acc, it) =>
+                                acc +
+                                (Number(it.cantidad_kg) || 0) *
+                                  (Number(it.precio_al_agregar) || 0),
+                              0
+                            )
+                        )}
                       </td>
                       <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
                         {cart.actualizado_en

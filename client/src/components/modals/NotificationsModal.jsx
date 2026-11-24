@@ -1,6 +1,5 @@
 // src/components/modals/NotificationsModal.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   X,
   Bell,
@@ -11,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Check,
 } from "lucide-react";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { useNotifications } from "@/context/NotificationContext";
@@ -41,7 +39,6 @@ export const NotificationsModal = ({
   onOpenTrackingModal,
   onOpenProfileModal,
 }) => {
-  const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
   const { setActiveOrderId } = useCart();
@@ -81,13 +78,22 @@ export const NotificationsModal = ({
       } else {
         onClose();
       }
-    } else if (notif.tipo === "promo") {
+    } else if (notif.tipo === "promo" || notif.tipo === "sistema") {
       onClose();
-      navigate(
-        notif.categoria
-          ? `/productos?categoria=${notif.categoria}`
-          : "/productos",
-      );
+      const rawCat =
+        notif.categoria ||
+        (notif.enlace && notif.enlace.match(/categoria=([a-z0-9_-]+)/i)?.[1]) ||
+        (notif.enlace && notif.enlace.match(/#seccion-([a-z0-9_-]+)/i)?.[1]) ||
+        "combos";
+      setTimeout(() => {
+        const target =
+          document.getElementById(`seccion-${rawCat}`) ||
+          document.getElementById("seccion-combos") ||
+          document.getElementById("secciones-catalogo");
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 120);
     }
   };
 
