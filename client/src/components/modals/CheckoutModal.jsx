@@ -1,6 +1,14 @@
 // src/components/modals/CheckoutModal.jsx
 import { useState } from "react";
-import { X, ChevronLeft, Check, Loader2, AlertCircle, Store, Truck } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  Check,
+  Loader2,
+  AlertCircle,
+  Store,
+  Truck,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useLocation, CASA_CENTRAL_BRANCH } from "@/context/LocationContext";
 import { useToast } from "@/context/ToastContext";
@@ -38,7 +46,12 @@ function getInitialCustomer() {
   };
 }
 
-export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => {
+export const CheckoutModal = ({
+  isOpen,
+  onClose,
+  onBack,
+  onOrderConfirmed,
+}) => {
   const {
     cartItems,
     totalEstimado,
@@ -248,14 +261,9 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
             >
               <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
-            <div className="text-center">
-              <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight leading-tight">
-                Confirmá tu Pedido
-              </h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Abastecedora Valette
-              </span>
-            </div>
+            <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight leading-tight">
+              Confirmá tu Pedido
+            </h3>
             <button
               type="button"
               onClick={handleCloseModal}
@@ -348,12 +356,18 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
 
             {deliveryMode === "pickup" ? (
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 mb-2">
-                <span className="font-extrabold text-slate-900 block">
-                  📍 {CASA_CENTRAL_BRANCH.nombre}
+                <span className="text-[15px] font-extrabold text-black block">
+                  {CASA_CENTRAL_BRANCH.nombre}
                 </span>
-                <span className="text-[11px] text-slate-500 block mt-0.5">
-                  {CASA_CENTRAL_BRANCH.direccion} ({CASA_CENTRAL_BRANCH.horario}
-                  )
+                <span className="text-[12px] text-slate-500 font-bold block mt-0.5">
+                  {CASA_CENTRAL_BRANCH.direccion}
+                </span>
+                <span className="text-[11px] text-slate-700 block mt-2">
+                  <b className="text-slate-800">Lunes a Sábados</b>: 07:00 a
+                  15:00hs
+                  <br />
+                  <b className="text-slate-800">Domingos</b>: 08:00 a 13:00hs -{" "}
+                  <b className="text-slate-800">Feriados</b>: 07:00 a 13:00hs
                 </span>
               </div>
             ) : (
@@ -414,18 +428,17 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
             <span className="font-bold text-slate-800 uppercase text-[11px] block mb-2">
               3. Medio de Pago
             </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { id: "efectivo", label: "💵 Efectivo", sub: "Al recibir" },
                 {
-                  id: "transferencia",
-                  label: "🏦 Transferencia",
-                  sub: "Alias CBU",
+                  id: "efectivo",
+                  label: "💵 Efectivo",
+                  sub: "Al retirar tu pedido",
                 },
                 {
                   id: "mercadopago",
                   label: "💳 Mercado Pago",
-                  sub: "QR / Tarjeta",
+                  sub: "Con dinero en cuenta",
                 },
               ].map((p) => (
                 <button
@@ -463,7 +476,7 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-extrabold text-xs shadow-sm active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-extrabold text-xs shadow-sm active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -472,7 +485,7 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
                 </>
               ) : (
                 <>
-                  <span>Confirmar y Enviar Pedido</span>
+                  <span>Confirmar Pedido</span>
                   <Check className="size-4 stroke-[2.5]" />
                 </>
               )}

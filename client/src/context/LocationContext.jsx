@@ -5,12 +5,15 @@ import { DEFAULT_HORARIOS_APERTURA } from "@/utils/horarios";
 
 export const CASA_CENTRAL_BRANCH = {
   id: 1,
-  nombre: "Luis Guillón (Casa Central)",
+  nombre: "Luis Guillon",
   slug: "luis-guillon",
-  direccion: "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires",
-  ciudad: "Luis Guillón",
-  horario: "Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs",
-  horario_atencion: "Lunes a Sábados de 07:00 a 15:00hs y Domingos de 08:00 a 13:00hs",
+  direccion:
+    "Av. Luciano Valette 1696, Luis Guillon, Provincia de Buenos Aires",
+  ciudad: "Luis Guillon",
+  horario:
+    "Lunes a Sábados de 07:00 a 15:00hs - Domingos de 08:00 a 13:00hs - Feriados de 07:00 a 13:00hs",
+  horario_atencion:
+    "Lunes a Sábados de 07:00 a 15:00hs - Domingos de 08:00 a 13:00hs - Feriados de 07:00 a 13:00hs",
   horarios_apertura: DEFAULT_HORARIOS_APERTURA,
   telefono: "1135534033",
   telefono_whatsapp: "5491162166222",
@@ -57,14 +60,24 @@ export const LocationProvider = ({ children }) => {
           nombre: central.nombre || CASA_CENTRAL_BRANCH.nombre,
           direccion: central.direccion || CASA_CENTRAL_BRANCH.direccion,
           ciudad: central.ciudad || CASA_CENTRAL_BRANCH.ciudad,
-          horario: central.horario_atencion || central.horario || CASA_CENTRAL_BRANCH.horario,
-          horario_atencion: central.horario_atencion || central.horario || CASA_CENTRAL_BRANCH.horario_atencion,
-          horarios_apertura: central.horarios_apertura || CASA_CENTRAL_BRANCH.horarios_apertura,
+          horario:
+            central.horario_atencion ||
+            central.horario ||
+            CASA_CENTRAL_BRANCH.horario,
+          horario_atencion:
+            central.horario_atencion ||
+            central.horario ||
+            CASA_CENTRAL_BRANCH.horario_atencion,
+          horarios_apertura:
+            central.horarios_apertura || CASA_CENTRAL_BRANCH.horarios_apertura,
         };
         setSucursales([normalized]);
         setSelectedBranch(normalized);
         try {
-          localStorage.setItem("valette_sucursales_cache", JSON.stringify([normalized]));
+          localStorage.setItem(
+            "valette_sucursales_cache",
+            JSON.stringify([normalized]),
+          );
           localStorage.setItem("valette_branch_id", "1");
         } catch {}
       }
@@ -114,6 +127,7 @@ export const LocationProvider = ({ children }) => {
 
 export const useLocation = () => {
   const ctx = useContext(LocationContext);
-  if (!ctx) throw new Error("useLocation debe ser usado dentro de LocationProvider");
+  if (!ctx)
+    throw new Error("useLocation debe ser usado dentro de LocationProvider");
   return ctx;
 };
