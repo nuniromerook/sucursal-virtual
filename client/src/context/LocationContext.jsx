@@ -31,11 +31,16 @@ export const LocationProvider = ({ children }) => {
   const [selectedBranch, setSelectedBranch] = useState(CASA_CENTRAL_BRANCH);
 
   const [customerAddress, setCustomerAddress] = useState(() => {
-    const saved = localStorage.getItem("valette_address");
-    if (saved && !saved.toLowerCase().includes("moreno")) {
+    const saved = (localStorage.getItem("valette_address") || "").trim();
+    const lower = saved.toLowerCase();
+    if (
+      saved &&
+      !lower.includes("moreno") &&
+      !lower.includes("luciano valette 1696")
+    ) {
       return saved;
     }
-    return "Av. Luciano Valette 1696, Luis Guillon";
+    return "";
   });
 
   // Cargar datos de la sucursal única desde PostgreSQL

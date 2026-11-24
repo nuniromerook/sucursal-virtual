@@ -46,6 +46,30 @@ import { formatPrecio } from "@/utils/formatters";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { uploadAvatarToCloudinary } from "@/utils/cloudinary";
 
+function parseAddressParts(raw = "") {
+  const clean = String(raw || "").trim();
+  if (!clean) return { calle: "", altura: "", localidad: "" };
+
+  const [streetPart = "", ...rest] = clean.split(",");
+  const localidad = rest
+    .join(",")
+    .replace(/provincia de buenos aires|buenos aires|argentina/gi, "")
+    .replace(/^[\s,]+|[\s,]+$/g, "")
+    .trim();
+
+  const match = streetPart.trim().match(/^(.*?)\s+(\d+[a-zA-Z0-9/-]*)$/);
+  if (match) {
+    return { calle: match[1].trim(), altura: match[2].trim(), localidad };
+  }
+  return { calle: streetPart.trim(), altura: "", localidad };
+}
+
+function composeAddress({ calle = "", altura = "", localidad = "" }) {
+  const street = [calle.trim(), altura.trim()].filter(Boolean).join(" ");
+  const loc = localidad.trim();
+  return [street, loc].filter(Boolean).join(", ");
+}
+
 export const ProfileModal = ({
   isOpen,
   initialView = "main",
@@ -124,13 +148,20 @@ export const ProfileModal = ({
   const [referralStatus, setReferralStatus] = useState(null); // null | { checking } | { valido, nombre, usuario }
 
   // Formulario de edición de perfil
-  const [formState, setFormState] = useState({
-    nombre: user?.nombre || "",
-    email: user?.email || "",
-    usuario: user?.usuario || "",
-    telefono: user?.telefono || "",
-    direccion: user?.direccion_default || customerAddress || "",
-    avatar_url: user?.avatar_url || "",
+  const [formState, setFormState] = useState(() => {
+    const addr = parseAddressParts(
+      user?.direccion_default || customerAddress || "",
+    );
+    return {
+      nombre: user?.nombre || "",
+      email: user?.email || "",
+      usuario: user?.usuario || "",
+      telefono: user?.telefono || "",
+      calle: addr.calle,
+      altura: addr.altura,
+      localidad: addr.localidad,
+      avatar_url: user?.avatar_url || "",
+    };
   });
 
   // Preferencias operativas
@@ -233,12 +264,17 @@ export const ProfileModal = ({
       setActiveView("auth");
       return;
     }
+    const addr = parseAddressParts(
+      user?.direccion_default || customerAddress || "",
+    );
     setFormState({
       nombre: user?.nombre || "",
       email: user?.email || "",
       usuario: user?.usuario || "",
       telefono: user?.telefono || "",
-      direccion: user?.direccion_default || customerAddress || "",
+      calle: addr.calle,
+      altura: addr.altura,
+      localidad: addr.localidad,
       avatar_url: user?.avatar_url || "",
     });
     setActiveView("edit-profile");
@@ -252,12 +288,12 @@ export const ProfileModal = ({
     try {
       const uploadedUrl = await uploadAvatarToCloudinary(file);
       setFormState((s) => ({ ...s, avatar_url: uploadedUrl }));
+      const composedAddr = composeAddress(formState);
       await updateProfile({
         nombre: formState.nombre || user?.nombre || undefined,
         usuario: formState.usuario || user?.usuario || undefined,
         telefono: formState.telefono || user?.telefono || undefined,
-        direccion_default:
-          formState.direccion || user?.direccion_default || undefined,
+        direccion_default: composedAddr || user?.direccion_default || undefined,
         avatar_url: uploadedUrl,
       });
       showToast("¡Foto de perfil actualizada! 📸");
@@ -426,15 +462,16 @@ export const ProfileModal = ({
     setIsBusy(true);
     setFormError(null);
     try {
+      const direccionFormateada = composeAddress(formState);
       const res = await updateProfile({
         nombre: formState.nombre.trim(),
         usuario: formState.usuario.trim(),
         telefono: formState.telefono.trim(),
-        direccion_default: formState.direccion.trim(),
+        direccion_default: direccionFormateada,
         avatar_url: formState.avatar_url,
       });
-      if (formState.direccion.trim()) {
-        updateCustomerAddress(formState.direccion.trim());
+      if (direccionFormateada) {
+        updateCustomerAddress(direccionFormateada);
       }
       showToast(res.message || "Datos de perfil actualizados correctamente");
       setActiveView("main");
@@ -1604,27 +1641,86 @@ export const ProfileModal = ({
                   </div>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="profile-address"
-                    className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
-                  >
-                    Dirección de Entrega Habitual
-                  </label>
-                  <input
-                    id="profile-address"
-                    type="text"
-                    autoComplete="street-address"
-                    value={formState.direccion}
-                    onChange={(e) =>
-                      setFormState((s) => ({
-                        ...s,
-                        direccion: e.target.value,
-                      }))
-                    }
-                    placeholder="Calle, altura y localidad"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
-                  />
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <div className="flex flex-col">
+                    <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Dirección de Entrega Habitual
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      Provincia de Buenos Aires, Argentina.
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="col-span-2">
+                      <label
+                        htmlFor="profile-calle"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Calle
+                      </label>
+                      <input
+                        id="profile-calle"
+                        type="text"
+                        autoComplete="address-line1"
+                        value={formState.calle}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            calle: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: Av. Luciano Valette"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="profile-altura"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Número / Altura
+                      </label>
+                      <input
+                        id="profile-altura"
+                        type="text"
+                        inputMode="numeric"
+                        value={formState.altura}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            altura: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: 1696"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="profile-localidad"
+                      className="block text-[10px] font-bold text-slate-500 mb-1"
+                    >
+                      Localidad
+                    </label>
+                    <input
+                      id="profile-localidad"
+                      type="text"
+                      autoComplete="address-level2"
+                      value={formState.localidad}
+                      onChange={(e) =>
+                        setFormState((s) => ({
+                          ...s,
+                          localidad: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Luis Guillón, Monte Grande, Llavallol..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1646,7 +1742,7 @@ export const ProfileModal = ({
                   <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-amber-300">
                     Puntos Club Valette
                   </span>
-                  <p className="text-sm text-blue-100 ml-auto">
+                  <p className="text-xs text-blue-100 ml-auto">
                     Cliente: <b> {profileData.usuario}</b>
                   </p>
                 </div>

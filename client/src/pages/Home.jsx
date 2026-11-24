@@ -299,7 +299,7 @@ export const Home = ({
               <p className="text-xs font-black text-slate-900 truncate mt-0.5 group-hover:text-[#003366] transition-colors">
                 {deliveryMode === "pickup"
                   ? `Sucursal ${selectedBranch?.nombre || "Luis Guillón"}`
-                  : customerAddress || "J. Tarulli 1474, Luis Guillón"}
+                  : customerAddress || "Ingresar dirección"}
               </p>
             </div>
           </div>

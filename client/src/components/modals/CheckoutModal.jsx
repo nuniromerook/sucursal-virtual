@@ -56,9 +56,7 @@ export const CheckoutModal = ({ isOpen, onClose, onBack, onOrderConfirmed }) => 
   const { showToast } = useToast();
 
   const [cliente, setCliente] = useState(getInitialCustomer);
-  const [direccion, setDireccion] = useState(
-    customerAddress || "Av. Luciano Valette 1696, Luis Guillon",
-  );
+  const [direccion, setDireccion] = useState(customerAddress || "");
   const [notas, setNotas] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("Hoy 12:00 - 14:30");
   const [medioPago, setMedioPago] = useState("efectivo");
