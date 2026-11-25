@@ -11,6 +11,7 @@ Esta regla está **siempre activa** y es obligatoria para **todas las generacion
 - **Público y liderazgo joven (~25 años):** Diseño fresco, contemporáneo, ágil y profesional (referencia: apps modernas de delivery/ecommerce nativas como Mercado Libre o PedidosYa, con vida, dinamismo, comodidad visual y estímulos medidos sin abrumar).
 - **Base de UI aprobada (10/10):** Conservar el sistema visual actual de botones, sombras (`shadow-native`, `shadow-2xs`), radios (`rounded-2xl`, `rounded-3xl`, `rounded-t-4xl`) y contadores/steppers — no reinventar ni romper estos patrones.
 - **PROHIBIDO el diseño antiguo en heroes y cabeceras:** Evitar bloques oscuros con gradientes pesados y cajitas recargadas en lugar de la fotografía real del producto/combo, subtítulos obvios o redundantes y saturación de información.
+- **Cero emojis en la interfaz:** Reemplazar emojis (`🥩`, `🛵`, `🎉`, `⚠️`, etc.) por íconos vectoriales limpios (`lucide-react`) y badges tipográficos sobrios para mantener un nivel visual profesional y contemporáneo.
 - **Menos es más (sin saturar):** Cada elemento debe existir por una razón clara de **estrategia, comodidad o flujo de compra**. Si un texto, ícono o caja no ayuda a decidir ni a comprar más cómodo, se elimina.
 
 ## 2. Consistencia de Medios y Modales

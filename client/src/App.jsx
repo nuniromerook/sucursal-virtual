@@ -295,6 +295,7 @@ function AppContent() {
       />
 
       <CheckoutModal
+        key={isCheckoutModalOpen ? "checkout-open" : "checkout-closed"}
         isOpen={isCheckoutModalOpen}
         onBack={() => setIsCheckoutModalOpen(false)}
         onClose={closeAllModals}

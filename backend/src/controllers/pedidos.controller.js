@@ -23,6 +23,34 @@ const sanitizePedidoPrivacidad = (pedido, canSeePrivateData) => {
   };
 };
 
+function sanitizeDireccionDatos(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const cleanStr = (val, max = 120) =>
+    typeof val === "string" ? val.trim().slice(0, max) : "";
+
+  const calle = cleanStr(raw.calle, 120);
+  const altura = cleanStr(raw.altura, 24);
+  const piso = cleanStr(raw.piso, 16);
+  const depto = cleanStr(raw.depto, 24);
+  const localidad = cleanStr(raw.localidad, 80);
+  const codigo_postal = cleanStr(raw.codigo_postal, 16);
+  const referencias = cleanStr(raw.referencias, 200);
+
+  if (!calle && !altura && !localidad && !codigo_postal) return null;
+
+  return {
+    calle,
+    altura,
+    piso,
+    depto,
+    localidad,
+    codigo_postal,
+    referencias,
+    provincia: cleanStr(raw.provincia, 60) || "Buenos Aires",
+    pais: cleanStr(raw.pais, 8) || "AR",
+  };
+}
+
 /**
  * POST /pedidos
  * Crea un nuevo pedido con transacción atómica en PostgreSQL
@@ -35,6 +63,7 @@ const createPedido = async (req, res) => {
     fecha_entrega_programada,
     medio_pago,
     direccion_entrega,
+    direccion_datos,
     notas,
     items,
     monto_total_estimado,
@@ -100,36 +129,49 @@ const createPedido = async (req, res) => {
       ? cliente.usuario.trim().replace(/^@/, "")
       : null;
 
+    const isDeliveryOrder =
+      tipo_entrega !== "retiro_sucursal" &&
+      Boolean(direccion_entrega && !/^retiro en /i.test(String(direccion_entrega).trim()));
+    const direccionGuardarPerfil = isDeliveryOrder
+      ? String(direccion_entrega).trim()
+      : null;
+    const direccionDatosClean = isDeliveryOrder
+      ? sanitizeDireccionDatos(direccion_datos)
+      : null;
+
     if (clienteRow) {
       clienteId = clienteRow.id;
-      // Actualizar datos de contacto si cambiaron
+      // Actualizar datos de contacto si cambiaron (nunca pisar direccion_default con dirección de retiro)
       await dbClient.query(
         `UPDATE clientes 
          SET nombre = COALESCE(NULLIF($1, ''), nombre),
              usuario = COALESCE(usuario, $2),
              email = COALESCE(email, $3),
              direccion_default = COALESCE($4, direccion_default),
+             direccion_datos = COALESCE($5::jsonb, direccion_datos),
              actualizado_en = NOW()
-         WHERE id = $5`,
+         WHERE id = $6`,
         [
           nombreLimpio,
           usuarioLimpio,
           cliente.email ? cliente.email.trim().toLowerCase() : null,
-          direccion_entrega || null,
+          direccionGuardarPerfil,
+          direccionDatosClean ? JSON.stringify(direccionDatosClean) : null,
           clienteId,
         ],
       );
     } else {
       const nuevoCliente = await dbClient.query(
-        `INSERT INTO clientes (nombre, usuario, telefono, email, direccion_default)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO clientes (nombre, usuario, telefono, email, direccion_default, direccion_datos)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
          RETURNING id`,
         [
           nombreLimpio,
           usuarioLimpio,
           cliente.telefono.trim(),
           cliente.email ? cliente.email.trim().toLowerCase() : null,
-          direccion_entrega || null,
+          direccionGuardarPerfil,
+          direccionDatosClean ? JSON.stringify(direccionDatosClean) : null,
         ],
       );
       clienteId = nuevoCliente.rows[0].id;

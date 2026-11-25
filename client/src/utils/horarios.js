@@ -146,3 +146,93 @@ export function getBranchOpenStatus(branch) {
     badgeText: "Cerrado",
   };
 }
+
+function buildDaySlots(cfg) {
+  const openMin = parseTimeToMinutes(cfg?.apertura) ?? 420; // 07:00
+  const closeMin = parseTimeToMinutes(cfg?.cierre) ?? 900; // 15:00
+  const fmt = (mins) => {
+    const h = String(Math.floor(mins / 60)).padStart(2, "0");
+    const m = String(mins % 60).padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  if (closeMin - openMin <= 300) {
+    // Jornada corta (ej: domingos 08:00 a 13:00)
+    const mid = Math.round((openMin + closeMin) / 2 / 30) * 30;
+    return [
+      { startMin: openMin + 30, endMin: mid, horario: `${fmt(openMin + 30)} - ${fmt(mid)}` },
+      { startMin: mid, endMin: closeMin, horario: `${fmt(mid)} - ${fmt(closeMin)}` },
+    ];
+  }
+
+  // Jornada estándar (ej: lun-sáb 07:00 a 15:00)
+  const s1Start = Math.max(openMin + 60, 510); // 08:30
+  const s1End = Math.min(closeMin, 660); // 11:00
+  const s2Start = s1End;
+  const s2End = Math.min(closeMin, 780); // 13:00
+  const s3Start = s2End;
+  const s3End = closeMin; // 15:00
+
+  const result = [];
+  if (s1End - s1Start >= 60) {
+    result.push({ startMin: s1Start, endMin: s1End, horario: `${fmt(s1Start)} - ${fmt(s1End)}` });
+  }
+  if (s2End - s2Start >= 60) {
+    result.push({ startMin: s2Start, endMin: s2End, horario: `${fmt(s2Start)} - ${fmt(s2End)}` });
+  }
+  if (s3End - s3Start >= 60) {
+    result.push({ startMin: s3Start, endMin: s3End, horario: `${fmt(s3Start)} - ${fmt(s3End)}` });
+  }
+  return result;
+}
+
+/**
+ * Devuelve hasta 3 franjas horarias reales disponibles (en hora de Argentina)
+ * evitando ofrecer franjas del día que ya vencieron.
+ */
+export function getAvailableDeliverySlots(branch) {
+  const rawSchedule = branch?.horarios_apertura;
+  const schedule =
+    rawSchedule && typeof rawSchedule === "object"
+      ? { ...DEFAULT_HORARIOS_APERTURA, ...rawSchedule }
+      : DEFAULT_HORARIOS_APERTURA;
+
+  const { dayIndex, minutesNow } = getArgentinaNowParts();
+  const slots = [];
+
+  for (let offset = 0; offset <= 7 && slots.length < 3; offset++) {
+    const idx = (dayIndex + offset) % 7;
+    const key = DAY_KEYS[idx];
+    const cfg = schedule[key];
+    if (!cfg?.abierto) continue;
+
+    const dayLabel =
+      offset === 0
+        ? "Hoy"
+        : offset === 1
+          ? "Mañana"
+          : DAY_LABELS[key].charAt(0).toUpperCase() + DAY_LABELS[key].slice(1);
+
+    const daySlots = buildDaySlots(cfg);
+    for (const s of daySlots) {
+      if (slots.length >= 3) break;
+      // Para hoy, requerimos al menos 45 min antes del cierre de la franja
+      if (offset === 0 && minutesNow >= s.endMin - 45) continue;
+      slots.push({
+        key: `${dayLabel} ${s.horario}`,
+        dia: dayLabel,
+        horario: s.horario,
+      });
+    }
+  }
+
+  if (slots.length === 0) {
+    return [
+      { key: "Mañana 08:30 - 11:00", dia: "Mañana", horario: "08:30 - 11:00" },
+      { key: "Mañana 11:00 - 13:00", dia: "Mañana", horario: "11:00 - 13:00" },
+      { key: "Mañana 13:00 - 15:00", dia: "Mañana", horario: "13:00 - 15:00" },
+    ];
+  }
+
+  return slots;
+}
