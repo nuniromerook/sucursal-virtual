@@ -12,13 +12,15 @@ import {
 } from "@/components/products/CategoryHorizontalShelf";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
-import { ChevronDown, MapPin, Store } from "lucide-react";
+import { scoreProductMatch } from "@/utils/searchRanking";
+import { ChevronDown, MapPin, Store, Search, X } from "lucide-react";
 
 export const Home = ({
   onOpenProduct,
   onOpenCustomizer,
   onOpenBranchModal,
   searchQuery = "",
+  searchSubmitTick = 0,
   sortBy = "destacados",
   onlyStock = false,
   onResetFilters,
@@ -39,48 +41,90 @@ export const Home = ({
   const isUserTouchingBar = useRef(false);
   const sectionsWithProductsRef = useRef([]);
 
+  const categoriaParam = searchParams.get("categoria");
+
   // Auto-scroll si el usuario ingresa con parámetro ?categoria= en la URL
+  // Depende solo de categoriaParam para NO dispararse al escribir en el buscador (?q=...)
   useEffect(() => {
-    const cat = searchParams.get("categoria");
-    if (cat) {
-      const target = document.getElementById(`seccion-${cat}`);
+    if (categoriaParam) {
+      const target = document.getElementById(`seccion-${categoriaParam}`);
       if (target) {
         setTimeout(() => {
           target.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 150);
       }
     }
-  }, [searchParams]);
+  }, [categoriaParam]);
 
-  // Filtrado reactivo de cortes oficiales desde PostgreSQL
+  const hasSearchQuery = Boolean(searchQuery.trim());
+  const hasSearchQueryRef = useRef(hasSearchQuery);
+  const lastSearchSubmitTickRef = useRef(0);
+
+  useEffect(() => {
+    hasSearchQueryRef.current = hasSearchQuery;
+  }, [hasSearchQuery]);
+
+  // Deslizar suavemente hacia "Resultados de búsqueda" ÚNICAMENTE cuando se presiona Enter
+  useEffect(() => {
+    if (
+      !searchSubmitTick ||
+      searchSubmitTick === lastSearchSubmitTickRef.current
+    ) {
+      return;
+    }
+    lastSearchSubmitTickRef.current = searchSubmitTick;
+    if (!hasSearchQueryRef.current) return;
+
+    const frameId = requestAnimationFrame(() => {
+      const target = document.getElementById("seccion-resultados-busqueda");
+      if (!target) return;
+      const navbarHeight = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--navbar-height",
+        ) || "112",
+      );
+      const top =
+        target.getBoundingClientRect().top + window.scrollY - navbarHeight - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [searchSubmitTick]);
+
+  // Filtrado reactivo de cortes oficiales desde PostgreSQL (ordenados por coincidencias si hay búsqueda)
   const filteredProducts = useMemo(() => {
     let list = [...productos];
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-          (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
-          (p.categoria && p.categoria.toLowerCase().includes(q)) ||
-          (p.especie && p.especie.toLowerCase().includes(q)),
-      );
+    if (hasSearchQuery) {
+      list = list
+        .map((p) => ({ prod: p, score: scoreProductMatch(p, searchQuery) }))
+        .filter((entry) => entry.score > 0)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          if (sortBy === "precio-menor") return a.prod.precio - b.prod.precio;
+          if (sortBy === "precio-mayor") return b.prod.precio - a.prod.precio;
+          if (sortBy === "alfabetico")
+            return a.prod.nombre.localeCompare(b.prod.nombre);
+          return 0;
+        })
+        .map((entry) => entry.prod);
     }
 
     if (onlyStock) {
       list = list.filter((p) => !p.sin_stock && p.activo !== false);
     }
 
-    if (sortBy === "precio-menor") {
-      list.sort((a, b) => a.precio - b.precio);
-    } else if (sortBy === "precio-mayor") {
-      list.sort((a, b) => b.precio - a.precio);
-    } else if (sortBy === "alfabetico") {
-      list.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    if (!hasSearchQuery) {
+      if (sortBy === "precio-menor") {
+        list.sort((a, b) => a.precio - b.precio);
+      } else if (sortBy === "precio-mayor") {
+        list.sort((a, b) => b.precio - a.precio);
+      } else if (sortBy === "alfabetico") {
+        list.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      }
     }
 
     return list;
-  }, [productos, searchQuery, onlyStock, sortBy]);
+  }, [productos, searchQuery, hasSearchQuery, onlyStock, sortBy]);
 
   // Secciones con productos disponibles según filtros
   const sectionsWithProducts = useMemo(() => {
@@ -298,7 +342,7 @@ export const Home = ({
               </div>
               <p className="text-xs font-black text-slate-900 truncate mt-0.5 group-hover:text-[#003366] transition-colors">
                 {deliveryMode === "pickup"
-                  ? `Sucursal ${selectedBranch?.nombre || "Luis Guillón"}`
+                  ? `Sucursal ${selectedBranch?.nombre || "Luis Guillon"}`
                   : customerAddress || "Ingresar dirección"}
               </p>
             </div>
@@ -323,6 +367,82 @@ export const Home = ({
         <CombosSection searchQuery={searchQuery} />
       </div>
 
+      {/* 4b. Sección "Resultados de búsqueda" (scroll horizontal como el resto de secciones, visible solo si hay texto) */}
+      {hasSearchQuery && (
+        <div
+          id="seccion-resultados-busqueda"
+          className="scroll-mt-36 md:scroll-mt-32 overscroll-contain"
+        >
+          {filteredProducts.length === 0 ? (
+            <section
+              aria-label="Resultados de búsqueda"
+              className="px-4 sm:px-6 mb-8"
+            >
+              <div className="flex items-center justify-between gap-3 mb-3.5 mt-2">
+                <h2 className="text-xl font-black text-slate-900 leading-tight">
+                  Resultados de búsqueda
+                </h2>
+                <button
+                  type="button"
+                  onClick={onResetFilters}
+                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 hover:bg-slate-100 text-slate-600 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0"
+                >
+                  <X className="size-3.5 stroke-[2.5]" aria-hidden="true" />
+                  <span>Limpiar</span>
+                </button>
+              </div>
+              <div className="bg-white border border-slate-200/90 rounded-3xl p-8 text-center text-slate-500 shadow-native">
+                <div className="size-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                  <Search className="size-5 stroke-[2]" aria-hidden="true" />
+                </div>
+                <h3 className="font-black text-sm sm:text-base text-slate-800">
+                  No encontramos cortes para “{searchQuery.trim()}”
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Probá buscando términos como “asado”, “vacío”, “pollo” o
+                  “bondiola”.
+                </p>
+                <button
+                  type="button"
+                  onClick={onResetFilters}
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#003366] text-white text-xs font-bold cursor-pointer hover:bg-valette-dark transition-colors shadow-2xs"
+                >
+                  Limpiar búsqueda
+                </button>
+              </div>
+            </section>
+          ) : (
+            <CategoryHorizontalShelf
+              title="Resultados de búsqueda"
+              description={`Coincidencias para “${searchQuery.trim()}” ordenadas por relevancia.`}
+              count={filteredProducts.length}
+              headerAction={
+                <button
+                  type="button"
+                  onClick={onResetFilters}
+                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 hover:bg-slate-100 text-slate-600 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0"
+                >
+                  <X className="size-3.5 stroke-[2.5]" aria-hidden="true" />
+                  <span>Limpiar</span>
+                </button>
+              }
+            >
+              {filteredProducts.map((prod) => (
+                <div
+                  key={`search-${prod.id}`}
+                  className="w-65 shrink-0 flex flex-col snap-start last:snap-end pb-4"
+                >
+                  <ProductCard
+                    product={prod}
+                    onOpenCustomizer={() => handleProductClick(prod)}
+                  />
+                </div>
+              ))}
+            </CategoryHorizontalShelf>
+          )}
+        </div>
+      )}
+
       {/* 5. Secciones de Categorías con Scroll Horizontal (Debajo de los Combos) */}
       <div id="secciones-catalogo" className="space-y-2">
         {/* Skeleton Loaders en estado de carga */}
@@ -333,7 +453,7 @@ export const Home = ({
                 <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
                 <div className="flex gap-4 overflow-x-hidden">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-[220px] sm:w-[240px] shrink-0">
+                    <div key={i} className="w-55 sm:w-60 shrink-0">
                       <ProductCardSkeleton />
                     </div>
                   ))}
@@ -341,7 +461,7 @@ export const Home = ({
               </div>
             ))}
           </div>
-        ) : !hasAnyResults ? (
+        ) : !hasAnyResults && !hasSearchQuery ? (
           /* Estado vacío si no hay coincidencias de búsqueda */
           <div className="mx-4 sm:px-6 bg-white border border-slate-200/90 rounded-3xl p-12 text-center text-slate-500 shadow-native my-8">
             <p className="text-3xl mb-2">🔍</p>

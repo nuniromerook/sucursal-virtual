@@ -4,6 +4,7 @@ import { getSocket } from "@/utils/socket";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { formatPrecio } from "@/utils/formatters";
+import { scoreComboMatch } from "@/utils/searchRanking";
 import { API_URL } from "@/config/api";
 import {
   ShoppingCart,
@@ -90,27 +91,22 @@ export const CombosSection = ({ searchQuery = "" }) => {
     };
 
     socket.on("catalogo_actualizado", handleUpdate);
+    window.addEventListener("valette:refresh", handleUpdate);
 
     return () => {
       isMounted = false;
       socket.off("catalogo_actualizado", handleUpdate);
+      window.removeEventListener("valette:refresh", handleUpdate);
     };
   }, [fetchCombosRequest]);
 
   const filteredCombos = useMemo(() => {
     if (!searchQuery.trim()) return combos;
-    const q = searchQuery.toLowerCase().trim();
-    return combos.filter(
-      (c) =>
-        c.nombre?.toLowerCase().includes(q) ||
-        c.descripcion?.toLowerCase().includes(q) ||
-        (Array.isArray(c.items) &&
-          c.items.some(
-            (it) =>
-              it.nombre?.toLowerCase().includes(q) ||
-              it.categoria?.toLowerCase().includes(q),
-          )),
-    );
+    return combos
+      .map((c) => ({ combo: c, score: scoreComboMatch(c, searchQuery) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.combo);
   }, [combos, searchQuery]);
 
   if (!isLoading && !hasError && filteredCombos.length === 0) return null;

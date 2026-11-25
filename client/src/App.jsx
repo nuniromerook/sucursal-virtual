@@ -4,7 +4,7 @@ import { BrowserRouter, useSearchParams, useLocation, useNavigate } from "react-
 import { trackPageView, trackEvent } from "@/utils/analytics";
 import { ToastProvider } from "@/context/ToastContext";
 import { LocationProvider } from "@/context/LocationContext";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { CatalogoProvider, useCatalogo } from "@/context/CatalogoContext";
@@ -19,6 +19,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MobileDock } from "@/components/layout/MobileDock";
 import { SidebarDrawer } from "@/components/layout/SidebarDrawer";
 import { CookieBanner } from "@/components/layout/CookieBanner";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 // Página Principal Integral
 import { Home } from "@/pages/Home";
@@ -35,8 +36,13 @@ import { NotificationsModal } from "@/components/modals/NotificationsModal";
 
 function AppContent() {
   const { isCartOpen, setIsCartOpen } = useCart();
-  const { getProductBySlugOrId } = useCatalogo();
-  const { isNotificationsOpen, setIsNotificationsOpen } = useNotifications();
+  const { getProductBySlugOrId, refreshCatalogo } = useCatalogo();
+  const { isAuthenticated, refreshProfile, refreshRecompensas } = useAuth();
+  const {
+    isNotificationsOpen,
+    setIsNotificationsOpen,
+    refreshNotifications,
+  } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,6 +63,7 @@ function AppContent() {
 
   // Estados de Búsqueda y Filtros
   const searchQuery = searchParams.get("q") || "";
+  const [searchSubmitTick, setSearchSubmitTick] = useState(0);
   const [sortBy, setSortBy] = useState("destacados");
   const [onlyStock, setOnlyStock] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
@@ -171,12 +178,41 @@ function AppContent() {
     ? "reset-password"
     : profileInitialView;
 
+  const hasOpenModal =
+    isSidebarOpen ||
+    isNotificationsOpen ||
+    isCartOpen ||
+    isCheckoutModalOpen ||
+    isTrackingModalOpen ||
+    effectiveProfileOpen ||
+    isBranchModalOpen ||
+    isFiltersModalOpen ||
+    Boolean(activeProduct);
+
+  // Refetch completo de datos sin recargar la página (Pull-to-Refresh + botón accesible)
+  const handleManualRefresh = useCallback(async () => {
+    window.dispatchEvent(new CustomEvent("valette:refresh"));
+    await Promise.allSettled([
+      refreshCatalogo(),
+      refreshNotifications(),
+      refreshRecompensas(),
+      isAuthenticated ? refreshProfile() : Promise.resolve(),
+    ]);
+  }, [
+    refreshCatalogo,
+    refreshNotifications,
+    refreshRecompensas,
+    refreshProfile,
+    isAuthenticated,
+  ]);
+
   return (
     <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA]">
       {/* 1. Header con Buscador Inteligente en Mobile/Desktop, Filtros, Carrito y Menú */}
       <Navbar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
+        onSearchSubmit={() => setSearchSubmitTick((t) => t + 1)}
         onOpenFiltersModal={() => setIsFiltersModalOpen(true)}
         hasActiveFilters={sortBy !== "destacados" || onlyStock}
         isNavbarFused={isNavbarFused}
@@ -186,6 +222,12 @@ function AppContent() {
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
 
+      {/* 1b. Pull-to-Refresh nativo 2026 debajo de la Navbar fija */}
+      <PullToRefresh
+        onRefresh={handleManualRefresh}
+        disabled={hasOpenModal}
+      />
+
       {/* 2. Pantalla Principal Integral con Todas las Secciones y Combos */}
       <main className="relative w-full">
         <Home
@@ -193,6 +235,7 @@ function AppContent() {
           onOpenCustomizer={openProductInUrl}
           onOpenBranchModal={() => setIsBranchModalOpen(true)}
           searchQuery={searchQuery}
+          searchSubmitTick={searchSubmitTick}
           sortBy={sortBy}
           onlyStock={onlyStock}
           onResetFilters={handleResetFilters}
@@ -217,6 +260,7 @@ function AppContent() {
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenTrackingModal={() => handleOpenTracking(null)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
+        onRefreshData={handleManualRefresh}
       />
 
       {/* 5. Modal / Bottom Sheet de Notificaciones */}

@@ -7,6 +7,7 @@ import {
   fetchCatalogo,
   fetchBanners,
 } from "@/services/catalogo.service";
+import { matchesAnimalCategory } from "@/components/products/CategoryHorizontalShelf";
 
 const CatalogoContext = createContext(null);
 
@@ -139,9 +140,12 @@ export const CatalogoProvider = ({ children }) => {
 
     productos.forEach((p) => {
       const cat = p.categoria || "vacuno";
-      if (counts[cat] !== undefined) {
+      if (["preparados", "embutidos", "achuras", "almacen"].includes(cat)) {
         counts[cat]++;
       }
+      if (matchesAnimalCategory(p, "vacuno")) counts.vacuno++;
+      if (matchesAnimalCategory(p, "cerdo")) counts.cerdo++;
+      if (matchesAnimalCategory(p, "pollo")) counts.pollo++;
       // Cortes parrilleros
       if (["vacuno", "cerdo", "embutidos", "achuras"].includes(cat)) {
         counts.asado++;

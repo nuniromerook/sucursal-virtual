@@ -59,7 +59,8 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
   const baseTotal = Math.round(selectedKg * (Number(product.precio) || 0));
   const hasNutrition =
     Number(product.proteinas) > 0 && Number(product.grasas) > 0;
-  const showPoints = product.gana_puntos !== false && Number(product.puntos) > 0;
+  const showPoints =
+    product.gana_puntos !== false && Number(product.puntos) > 0;
 
   const handleIncrement = () => setSelectedKg((prev) => Math.round(prev + 1));
   const handleDecrement = () =>
@@ -245,8 +246,9 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
                   </span>
                 )}
                 {hasNutrition && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-num text-[11px]">
-                    {product.proteinas}g prot · {product.grasas}g grasas
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-normal">
+                    <b>Cada 100g | Proteínas:</b> {product.proteinas} g
+                    <b>Grasas:</b> {product.grasas} g
                   </span>
                 )}
               </div>

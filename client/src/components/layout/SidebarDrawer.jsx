@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Beef,
   Sparkles,
+  RotateCw,
 } from "lucide-react";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { useCatalogo } from "@/context/CatalogoContext";
@@ -34,6 +35,7 @@ export const SidebarDrawer = ({
   onOpenBranchModal,
   onOpenTrackingModal,
   onOpenNotificationsModal,
+  onRefreshData,
 }) => {
   const { productos } = useCatalogo();
   const { favorites } = useFavorites();
@@ -45,6 +47,7 @@ export const SidebarDrawer = ({
   const { showToast } = useToast();
 
   const [combosCount, setCombosCount] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { handleBackdropClick, modalRef } = useModalBehavior(isOpen, onClose);
 
@@ -247,15 +250,41 @@ export const SidebarDrawer = ({
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar menú"
-            className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center shrink-0 cursor-pointer shadow-2xs transition-colors"
-            title="Cerrar menú"
-          >
-            <X className="size-4 stroke-[2.25]" aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onRefreshData && (
+              <button
+                type="button"
+                disabled={isRefreshing}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  try {
+                    await onRefreshData();
+                    showToast("Datos actualizados", "info");
+                  } finally {
+                    setIsRefreshing(false);
+                  }
+                }}
+                aria-label="Actualizar datos de la tienda"
+                title="Actualizar datos"
+                className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 hover:text-[#003366] flex items-center justify-center shrink-0 cursor-pointer shadow-2xs transition-colors disabled:opacity-60"
+              >
+                <RotateCw
+                  className={`size-3.5 stroke-[2.25] ${isRefreshing ? "ptr-spin" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar menú"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center shrink-0 cursor-pointer shadow-2xs transition-colors"
+              title="Cerrar menú"
+            >
+              <X className="size-4 stroke-[2.25]" aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         {/* 2. Cuerpo de Navegación Limpio con Estímulos Medidos */}

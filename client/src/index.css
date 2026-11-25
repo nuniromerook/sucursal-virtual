@@ -19,6 +19,19 @@ body {
     Roboto,
     sans-serif;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ptr-spin {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ptr-spin 0.75s linear infinite;
+  }
 }
 
 /* Sombras nativas ultra limpias estilo Apple / Uber */
@@ -47,6 +60,7 @@ body {
 
 /* Scrollbar personalizada para que combine con el fondo de la app */
 html {
+  overscroll-behavior-y: contain;
   scrollbar-gutter: stable;
   /* Estándar moderno (Firefox y Chrome moderno) */
   scrollbar-color: #cbd5e1 #f6f8fa; /* [color_del_indicador] [color_del_fondo_track] */

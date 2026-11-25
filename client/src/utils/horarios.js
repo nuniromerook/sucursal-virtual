@@ -117,7 +117,7 @@ export function getBranchOpenStatus(branch) {
           isOpen: false,
           shortText: "Cerrado",
           detailText: `Abre hoy a las ${todayCfg.apertura}`,
-          badgeText: `Cerrado · Abrimos ${todayCfg.apertura}hs`,
+          badgeText: `Cerrado · Abrimos a las ${todayCfg.apertura}hs`,
         };
       }
     }

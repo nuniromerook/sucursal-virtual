@@ -693,9 +693,9 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
         : categoria === "pollo"
           ? "Granja & Pollo"
           : categoria === "embutidos"
-            ? "Embutidos Artesanales"
+            ? "Embutidos - Producción Propia"
             : categoria === "preparados"
-              ? "Preparados Caseros"
+              ? "Preparados - Producción Propia"
               : categoria === "achuras"
                 ? "Achuras Frescas"
                 : categoria === "almacen"
@@ -710,7 +710,8 @@ export const enrichProduct = (dbProduct, mockReferenceList = CORTES_MOCK) => {
       : [];
 
   const metodosCoccion =
-    Array.isArray(dbProduct.metodos_coccion) && dbProduct.metodos_coccion.length > 0
+    Array.isArray(dbProduct.metodos_coccion) &&
+    dbProduct.metodos_coccion.length > 0
       ? dbProduct.metodos_coccion
       : Array.isArray(mockMatch?.metodos_coccion)
         ? mockMatch.metodos_coccion

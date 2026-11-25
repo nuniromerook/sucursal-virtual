@@ -31,6 +31,7 @@ export const CATEGORIES = [
 export const Navbar = ({
   searchQuery = "",
   onSearchChange,
+  onSearchSubmit,
   onOpenFiltersModal,
   hasActiveFilters = false,
   isNavbarFused = false,
@@ -80,6 +81,28 @@ export const Navbar = ({
     const target = document.getElementById(`seccion-${cat.id}`);
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleSearchFormSubmit = (e) => {
+    e.preventDefault();
+    const input = e.currentTarget.querySelector("input");
+    if (input) input.blur();
+    if (searchQuery.trim()) {
+      onSearchSubmit?.();
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      if (e.nativeEvent.isComposing || e.keyCode === 229) {
+        return;
+      }
+      e.preventDefault();
+      e.currentTarget.blur();
+      if (searchQuery.trim()) {
+        onSearchSubmit?.();
+      }
     }
   };
 
@@ -140,28 +163,40 @@ export const Navbar = ({
 
         {/* Fila 2: Barra Buscadora Mobile con Botón de Filtros Funcional */}
         <div className="flex items-center gap-2 px-4 pb-2.5">
-          <div className="relative flex-1 flex items-center">
+          <form
+            role="search"
+            onSubmit={handleSearchFormSubmit}
+            className="relative flex-1 flex items-center"
+          >
+            <label htmlFor="mobile-search-input" className="sr-only">
+              Buscar cortes y productos
+            </label>
             <div className="absolute left-3 text-slate-400 pointer-events-none">
               <Search className="size-4 stroke-[2.5]" />
             </div>
             <input
-              type="text"
+              id="mobile-search-input"
+              name="q"
+              type="search"
+              enterKeyHint="search"
               value={searchQuery}
               onChange={(e) => onSearchChange?.(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Qué queres comer hoy?"
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#F1F4F8] border border-slate-200/60 text-xs font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#F1F4F8] border border-slate-200/60 text-xs font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none [&::-webkit-search-cancel-button]:hidden"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => onSearchChange?.("")}
+                aria-label="Limpiar búsqueda"
                 className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                 title="Limpiar búsqueda"
               >
                 <X className="size-3.5 stroke-[2.5]" />
               </button>
             )}
-          </div>
+          </form>
 
           <button
             type="button"
@@ -202,21 +237,33 @@ export const Navbar = ({
             {/* Buscador, Puntos, Notificaciones, Carrito y Perfil */}
             <div className="flex items-center gap-3 transition-all whitespace-nowrap">
               {/* Input Buscador Desktop */}
-              <div className="relative flex w-full items-center">
+              <form
+                role="search"
+                onSubmit={handleSearchFormSubmit}
+                className="relative flex w-full items-center"
+              >
+                <label htmlFor="desktop-search-input" className="sr-only">
+                  Buscar cortes y productos
+                </label>
                 <div className="absolute left-3.5 text-slate-400 pointer-events-none">
                   <Search className="size-4 stroke-[2.5]" />
                 </div>
                 <input
-                  type="text"
+                  id="desktop-search-input"
+                  name="q"
+                  type="search"
+                  enterKeyHint="search"
                   value={searchQuery}
                   onChange={(e) => onSearchChange?.(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder="¿Qué querés comer hoy?"
-                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-[#F1F4F8] border border-slate-200/60 text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none"
+                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-[#F1F4F8] border border-slate-200/60 text-xs sm:text-sm font-medium placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none [&::-webkit-search-cancel-button]:hidden"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => onSearchChange?.("")}
+                    aria-label="Limpiar búsqueda"
                     className="absolute right-24 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                     title="Limpiar búsqueda"
                   >
@@ -240,7 +287,7 @@ export const Navbar = ({
                     <span className="size-1.5 rounded-full bg-emerald-400" />
                   )}
                 </button>
-              </div>
+              </form>
 
               {/* Botón Rápido de Puntos Valette Club */}
               <button
