@@ -57,6 +57,15 @@ export function parseAddressParts(raw = "", structured = null) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // También reconocer CP limpio sin prefijo como último segmento (ej: "1838" o "B1838")
+  if (
+    !codigo_postal &&
+    segments.length >= 2 &&
+    /^[A-Za-z]?\d{4}[A-Za-z]{0,3}$/.test(segments[segments.length - 1])
+  ) {
+    codigo_postal = segments.pop().trim().toUpperCase();
+  }
+
   const streetPart = segments[0] || "";
   let piso = "";
   let depto = "";
@@ -123,13 +132,25 @@ export function composeAddress({
 
   const loc = localidad.trim();
   const cp = codigo_postal.trim().toUpperCase();
-  const locWithCp =
-    loc && cp ? `${loc} (CP ${cp})` : loc || (cp ? `CP ${cp}` : "");
+  const locWithCp = loc && cp ? `${loc}, ${cp}` : loc || cp;
 
   const base = [street, unit, locWithCp].filter(Boolean).join(", ");
   const ref = referencias.trim();
   if (!base) return ref;
   return ref ? `${base} · Ref: ${ref}` : base;
+}
+
+/**
+ * Limpia direcciones previas guardadas con "(CP 1838)" para mostrar únicamente el número de CP.
+ */
+export function formatDisplayAddress(raw = "") {
+  const clean = String(raw || "").trim();
+  if (!clean) return "";
+  return clean
+    .replace(/\s*\(\s*CP\s*([A-Za-z0-9]{4,8})\s*\)/gi, ", $1")
+    .replace(/\bCP\s*([A-Za-z0-9]{4,8})\b/gi, "$1")
+    .replace(/,\s*,+/g, ", ")
+    .trim();
 }
 
 /**

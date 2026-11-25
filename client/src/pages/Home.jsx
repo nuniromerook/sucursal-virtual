@@ -13,6 +13,7 @@ import {
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
 import { scoreProductMatch } from "@/utils/searchRanking";
+import { formatDisplayAddress } from "@/utils/address";
 import { ChevronDown, MapPin, Store, Search, X } from "lucide-react";
 
 export const Home = ({
@@ -342,8 +343,9 @@ export const Home = ({
               </div>
               <p className="text-xs font-black text-slate-900 truncate mt-0.5 group-hover:text-[#003366] transition-colors">
                 {deliveryMode === "pickup"
-                  ? `Sucursal ${selectedBranch?.nombre || "Luis Guillon"}`
-                  : customerAddress || "Ingresar dirección"}
+                  ? `Sucursal ${selectedBranch?.nombre || "Luis Guillón"}`
+                  : formatDisplayAddress(customerAddress) ||
+                    "Ingresar dirección"}
               </p>
             </div>
           </div>

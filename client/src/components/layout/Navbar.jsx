@@ -6,6 +6,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { useAuth } from "@/context/AuthContext";
+import { formatDisplayAddress } from "@/utils/address";
 import {
   Bell,
   Menu,
@@ -360,7 +361,9 @@ export const Navbar = ({
                 <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="truncate max-w-[200px]">
                   {deliveryMode === "delivery"
-                    ? `Envío: ${customerAddress}`
+                    ? customerAddress
+                      ? `Envío: ${formatDisplayAddress(customerAddress)}`
+                      : "Ingresar dirección"
                     : `Retiro: ${selectedBranch?.nombre || "Luis Guillón"}`}
                 </span>
                 <ChevronDown className="size-3 text-slate-400 shrink-0 stroke-[2.5]" />
