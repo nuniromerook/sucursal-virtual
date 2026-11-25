@@ -1,5 +1,5 @@
 // src/components/modals/ProfileModal.jsx
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   X,
   ChevronRight,
@@ -46,28 +46,158 @@ import { formatPrecio } from "@/utils/formatters";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { uploadAvatarToCloudinary } from "@/utils/cloudinary";
 
-function parseAddressParts(raw = "") {
-  const clean = String(raw || "").trim();
-  if (!clean) return { calle: "", altura: "", localidad: "" };
+function parseAddressParts(raw = "", structured = null) {
+  if (
+    structured &&
+    typeof structured === "object" &&
+    !Array.isArray(structured)
+  ) {
+    return {
+      calle: String(structured.calle || "").trim(),
+      altura: String(structured.altura || "").trim(),
+      piso: String(structured.piso || "").trim(),
+      depto: String(structured.depto || "").trim(),
+      localidad: String(structured.localidad || "").trim(),
+      codigo_postal: String(structured.codigo_postal || "").trim(),
+      referencias: String(structured.referencias || "").trim(),
+    };
+  }
 
-  const [streetPart = "", ...rest] = clean.split(",");
-  const localidad = rest
-    .join(",")
+  const clean = String(raw || "").trim();
+  if (!clean) {
+    return {
+      calle: "",
+      altura: "",
+      piso: "",
+      depto: "",
+      localidad: "",
+      codigo_postal: "",
+      referencias: "",
+    };
+  }
+
+  let referencias = "";
+  const refMatch = clean.match(/\s*·\s*Ref:\s*(.+)$/i);
+  if (refMatch) {
+    referencias = refMatch[1].trim();
+  }
+  const withoutRef = clean.replace(/\s*·\s*Ref:\s*.+$/i, "").trim();
+
+  let codigo_postal = "";
+  const cpMatch = withoutRef.match(/\(?\bCP\s*([A-Za-z0-9]{4,8})\)?/i);
+  if (cpMatch) {
+    codigo_postal = cpMatch[1].trim();
+  }
+  const withoutCp = withoutRef
+    .replace(/\(?\bCP\s*[A-Za-z0-9]{4,8}\)?/gi, "")
+    .trim();
+
+  const segments = withoutCp
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const streetPart = segments[0] || "";
+  let piso = "";
+  let depto = "";
+  const localitySegments = [];
+
+  for (let i = 1; i < segments.length; i++) {
+    const seg = segments[i];
+    if (/^(piso|p\.|depto|dpto|dto)/i.test(seg)) {
+      const pMatch = seg.match(/(?:piso|p\.)\s*([^\s,]+)/i);
+      const dMatch = seg.match(/(?:depto|dpto|dto\.?)\s*([^\s,]+)/i);
+      if (pMatch) piso = pMatch[1].trim();
+      if (dMatch) depto = dMatch[1].trim();
+    } else {
+      localitySegments.push(seg);
+    }
+  }
+
+  const localidad = localitySegments
+    .join(", ")
     .replace(/provincia de buenos aires|buenos aires|argentina/gi, "")
     .replace(/^[\s,]+|[\s,]+$/g, "")
     .trim();
 
-  const match = streetPart.trim().match(/^(.*?)\s+(\d+[a-zA-Z0-9/-]*)$/);
+  const match = streetPart.match(/^(.*?)\s+(\d+[a-zA-Z0-9/-]*)$/);
   if (match) {
-    return { calle: match[1].trim(), altura: match[2].trim(), localidad };
+    return {
+      calle: match[1].trim(),
+      altura: match[2].trim(),
+      piso,
+      depto,
+      localidad,
+      codigo_postal,
+      referencias,
+    };
   }
-  return { calle: streetPart.trim(), altura: "", localidad };
+  return {
+    calle: streetPart,
+    altura: "",
+    piso,
+    depto,
+    localidad,
+    codigo_postal,
+    referencias,
+  };
 }
 
-function composeAddress({ calle = "", altura = "", localidad = "" }) {
+function composeAddress({
+  calle = "",
+  altura = "",
+  piso = "",
+  depto = "",
+  localidad = "",
+  codigo_postal = "",
+  referencias = "",
+}) {
   const street = [calle.trim(), altura.trim()].filter(Boolean).join(" ");
+  const unitParts = [];
+  if (piso.trim()) unitParts.push(`Piso ${piso.trim()}`);
+  if (depto.trim()) unitParts.push(`Depto ${depto.trim()}`);
+  const unit = unitParts.join(" ");
+
   const loc = localidad.trim();
-  return [street, loc].filter(Boolean).join(", ");
+  const cp = codigo_postal.trim().toUpperCase();
+  const locWithCp =
+    loc && cp ? `${loc} (CP ${cp})` : loc || (cp ? `CP ${cp}` : "");
+
+  const base = [street, unit, locWithCp].filter(Boolean).join(", ");
+  const ref = referencias.trim();
+  if (!base) return ref;
+  return ref ? `${base} · Ref: ${ref}` : base;
+}
+
+function buildStructuredAddress({
+  calle = "",
+  altura = "",
+  piso = "",
+  depto = "",
+  localidad = "",
+  codigo_postal = "",
+  referencias = "",
+}) {
+  const clean = {
+    calle: calle.trim(),
+    altura: altura.trim(),
+    piso: piso.trim(),
+    depto: depto.trim(),
+    localidad: localidad.trim(),
+    codigo_postal: codigo_postal.trim().toUpperCase(),
+    referencias: referencias.trim(),
+    provincia: "Buenos Aires",
+    pais: "AR",
+  };
+  if (
+    !clean.calle &&
+    !clean.altura &&
+    !clean.localidad &&
+    !clean.codigo_postal
+  ) {
+    return null;
+  }
+  return clean;
 }
 
 function isOrderTerminal(estadoRaw) {
@@ -79,6 +209,12 @@ function isOrderTerminal(estadoRaw) {
     est.includes("rechazado")
   );
 }
+
+const AUTH_ONLY_VIEWS = new Set([
+  "edit-profile",
+  "security",
+  "onboarding-address",
+]);
 
 export const ProfileModal = ({
   isOpen,
@@ -123,7 +259,11 @@ export const ProfileModal = ({
   const { activeOrderId, setActiveOrderId } = useCart();
 
   // Vista interna: "main" | "auth" | "forgot-password" | "reset-password" | "edit-profile" | "points" | "orders" | "favorites" | "security" | "support"
-  const [activeView, setActiveView] = useState(initialView);
+  const [activeView, setActiveView] = useState(() =>
+    !isAuthenticated && AUTH_ONLY_VIEWS.has(initialView) ? "auth" : initialView,
+  );
+  const currentView =
+    !isAuthenticated && AUTH_ONLY_VIEWS.has(activeView) ? "auth" : activeView;
   const [authTab, setAuthTab] = useState("login"); // "login" | "register"
   const [showPass, setShowPass] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -132,6 +272,19 @@ export const ProfileModal = ({
   const [formError, setFormError] = useState(null);
   const [formSuccess, setFormSuccess] = useState(null);
   const avatarInputRef = useRef(null);
+  const onboardingHeadingRef = useRef(null);
+
+  // Mover el foco al encabezado del paso "Por último" al transicionar dinámicamente
+  useEffect(() => {
+    if (isOpen && currentView === "onboarding-address") {
+      onboardingHeadingRef.current?.focus();
+    }
+  }, [isOpen, currentView]);
+
+  // Estado formulario paso "Por último" (dirección de entrega post-registro)
+  const [onboardingAddress, setOnboardingAddress] = useState(() =>
+    parseAddressParts(customerAddress || "", user?.direccion_datos || null),
+  );
 
   // Estado formulario Login
   const [loginForm, setLoginForm] = useState({
@@ -161,6 +314,7 @@ export const ProfileModal = ({
   const [formState, setFormState] = useState(() => {
     const addr = parseAddressParts(
       user?.direccion_default || customerAddress || "",
+      user?.direccion_datos || null,
     );
     return {
       nombre: user?.nombre || "",
@@ -169,7 +323,11 @@ export const ProfileModal = ({
       telefono: user?.telefono || "",
       calle: addr.calle,
       altura: addr.altura,
+      piso: addr.piso,
+      depto: addr.depto,
       localidad: addr.localidad,
+      codigo_postal: addr.codigo_postal,
+      referencias: addr.referencias,
       avatar_url: user?.avatar_url || "",
     };
   });
@@ -223,7 +381,10 @@ export const ProfileModal = ({
 
   const resolvedPedidoActivoId =
     activeOrderId &&
-    !(activeOrderMatch && isOrderTerminal(activeOrderMatch.estado_local || activeOrderMatch.estado))
+    !(
+      activeOrderMatch &&
+      isOrderTerminal(activeOrderMatch.estado_local || activeOrderMatch.estado)
+    )
       ? activeOrderId
       : activeOrderFromHistory?.id || null;
 
@@ -290,6 +451,7 @@ export const ProfileModal = ({
     }
     const addr = parseAddressParts(
       user?.direccion_default || customerAddress || "",
+      user?.direccion_datos || null,
     );
     setFormState({
       nombre: user?.nombre || "",
@@ -298,7 +460,11 @@ export const ProfileModal = ({
       telefono: user?.telefono || "",
       calle: addr.calle,
       altura: addr.altura,
+      piso: addr.piso,
+      depto: addr.depto,
       localidad: addr.localidad,
+      codigo_postal: addr.codigo_postal,
+      referencias: addr.referencias,
       avatar_url: user?.avatar_url || "",
     });
     setActiveView("edit-profile");
@@ -442,6 +608,9 @@ export const ProfileModal = ({
         identificador: loginForm.identificador,
         password: loginForm.password,
       });
+      if (data.user?.direccion_default && !customerAddress) {
+        updateCustomerAddress(data.user.direccion_default);
+      }
       showToast(`¡Bienvenido, ${data.user?.nombre || "a Valette"}! 🥩`);
       setLoginForm({ identificador: "", password: "" });
       setActiveView("main");
@@ -463,7 +632,7 @@ export const ProfileModal = ({
     setFormError(null);
     try {
       const data = await register(registerForm);
-      showToast(data.message || "¡Cuenta creada con éxito! 🎉");
+      showToast(data.message || "¡Cuenta creada! Cargá tu dirección de envío.");
       setRegisterForm({
         nombre: "",
         email: "",
@@ -472,9 +641,44 @@ export const ProfileModal = ({
         password: "",
         codigo_referido: "",
       });
-      setActiveView("main");
+      setOnboardingAddress(parseAddressParts(customerAddress || "", null));
+      setActiveView("onboarding-address");
     } catch (err) {
       setFormError(err.message || "Error al crear la cuenta.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleSaveOnboardingAddress = async (e) => {
+    e.preventDefault();
+    if (isBusy) return;
+    if (
+      !onboardingAddress.calle.trim() ||
+      !onboardingAddress.altura.trim() ||
+      !onboardingAddress.localidad.trim()
+    ) {
+      setFormError(
+        "Completá calle, altura y localidad para guardar tu dirección.",
+      );
+      return;
+    }
+    setIsBusy(true);
+    setFormError(null);
+    try {
+      const direccionFormateada = composeAddress(onboardingAddress);
+      const direccionDatos = buildStructuredAddress(onboardingAddress);
+      await updateProfile({
+        direccion_default: direccionFormateada,
+        direccion_datos: direccionDatos,
+      });
+      if (direccionFormateada) {
+        updateCustomerAddress(direccionFormateada);
+      }
+      showToast("¡Listo! Guardamos tu dirección de entrega 🥩");
+      setActiveView("main");
+    } catch (err) {
+      setFormError(err.message || "No pudimos guardar tu dirección.");
     } finally {
       setIsBusy(false);
     }
@@ -487,11 +691,13 @@ export const ProfileModal = ({
     setFormError(null);
     try {
       const direccionFormateada = composeAddress(formState);
+      const direccionDatos = buildStructuredAddress(formState);
       const res = await updateProfile({
         nombre: formState.nombre.trim(),
         usuario: formState.usuario.trim(),
         telefono: formState.telefono.trim(),
         direccion_default: direccionFormateada,
+        direccion_datos: direccionDatos,
         avatar_url: formState.avatar_url,
       });
       if (direccionFormateada) {
@@ -550,6 +756,7 @@ export const ProfileModal = ({
   const viewTitles = {
     main: "Mi Perfil",
     auth: authTab === "login" ? "Iniciar Sesión" : "Crear Cuenta Club Valette",
+    "onboarding-address": "Por último",
     "forgot-password": "Recuperar Contraseña",
     "reset-password": "Nueva Contraseña",
     "edit-profile": "Gestionar Perfil",
@@ -567,7 +774,7 @@ export const ProfileModal = ({
     >
       <div
         ref={modalRef}
-        className="bg-[#F6F8FA] w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl shadow-2xl h-[86vh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 transition-all animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="bg-[#F6F8FA] w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl shadow-2xl h-[86dvh] sm:max-h-[88dvh] overflow-hidden flex flex-col p-0 transition-all animate-in fade-in slide-in-from-bottom-4 duration-200 overscroll-contain"
       >
         {/* Cabecera deslizable y barra táctil */}
         <div
@@ -587,7 +794,7 @@ export const ProfileModal = ({
             </button>
 
             <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight">
-              {viewTitles[activeView] || "Mi Perfil"}
+              {viewTitles[currentView] || "Mi Perfil"}
             </h3>
 
             <button
@@ -602,7 +809,7 @@ export const ProfileModal = ({
         </div>
 
         {/* Contenido dinámico con scroll limpio */}
-        <div className="flex-1 overflow-y-auto scrollbar-none px-5 py-4 space-y-5">
+        <div className="flex-1 overflow-y-auto scrollbar-none px-5 py-4 space-y-5 overscroll-contain">
           {formError && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="size-4 shrink-0" />
@@ -968,7 +1175,7 @@ export const ProfileModal = ({
           )}
 
           {/* SUB-VISTA: AUTENTICACIÓN REAL (LOGIN / REGISTRO) */}
-          {activeView === "auth" && (
+          {currentView === "auth" && (
             <div className="space-y-4 pb-6">
               {/* Selector Login vs Registro */}
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-2xl">
@@ -1350,12 +1557,298 @@ export const ProfileModal = ({
                         <span>Creando cuenta...</span>
                       </>
                     ) : (
-                      <span>Crear Cuenta y Sumarme al Club</span>
+                      <span>Crear Cuenta y Continuar</span>
                     )}
                   </button>
                 </form>
               )}
             </div>
+          )}
+
+          {/* SUB-VISTA: PASO 2 POST-REGISTRO ("POR ÚLTIMO" — DIRECCIÓN DE ENVÍO) */}
+          {currentView === "onboarding-address" && (
+            <form
+              onSubmit={handleSaveOnboardingAddress}
+              aria-labelledby="onboarding-address-heading"
+              className="space-y-4 pb-6"
+            >
+              {/* Indicador compacto de progreso (2 pasos) */}
+              <nav aria-label="Progreso del registro">
+                <ol className="flex items-center gap-2 text-[11px] font-bold">
+                  <li className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="size-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Check className="size-3 stroke-[3]" aria-hidden="true" />
+                    </span>
+                    <span>Cuenta</span>
+                  </li>
+                  <li className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+                  <li
+                    aria-current="step"
+                    className="flex items-center gap-1.5 text-[#003366]"
+                  >
+                    <span className="size-5 rounded-full bg-[#003366] text-white flex items-center justify-center text-[10px] font-black font-num shrink-0">
+                      2
+                    </span>
+                    <span>Dirección de envío</span>
+                  </li>
+                </ol>
+              </nav>
+
+              {/* Encabezado limpio estilo design-criteria.md */}
+              <div className="flex items-start gap-3">
+                <div
+                  className="size-10 rounded-2xl bg-[#EFF4F9] text-[#003366] flex items-center justify-center shrink-0 mt-0.5"
+                  aria-hidden="true"
+                >
+                  <MapPin className="size-5 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <h4
+                    id="onboarding-address-heading"
+                    ref={onboardingHeadingRef}
+                    tabIndex={-1}
+                    className="text-base font-black text-slate-900 tracking-tight leading-snug outline-none"
+                  >
+                    Por último, ¿dónde te enviamos?
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Cargá tu dirección estándar una sola vez para agilizar tus
+                    envíos.
+                  </p>
+                </div>
+              </div>
+
+              {/* Formulario estructurado estándar para integraciones de envíos */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="col-span-2">
+                    <label
+                      htmlFor="onboarding-calle"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Calle *
+                    </label>
+                    <input
+                      id="onboarding-calle"
+                      name="address-line1"
+                      type="text"
+                      required
+                      autoComplete="shipping address-line1"
+                      enterKeyHint="next"
+                      value={onboardingAddress.calle}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          calle: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Av. Luciano Valette"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="onboarding-altura"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Altura / N° *
+                    </label>
+                    <input
+                      id="onboarding-altura"
+                      name="street-number"
+                      type="text"
+                      required
+                      inputMode="numeric"
+                      enterKeyHint="next"
+                      value={onboardingAddress.altura}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          altura: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 1696"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label
+                      htmlFor="onboarding-piso"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Piso{" "}
+                      <span className="normal-case font-medium text-slate-400">
+                        (opc.)
+                      </span>
+                    </label>
+                    <input
+                      id="onboarding-piso"
+                      name="floor"
+                      type="text"
+                      enterKeyHint="next"
+                      value={onboardingAddress.piso}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          piso: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 2 / PB"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="onboarding-depto"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Depto / Timbre{" "}
+                      <span className="normal-case font-medium text-slate-400">
+                        (opc.)
+                      </span>
+                    </label>
+                    <input
+                      id="onboarding-depto"
+                      name="address-line2"
+                      type="text"
+                      autoComplete="shipping address-line2"
+                      enterKeyHint="next"
+                      value={onboardingAddress.depto}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          depto: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: B / Casa 4"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="col-span-2">
+                    <label
+                      htmlFor="onboarding-localidad"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Localidad *
+                    </label>
+                    <input
+                      id="onboarding-localidad"
+                      name="address-level2"
+                      type="text"
+                      required
+                      autoComplete="shipping address-level2"
+                      enterKeyHint="next"
+                      value={onboardingAddress.localidad}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          localidad: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Luis Guillón, Monte Grande..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="onboarding-cp"
+                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                    >
+                      Cód. Postal
+                    </label>
+                    <input
+                      id="onboarding-cp"
+                      name="postal-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={8}
+                      autoComplete="shipping postal-code"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="next"
+                      value={onboardingAddress.codigo_postal}
+                      onChange={(e) =>
+                        setOnboardingAddress((s) => ({
+                          ...s,
+                          codigo_postal: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 1838"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="onboarding-referencias"
+                    className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Entre calles o referencias{" "}
+                    <span className="normal-case font-medium text-slate-400">
+                      (opcional)
+                    </span>
+                  </label>
+                  <input
+                    id="onboarding-referencias"
+                    name="address-notes"
+                    type="text"
+                    enterKeyHint="done"
+                    value={onboardingAddress.referencias}
+                    onChange={(e) =>
+                      setOnboardingAddress((s) => ({
+                        ...s,
+                        referencias: e.target.value,
+                      }))
+                    }
+                    placeholder="Ej: Portón negro, entre Rojas y Santamarina"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                  />
+                </div>
+
+                <p className="text-[11px] text-slate-400 font-medium pt-0.5">
+                  Zona de cobertura actual: Provincia de Buenos Aires,
+                  Argentina.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="submit"
+                  disabled={isBusy}
+                  className="w-full py-3.5 rounded-2xl bg-[#003366] hover:bg-valette-dark disabled:opacity-60 text-white font-extrabold text-xs shadow-sm active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isBusy ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      <span>Guardando dirección...</span>
+                    </>
+                  ) : (
+                    <span>Guardar dirección y finalizar</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormError(null);
+                    setActiveView("main");
+                  }}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 transition-colors cursor-pointer"
+                >
+                  Completar más tarde
+                </button>
+              </div>
+            </form>
           )}
 
           {/* SUB-VISTA: SOLICITAR RECUPERACIÓN DE CONTRASEÑA */}
@@ -1504,7 +1997,7 @@ export const ProfileModal = ({
           )}
 
           {/* SUB-VISTA: GESTIONAR PERFIL */}
-          {activeView === "edit-profile" && (
+          {currentView === "edit-profile" && (
             <form onSubmit={handleSaveProfile} className="space-y-4 pb-6">
               {/* Selector y subida de Foto de Perfil con Cloudinary */}
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center gap-4">
@@ -1688,8 +2181,9 @@ export const ProfileModal = ({
                       </label>
                       <input
                         id="profile-calle"
+                        name="address-line1"
                         type="text"
-                        autoComplete="address-line1"
+                        autoComplete="shipping address-line1"
                         value={formState.calle}
                         onChange={(e) =>
                           setFormState((s) => ({
@@ -1707,10 +2201,11 @@ export const ProfileModal = ({
                         htmlFor="profile-altura"
                         className="block text-[10px] font-bold text-slate-500 mb-1"
                       >
-                        Número / Altura
+                        Altura / N°
                       </label>
                       <input
                         id="profile-altura"
+                        name="street-number"
                         type="text"
                         inputMode="numeric"
                         value={formState.altura}
@@ -1726,25 +2221,127 @@ export const ProfileModal = ({
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label
+                        htmlFor="profile-piso"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Piso (opcional)
+                      </label>
+                      <input
+                        id="profile-piso"
+                        name="floor"
+                        type="text"
+                        value={formState.piso}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            piso: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: 2 / PB"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="profile-depto"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Depto / Timbre (opcional)
+                      </label>
+                      <input
+                        id="profile-depto"
+                        name="address-line2"
+                        type="text"
+                        autoComplete="shipping address-line2"
+                        value={formState.depto}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            depto: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: B / Casa 4"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="col-span-2">
+                      <label
+                        htmlFor="profile-localidad"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Localidad
+                      </label>
+                      <input
+                        id="profile-localidad"
+                        name="address-level2"
+                        type="text"
+                        autoComplete="shipping address-level2"
+                        value={formState.localidad}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            localidad: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: Luis Guillón, Monte Grande..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="profile-cp"
+                        className="block text-[10px] font-bold text-slate-500 mb-1"
+                      >
+                        Cód. Postal
+                      </label>
+                      <input
+                        id="profile-cp"
+                        name="postal-code"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={8}
+                        autoComplete="shipping postal-code"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        value={formState.codigo_postal}
+                        onChange={(e) =>
+                          setFormState((s) => ({
+                            ...s,
+                            codigo_postal: e.target.value,
+                          }))
+                        }
+                        placeholder="Ej: 1838"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none font-num uppercase"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label
-                      htmlFor="profile-localidad"
+                      htmlFor="profile-referencias"
                       className="block text-[10px] font-bold text-slate-500 mb-1"
                     >
-                      Localidad
+                      Entre calles o referencias (opcional)
                     </label>
                     <input
-                      id="profile-localidad"
+                      id="profile-referencias"
+                      name="address-notes"
                       type="text"
-                      autoComplete="address-level2"
-                      value={formState.localidad}
+                      value={formState.referencias}
                       onChange={(e) =>
                         setFormState((s) => ({
                           ...s,
-                          localidad: e.target.value,
+                          referencias: e.target.value,
                         }))
                       }
-                      placeholder="Ej: Luis Guillón, Monte Grande, Llavallol..."
+                      placeholder="Ej: Portón negro, entre Rojas y Santamarina"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#003366] outline-none"
                     />
                   </div>
@@ -1764,17 +2361,19 @@ export const ProfileModal = ({
           {/* SUB-VISTA: CLUB VALETTE & PUNTOS REALES */}
           {activeView === "points" && (
             <div className="space-y-4 pb-6">
-              <div className="bg-[#003366] text-white rounded-2xl shadow-sm relative overflow-hidden">
+              <div className="bg-[#003366] text-white rounded-2xl drop-shadow-lg drop-shadow-black/60 relative overflow-hidden">
                 <div className="flex items-center mb-2 px-5 pt-5">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-amber-300">
-                    Puntos Club Valette
+                  <span className="text-[12px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-amber-300">
+                    Club Valette
                   </span>
-                  <p className="text-xs text-blue-100 ml-auto">
-                    Cliente: <b> {profileData.usuario}</b>
+                  <p className="text-[13px] font-bold font-num text-blue-100 ml-auto">
+                    {isAuthenticated
+                      ? `ID Cliente: ${profileData.codigoReferido}`
+                      : "No hay usuario logueado"}
                   </p>
                 </div>
                 <div className="text-3xl font-black font-num tracking-tight px-5">
-                  {profileData.puntos.toLocaleString("es-AR")} pts
+                  {profileData.puntos.toLocaleString("es-AR")} puntos
                 </div>
                 <p className="text-xs text-blue-100 px-5 mt-1">
                   Canjeá tus puntos por premios, cortes gratis, envíos
@@ -1784,10 +2383,52 @@ export const ProfileModal = ({
                 <div className="flex w-full h-10 bg-black my-4" />
               </div>
 
+              {/* Tarjeta de Código de Referido */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-900">
+                    Tu ID de Cliente y Código de Invitación
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Decí este número en caja para sumar puntos en mostrador.
+                    Además, tus amigos <b>reciben 50 pts al registrarse</b> con
+                    tu código <b>y vos sumás 100 pts extra.</b>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-300 font-black text-xs text-[#003366] tracking-wider font-num text-center">
+                    {isAuthenticated
+                      ? profileData.codigoReferido
+                      : "INGRESÁ PARA VER"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyReferral}
+                    className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    {copiedCode ? (
+                      <Check className="size-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="size-3.5" />
+                    )}
+                    <span>{copiedCode ? "Copiado" : "Copiar"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareReferral}
+                    className="px-3.5 py-2.5 rounded-xl bg-[#003366] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-valette-dark transition-colors"
+                  >
+                    <Share2 className="size-3.5" />
+                    <span>Enviar</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Catálogo de Premios Canjeables Club Valette */}
               <div>
                 <span className="text-xs font-semibold text-slate-400 mb-2 pl-1 block">
-                  Catálogo de Premios y Sorteos
+                  Catálogo de Recompensas
                 </span>
                 {recompensas.length === 0 ? (
                   <div className="bg-white border border-slate-200/70 rounded-2xl p-5 text-center text-xs text-slate-500">
@@ -1894,7 +2535,7 @@ export const ProfileModal = ({
                                 <span>Canjear ahora</span>
                               ) : (
                                 <span>
-                                  Faltan {costo - profileData.puntos} pts
+                                  Te faltan {costo - profileData.puntos} pts
                                 </span>
                               )}
                             </button>
@@ -1961,47 +2602,6 @@ export const ProfileModal = ({
                   </div>
                 </div>
               )}
-
-              {/* Tarjeta de Código de Referido */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
-                <div>
-                  <h4 className="text-xs font-extrabold text-slate-900">
-                    Tu Código de Invitación
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Tus amigos reciben 50 pts al registrarse con tu código y vos
-                    sumás 100 pts extra.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-300 font-black text-xs text-[#003366] tracking-wider font-num text-center">
-                    {isAuthenticated
-                      ? profileData.codigoReferido
-                      : "INGRESÁ PARA VER"}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyReferral}
-                    className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    {copiedCode ? (
-                      <Check className="size-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="size-3.5" />
-                    )}
-                    <span>{copiedCode ? "Copiado" : "Copiar"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleShareReferral}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#003366] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-valette-dark transition-colors"
-                  >
-                    <Share2 className="size-3.5" />
-                    <span>Enviar</span>
-                  </button>
-                </div>
-              </div>
 
               {/* Historial real de puntos desde PostgreSQL */}
               <div>
@@ -2077,8 +2677,7 @@ export const ProfileModal = ({
                       <div
                         key={ped.id}
                         onClick={() => {
-                          setActiveOrderId(ped.id);
-                          onOpenTrackingModal?.(activeView);
+                          onOpenTrackingModal?.(ped.id);
                         }}
                         className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3 cursor-pointer hover:border-slate-300 transition-colors"
                       >
@@ -2180,7 +2779,7 @@ export const ProfileModal = ({
           )}
 
           {/* SUB-VISTA: CONTRASEÑA Y SEGURIDAD */}
-          {activeView === "security" && (
+          {currentView === "security" && (
             <form onSubmit={handleSaveSecurity} className="space-y-4 pb-6">
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5">
                 <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">

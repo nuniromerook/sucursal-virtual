@@ -35,7 +35,10 @@ export const DEFAULT_HORARIOS_APERTURA = {
 };
 
 function getArgentinaNowParts() {
-  if (typeof globalThis !== "undefined" && globalThis.Temporal?.Now?.zonedDateTimeISO) {
+  if (
+    typeof globalThis !== "undefined" &&
+    globalThis.Temporal?.Now?.zonedDateTimeISO
+  ) {
     try {
       const zdt = globalThis.Temporal.Now.zonedDateTimeISO(ARGENTINA_TZ);
       // Temporal dayOfWeek: 1 (Mon) .. 7 (Sun) -> JS 0 (Sun) .. 6 (Sat)
@@ -57,7 +60,9 @@ function getArgentinaNowParts() {
     minute: "2-digit",
     hour12: false,
   });
-  const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
+  const parts = Object.fromEntries(
+    fmt.formatToParts(now).map((p) => [p.type, p.value]),
+  );
   const weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   const dayIndex = weekdayMap[parts.weekday] ?? now.getDay();
   const hour = Number(parts.hour === "24" ? 0 : parts.hour) || 0;
@@ -112,7 +117,7 @@ export function getBranchOpenStatus(branch) {
           isOpen: false,
           shortText: "Cerrado",
           detailText: `Abre hoy a las ${todayCfg.apertura}`,
-          badgeText: `Cerrado · Abre hoy ${todayCfg.apertura}hs`,
+          badgeText: `Cerrado · Abrimos ${todayCfg.apertura}hs`,
         };
       }
     }
@@ -124,8 +129,7 @@ export function getBranchOpenStatus(branch) {
     const nextKey = DAY_KEYS[nextIdx];
     const nextCfg = schedule[nextKey];
     if (nextCfg?.abierto && nextCfg?.apertura) {
-      const whenLabel =
-        offset === 1 ? "mañana" : `el ${DAY_LABELS[nextKey]}`;
+      const whenLabel = offset === 1 ? "mañana" : `el ${DAY_LABELS[nextKey]}`;
       return {
         isOpen: false,
         shortText: "Cerrado",

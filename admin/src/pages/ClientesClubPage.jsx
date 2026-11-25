@@ -215,9 +215,10 @@ export default function ClientesClubPage() {
   };
 
   const filteredClients = clientes.filter((c) => {
-    const q = searchTerm.trim().toLowerCase();
+    const q = searchTerm.trim().toLowerCase().replace(/^#/, "");
     if (!q) return true;
     return (
+      String(c.referral_code || "").toLowerCase().includes(q) ||
       String(c.nombre || "").toLowerCase().includes(q) ||
       String(c.email || "").toLowerCase().includes(q) ||
       String(c.telefono || "").toLowerCase().includes(q) ||
@@ -320,7 +321,7 @@ export default function ClientesClubPage() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar cliente por nombre, email, usuario o teléfono..."
+                placeholder="Buscar por ID de cliente (caja), nombre, email, usuario o teléfono..."
                 className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none focus:bg-white focus:border-[#002244]"
               />
             </div>
@@ -335,6 +336,7 @@ export default function ClientesClubPage() {
               <table className="w-full text-left border-collapse text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-extrabold">
                   <tr>
+                    <th className="py-3 px-4">ID Caja</th>
                     <th className="py-3 px-4">Cliente</th>
                     <th className="py-3 px-4">Contacto</th>
                     <th className="py-3 px-4">Pedidos / Facturado</th>
@@ -345,6 +347,11 @@ export default function ClientesClubPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredClients.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/70">
+                      <td className="py-3 px-4">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#EFF4F9] text-[#002244] font-mono font-black text-xs tracking-wider">
+                          {c.referral_code || "—"}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <div>{c.nombre}</div>
                         {c.usuario && (

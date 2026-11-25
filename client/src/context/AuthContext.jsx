@@ -24,6 +24,10 @@ function normalizeUser(raw) {
       : "",
     telefono: raw.telefono || "",
     direccion_default: raw.direccion_default || "",
+    direccion_datos:
+      raw.direccion_datos && typeof raw.direccion_datos === "object"
+        ? raw.direccion_datos
+        : null,
     puntos,
     puntos_acumulados: puntos,
     equivalenciaPesos: Math.round(puntos * 5),
@@ -276,6 +280,7 @@ export const AuthProvider = ({ children }) => {
     usuario,
     telefono,
     direccion_default,
+    direccion_datos,
     avatar_url,
   }) => {
     if (!token) {
@@ -288,6 +293,9 @@ export const AuthProvider = ({ children }) => {
       telefono,
       direccion_default,
     };
+    if (direccion_datos !== undefined) {
+      payload.direccion_datos = direccion_datos;
+    }
     if (avatar_url !== undefined) {
       payload.avatar_url = avatar_url;
     }

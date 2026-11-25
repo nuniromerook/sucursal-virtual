@@ -1,3 +1,4 @@
+// src/components/modals/ProductDetailModal.jsx
 import React, { useState } from "react";
 import {
   X,
@@ -9,12 +10,9 @@ import {
   Flame,
   Users,
   Check,
-  Info,
   Sparkles,
   Beef,
-  Coins,
-  Activity,
-  HandCoins,
+  Package,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -33,7 +31,6 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showToast } = useToast();
 
-  // Estandarización de comportamiento: bloqueo de scroll, escape y backdrop + gesto táctil de cierre
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
     onBack || onClose,
@@ -43,7 +40,6 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
   const esUnidad = unidadMedida === "u";
   const hasCutOptions =
     Array.isArray(product?.opciones_corte) && product.opciones_corte.length > 0;
-
   const defaultCut = hasCutOptions ? product.opciones_corte[0] : "";
 
   const [selectedKg, setSelectedKg] = useState(1);
@@ -55,23 +51,21 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
   const isFav = isFavorite(product.id);
   const isOutOfStock = product.sin_stock || product.activo === false;
 
-  // Cálculo financiero reactivo con promociones por volumen (sin tope máximo)
   const priceInfo = calculateItemPrice({
     ...product,
     cantidad_kg: selectedKg,
   });
 
-  const handleIncrement = () => {
-    setSelectedKg((prev) => Math.round(prev + 1));
-  };
+  const baseTotal = Math.round(selectedKg * (Number(product.precio) || 0));
+  const hasNutrition =
+    Number(product.proteinas) > 0 && Number(product.grasas) > 0;
+  const showPoints = product.gana_puntos !== false && Number(product.puntos) > 0;
 
-  const handleDecrement = () => {
+  const handleIncrement = () => setSelectedKg((prev) => Math.round(prev + 1));
+  const handleDecrement = () =>
     setSelectedKg((prev) => Math.max(1, Math.round(prev - 1)));
-  };
-
-  const handleSelectPredefinedKg = (kg) => {
+  const handleSelectPredefinedKg = (kg) =>
     setSelectedKg(Math.max(1, Math.round(kg)));
-  };
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
@@ -82,7 +76,7 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
         : esUnidad
           ? "Estándar"
           : "Corte tradicional",
-      notas,
+      notas: notas.trim() || undefined,
       unidad_medida: unidadMedida,
     });
 
@@ -96,46 +90,44 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
     <div
       className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
       onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="product-detail-title"
     >
-      {/* Contenedor Modal / Bottom Sheet */}
       <div
         ref={modalRef}
-        className="bg-white w-full sm:max-w-xl md:max-w-2xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="bg-white w-full sm:max-w-xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 overscroll-contain"
       >
-        {/* Zona táctil de arrastre (barra + header superior) */}
+        {/* Header limpio y deslizable */}
         <div
           {...dragHandleProps}
-          className="touch-none select-none shrink-0 px-6 pt-3.5 pb-3 border-b border-slate-200/60"
+          className="touch-none select-none shrink-0 px-5 sm:px-6 pt-3 pb-3 border-b border-slate-100 bg-white"
         >
-          {/* Barra táctil para deslizar en celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-11 h-1 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-          {/* Header Superior del Modal */}
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={onBack || onClose}
               title="Volver"
               aria-label="Volver"
-              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
             >
               <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
 
-            <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[12px] font-extrabold uppercase tracking-wider text-slate-600">
-                {product.categoria_label || "Frigorífico Valette"}
-              </span>
-            </div>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              {product.categoria_label || "Corte Valette"}
+            </span>
 
             <div className="flex items-center gap-1.5">
-              {/* Botón Favorito */}
               <button
                 type="button"
                 onClick={() => toggleFavorite(product.id, product.nombre)}
                 title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
-                aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                aria-label={
+                  isFav ? "Quitar de favoritos" : "Guardar en favoritos"
+                }
                 className={`size-8 rounded-full bg-white border border-slate-200/80 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs ${
                   isFav ? "text-red-500" : "text-slate-500 hover:text-red-500"
                 }`}
@@ -147,13 +139,12 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
                 />
               </button>
 
-              {/* Botón Cerrar */}
               <button
                 type="button"
                 onClick={onClose}
                 title="Cerrar"
                 aria-label="Cerrar"
-                className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+                className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
               >
                 <X className="size-4 stroke-[2.25]" />
               </button>
@@ -161,166 +152,152 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
           </div>
         </div>
 
-        {/* Cuerpo del Modal con scroll fluido */}
-        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-6">
-          {/* 1. Imagen Principal con Badges */}
-          <div className="relative w-full aspect-4/3 sm:aspect-auto sm:h-64 bg-slate-100 rounded-2xl overflow-hidden shadow-2xs">
-            <img
-              src={
-                product.imagen_url ||
-                "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800"
-              }
-              alt={product.nombre}
-              className={`w-full h-full object-cover ${
-                isOutOfStock ? "grayscale-30" : ""
-              }`}
-            />
+        {/* Cuerpo scrolleable, respirado y directo */}
+        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-6 py-4 space-y-5 overscroll-contain">
+          {/* 1. Foto Protagonista aspect-video (sin fallback hardcodeado) */}
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-100">
+            {product.imagen_url ? (
+              <img
+                src={product.imagen_url}
+                alt={product.nombre}
+                className={`w-full h-full object-cover ${
+                  isOutOfStock ? "grayscale-30 opacity-85" : ""
+                }`}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                <Package className="size-10 stroke-[1.5]" />
+              </div>
+            )}
 
-            {/* Badges superiores sobre la imagen */}
-            <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-              {isOutOfStock ? (
-                <span className="px-3 py-1 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase shadow-xs">
-                  Agotado por hoy
-                </span>
-              ) : product.badge ? (
-                <span className="px-3 py-1 rounded-xl bg-valette-red text-white text-[11px] font-black uppercase shadow-xs">
-                  {product.badge}
-                </span>
-              ) : null}
+            {/* Badges superiores discretos */}
+            {(isOutOfStock || product.badge || priceInfo.tienePromo) && (
+              <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                {isOutOfStock ? (
+                  <span className="px-2.5 py-1 rounded-xl bg-slate-900/90 text-white text-[11px] font-extrabold shadow-xs">
+                    Agotado por hoy
+                  </span>
+                ) : product.badge ? (
+                  <span className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-white text-[11px] font-extrabold tracking-tight shadow-xs">
+                    {product.badge}
+                  </span>
+                ) : null}
 
-              {priceInfo.tienePromo && (
-                <span className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 text-[11px] font-black uppercase shadow-xs flex items-center gap-1">
-                  <Sparkles className="size-3 stroke-[2.5]" />
-                  <span>¡Descuento por volumen activo!</span>
-                </span>
-              )}
-            </div>
+                {priceInfo.tienePromo && !isOutOfStock && (
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-[11px] font-black shadow-xs">
+                    Promo volumen activa
+                  </span>
+                )}
+              </div>
+            )}
 
-            {/* Puntos Club Valette */}
-            <span className="absolute bottom-3 left-3 pl-1 pr-2 py-1 rounded-lg bg-yellow-500/70 border border-amber-400 text-slate-900 text-[11px] font-black shadow-xs flex items-center gap-2">
-              <HandCoins className="size-5.5 stroke-[2.5] text-amber-500 bg-white border border-amber-400 rounded-md p-1" />
-              <span>
-                Sumás{" "}
-                <span className="text-amber-900">+{product.puntos || 15}</span>{" "}
-                Puntos
-              </span>
-            </span>
+            {/* Pill compacto Club Valette (abajo izquierda) */}
+            {showPoints && (
+              <div className="absolute bottom-3 left-3">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/95 text-amber-900 text-[11px] font-black font-num shadow-xs">
+                  <Sparkles className="size-3 text-amber-500" />+
+                  {Number(product.puntos)} pts Club
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* 2. Nombre, Precio Base y Descripción única llamativa */}
-          <div>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+          {/* 2. Título, precio de referencia, chips breves y descripción */}
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <h1
+                id="product-detail-title"
+                className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug"
+              >
                 {product.nombre}
-              </h2>
+              </h1>
 
-              {/* Tag sutil de precio de lista / referencia por unidad o kilo */}
-              <div className="inline-flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/80 px-2.5 py-1 rounded-xl">
-                <span className="text-[11px] font-bold text-slate-500">
-                  {esUnidad ? "Unidad" : "Por kilo"}
-                </span>
-                <span className="text-sm font-black text-slate-900 font-num">
+              <div className="text-right shrink-0">
+                <span className="text-base sm:text-lg font-black text-[#003366] font-num block leading-tight">
                   {formatPrecio(product.precio)}
+                  <span className="text-[11px] font-bold text-slate-400 ml-0.5">
+                    /{unidadMedida}
+                  </span>
                 </span>
                 {product.precio_anterior > product.precio && (
-                  <span className="text-[11px] text-slate-400 line-through font-num ml-0.5">
+                  <span className="text-[11px] text-slate-400 line-through font-num">
                     {formatPrecio(product.precio_anterior)}
                   </span>
                 )}
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed">
-              {product.descripcion}
-            </p>
-          </div>
-
-          {/* 3. Ficha Técnica Rápida (Rendimiento, Cocción & Información Nutricional de PostgreSQL) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pb-2">
-            {product.metodos_coccion && product.metodos_coccion.length > 0 && (
-              <div className="flex items-center gap-2.5">
-                <Flame className="size-4 text-orange-500 shrink-0" />
-                <div className="-space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Cocción
+            {/* Chips breves de info útil (solo los que tengan datos reales) */}
+            {(product.metodos_coccion?.length > 0 ||
+              product.rinde_personas ||
+              hasNutrition) && (
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-600">
+                {product.metodos_coccion?.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">
+                    <Flame className="size-3.5 text-orange-500 shrink-0" />
+                    {product.metodos_coccion.slice(0, 3).join(" · ")}
                   </span>
-                  <span className="text-xs font-extrabold text-slate-800 truncate block">
-                    {product.metodos_coccion.join(", ")}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {product.rinde_personas && (
-              <div className="flex items-center gap-2.5">
-                <Users className="size-4 text-slate-500 shrink-0" />
-                <div className="-space-y-0.5 min-w-0">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Rendimiento
-                  </span>
-                  <span className="text-xs font-extrabold text-slate-800 truncate block">
+                )}
+                {product.rinde_personas && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">
+                    <Users className="size-3.5 text-[#003366] shrink-0" />
                     {product.rinde_personas}
                   </span>
-                </div>
+                )}
+                {hasNutrition && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-num text-[11px]">
+                    {product.proteinas}g prot · {product.grasas}g grasas
+                  </span>
+                )}
               </div>
             )}
 
-            {/* Proteínas & Grasas de PostgreSQL */}
-            <div className="flex items-center gap-2.5">
-              <Info className="size-4 text-[#003366] shrink-0" />
-              <div className="-space-y-0.5 min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                  Proteínas / Grasas
-                </span>
-                <span className="text-xs font-extrabold text-slate-800 truncate block font-num">
-                  {product.proteinas || 20}g{" "}
-                  <span className="text-slate-300">|</span>{" "}
-                  {product.grasas || 15}g
-                </span>
-              </div>
-            </div>
+            {product.descripcion && (
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed pt-0.5">
+                {product.descripcion}
+              </p>
+            )}
           </div>
 
-          {/* 4. Selector de Cantidad Simple en Unidades o Kilogramos Enteros (sin topes ni piezas) */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="-space-y-0.5">
-                <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+          {/* 3. Selector de Cantidad + Promos por Volumen */}
+          <div className="bg-slate-50/90 border border-slate-200/70 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 block">
                   Cantidad
-                </label>
-                <span className="text-[11px] text-slate-500">
-                  {esUnidad ? "Venta por unidad" : "Venta por kg"}
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {esUnidad ? "Por unidad" : "Por kilogramo"}
                 </span>
               </div>
 
-              {/* Stepper +/- de 1 en 1 (sin tope máximo) */}
-              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+              <div className="inline-flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs">
                 <button
                   type="button"
                   onClick={handleDecrement}
                   disabled={isOutOfStock || selectedKg <= 1}
-                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-40 cursor-pointer transition-colors"
-                  title={`Restar 1 ${unidadMedida}`}
+                  aria-label={`Restar 1 ${unidadMedida}`}
+                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 disabled:opacity-40 cursor-pointer transition-colors"
                 >
-                  <Minus className="size-4 stroke-[2.5]" />
+                  <Minus className="size-3.5 stroke-[2.5]" />
                 </button>
-                <span className="text-sm font-black text-slate-900 min-w-12.5 text-center font-num">
+                <span className="text-sm font-black text-slate-900 min-w-12 text-center font-num">
                   {selectedKg} {unidadMedida}
                 </span>
                 <button
                   type="button"
                   onClick={handleIncrement}
                   disabled={isOutOfStock}
-                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-black active:scale-95 disabled:opacity-50 cursor-pointer transition-colors"
-                  title={`Sumar 1 ${unidadMedida}`}
+                  aria-label={`Sumar 1 ${unidadMedida}`}
+                  className="size-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 disabled:opacity-40 cursor-pointer transition-colors"
                 >
-                  <Plus className="size-4 stroke-[2.5]" />
+                  <Plus className="size-3.5 stroke-[2.5]" />
                 </button>
               </div>
             </div>
 
-            {/* Chips rápidos de selección enteros (1 a 5) */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+            {/* Chips rápidos 1 a 5 */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
               {[1, 2, 3, 4, 5].map((qty) => {
                 const isSelected = selectedKg === qty;
                 return (
@@ -328,10 +305,11 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
                     key={qty}
                     type="button"
                     onClick={() => handleSelectPredefinedKg(qty)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer font-num ${
+                    disabled={isOutOfStock}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer font-num ${
                       isSelected
                         ? "bg-[#003366] text-white shadow-2xs"
-                        : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                        : "bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-100"
                     }`}
                   >
                     {qty} {unidadMedida}
@@ -340,43 +318,36 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
               })}
             </div>
 
-            {/* Promociones por volumen si existen */}
+            {/* Escalas de descuento por volumen */}
             {product.promos && product.promos.length > 0 && (
-              <div className="mt-3.5 pt-3 border-t border-slate-200/70 space-y-1.5">
+              <div className="pt-2.5 border-t border-slate-200/70 space-y-1.5">
                 {product.promos.map((promo) => {
                   const activa = selectedKg >= promo.cantidad_kg;
                   return (
                     <div
                       key={promo.id || promo.cantidad_kg}
-                      className={`flex items-center justify-between text-xs p-2.5 rounded-xl border transition-colors ${
+                      className={`flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-xl border transition-colors ${
                         activa
-                          ? "bg-amber-50 border-amber-200 text-amber-950 font-bold"
-                          : "bg-white border-slate-200 text-slate-600"
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-950 font-bold"
+                          : "bg-white border-slate-200/80 text-slate-600"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <Sparkles
-                          className={`size-3.5 ${
-                            activa ? "text-amber-600" : "text-slate-400"
-                          }`}
-                        />
-                        <span>
-                          Llevando {promo.cantidad_kg} {unidadMedida} o más:{" "}
-                          <strong className="text-slate-900 font-num">
-                            {formatPrecioPorUnidad(
-                              promo.precio_promocional,
-                              unidadMedida,
-                            )}
-                          </strong>
-                        </span>
-                      </div>
+                      <span className="truncate">
+                        Desde {promo.cantidad_kg} {unidadMedida}:{" "}
+                        <strong className="text-slate-900 font-num">
+                          {formatPrecioPorUnidad(
+                            promo.precio_promocional,
+                            unidadMedida,
+                          )}
+                        </strong>
+                      </span>
                       {activa ? (
-                        <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
-                          ¡Promo aplicada!
+                        <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md shrink-0">
+                          Aplicada
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400 font-num">
-                          Faltan {promo.cantidad_kg - selectedKg} {unidadMedida}
+                        <span className="text-[10px] text-slate-400 font-num shrink-0">
+                          +{promo.cantidad_kg - selectedKg} {unidadMedida}
                         </span>
                       )}
                     </div>
@@ -386,18 +357,13 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
             )}
           </div>
 
-          {/* 5. Personalización del Carnicero (Cortes y Preparación) */}
+          {/* 4. Opciones de Corte (solo si existen en el producto) */}
           {hasCutOptions && (
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Beef className="size-3.5 text-[#003366]" />
-                  <span>Cómo te lo preparamos?</span>
-                </label>
-                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                  + $ 300/kg
-                </span>
-              </div>
+            <div className="space-y-2">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Beef className="size-3.5 text-[#003366]" />
+                <span>Cómo te lo preparamos</span>
+              </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {product.opciones_corte.map((opc) => {
@@ -407,15 +373,15 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
                       key={opc}
                       type="button"
                       onClick={() => setSelectedCut(opc)}
-                      className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer flex items-center justify-between ${
+                      className={`p-3 rounded-xl border text-xs font-bold text-left transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
                         isSelected
                           ? "border-[#003366] bg-[#003366]/5 text-[#003366]"
-                          : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
+                          : "border-slate-200/90 hover:border-slate-300 text-slate-700 bg-white"
                       }`}
                     >
-                      <span>{opc}</span>
+                      <span className="leading-snug">{opc}</span>
                       {isSelected && (
-                        <Check className="size-3.5 text-[#003366] stroke-3" />
+                        <Check className="size-3.5 text-[#003366] stroke-3 shrink-0" />
                       )}
                     </button>
                   );
@@ -424,42 +390,54 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
             </div>
           )}
 
-          {/* 6. Indicaciones / Notas al Cortador o de Entrega */}
+          {/* 5. Nota opcional discreta */}
           <div>
-            <label className="text-xs font-bold text-slate-800 mb-1.5 block">
-              {!hasCutOptions
-                ? "Indicaciones o aclaraciones:"
-                : "Indicaciones especiales para el cortador:"}
+            <label
+              htmlFor="product-notes"
+              className="text-xs font-bold text-slate-600 mb-1.5 block"
+            >
+              {hasCutOptions
+                ? "Nota para el carnicero"
+                : "Indicaciones o aclaraciones"}{" "}
+              <span className="text-slate-400 font-medium">(opcional)</span>
             </label>
             <input
+              id="product-notes"
               type="text"
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder={
-                !hasCutOptions
-                  ? "Ej: dejar en recepción, empaquetar por separado..."
-                  : "Ej: sacar el cuerito, dividir en dos bolsitas, desgrasar..."
+                hasCutOptions
+                  ? "Ej: sacar el cuerito, separar en dos bolsitas..."
+                  : "Ej: dejar en recepción, empaquetar aparte..."
               }
-              className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs focus:ring-1 focus:ring-[#003366]/20 transition-all outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#003366] transition-colors outline-none"
             />
           </div>
         </div>
 
-        {/* Footer Fijo con Total y Botón CTA */}
-        <div className="border-t border-slate-100 px-5 py-3.5 sm:px-7 sm:py-4 bg-white shrink-0 flex items-center justify-between gap-4">
+        {/* Footer fijo limpio orientado a conversión */}
+        <div className="border-t border-slate-100 px-5 sm:px-6 py-3.5 bg-white shrink-0 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                Total ({selectedKg} {unidadMedida})
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-xl sm:text-2xl font-black text-slate-900 font-num leading-none">
+                {formatPrecio(priceInfo.total)}
               </span>
-              {priceInfo.ahorro > 0 && (
-                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md leading-none">
-                  Ahorrás {formatPrecio(priceInfo.ahorro)}
+              {priceInfo.ahorro > 0 && baseTotal > priceInfo.total && (
+                <span className="text-xs font-semibold text-slate-400 line-through font-num">
+                  {formatPrecio(baseTotal)}
                 </span>
               )}
             </div>
-            <div className="text-xl sm:text-2xl font-black text-[#003366] font-num leading-tight mt-0.5">
-              {formatPrecio(priceInfo.total)}
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[11px] font-bold text-slate-400 font-num">
+                {selectedKg} {unidadMedida}
+              </span>
+              {priceInfo.ahorro > 0 && (
+                <span className="text-[11px] font-bold text-emerald-700 font-num">
+                  · Ahorrás {formatPrecio(priceInfo.ahorro)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -467,14 +445,14 @@ export const ProductDetailModal = ({ isOpen, onClose, onBack, product }) => {
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className={`px-5 sm:px-7 py-3.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all cursor-pointer shrink-0 ${
+            className={`px-5 sm:px-7 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-all cursor-pointer shrink-0 ${
               isOutOfStock
                 ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                 : "bg-[#003366] hover:bg-valette-dark text-white"
             }`}
           >
             <ShoppingCart className="size-4" />
-            <span>Agregar al Carrito</span>
+            <span>{isOutOfStock ? "Sin stock" : "Agregar al Carrito"}</span>
           </button>
         </div>
       </div>

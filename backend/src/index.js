@@ -143,7 +143,33 @@ httpServer.listen(PORT, async () => {
     await pool.query("ALTER TABLE catalogo ADD COLUMN IF NOT EXISTS metodos_coccion JSONB DEFAULT '[]'::jsonb;");
     await pool.query("ALTER TABLE catalogo ADD COLUMN IF NOT EXISTS rinde_personas VARCHAR(255);");
     await pool.query("ALTER TABLE catalogo ADD COLUMN IF NOT EXISTS badge VARCHAR(255);");
-    console.log("✅ [DB Auto-Migration] Columnas de 'catalogo' verificadas/creadas.");
+    await pool.query("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS direccion_datos JSONB DEFAULT NULL;");
+    await pool.query("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20);");
+    // Backfill de ID numérico único de 5 dígitos (referral_code) para clientes sin código válido
+    const sinCodigo = await pool.query(
+      "SELECT id FROM clientes WHERE referral_code IS NULL OR TRIM(referral_code) = '' OR referral_code !~ '^[0-9]{5}$'"
+    );
+    for (const row of sinCodigo.rows) {
+      let assigned = false;
+      for (let attempt = 0; attempt < 25 && !assigned; attempt++) {
+        const candidate = String(Math.floor(10000 + Math.random() * 90000));
+        const exists = await pool.query(
+          "SELECT 1 FROM clientes WHERE referral_code = $1 LIMIT 1",
+          [candidate]
+        );
+        if (exists.rows.length === 0) {
+          await pool.query("UPDATE clientes SET referral_code = $1 WHERE id = $2", [
+            candidate,
+            row.id,
+          ]);
+          assigned = true;
+        }
+      }
+    }
+    await pool.query(
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_referral_code_unique ON clientes (referral_code) WHERE referral_code IS NOT NULL;"
+    );
+    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo' y 'clientes' verificados.");
   } catch (err) {
     console.error("⚠️ [DB Auto-Migration Error]:", err.message);
   }

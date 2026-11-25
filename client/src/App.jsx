@@ -18,6 +18,7 @@ import { TabNavigationProvider } from "@/context/TabNavigationContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileDock } from "@/components/layout/MobileDock";
 import { SidebarDrawer } from "@/components/layout/SidebarDrawer";
+import { CookieBanner } from "@/components/layout/CookieBanner";
 
 // Página Principal Integral
 import { Home } from "@/pages/Home";
@@ -66,6 +67,7 @@ function AppContent() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileInitialView, setProfileInitialView] = useState("main");
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isNavbarFused, setIsNavbarFused] = useState(false);
 
@@ -139,6 +141,7 @@ function AppContent() {
     setIsCartOpen(false);
     setIsCheckoutModalOpen(false);
     setIsTrackingModalOpen(false);
+    setTrackingOrderId(null);
     setIsProfileModalOpen(false);
     setProfileInitialView("main");
     setIsBranchModalOpen(false);
@@ -152,6 +155,16 @@ function AppContent() {
     setProfileInitialView(targetView);
     setIsProfileModalOpen(true);
   };
+
+  const handleOpenTracking = useCallback((orderId = null) => {
+    const numericId =
+      typeof orderId === "number" ||
+      (typeof orderId === "string" && /^\d+$/.test(orderId))
+        ? Number(orderId)
+        : null;
+    setTrackingOrderId(numericId);
+    setIsTrackingModalOpen(true);
+  }, []);
 
   const effectiveProfileOpen = isProfileModalOpen || isResetRoute;
   const effectiveProfileView = isResetRoute
@@ -189,9 +202,12 @@ function AppContent() {
 
       {/* 3. Dock Inferior Mobile */}
       <MobileDock
-        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenTrackingModal={() => handleOpenTracking(null)}
         onOpenProfileModal={handleOpenProfile}
       />
+
+      {/* 3b. Aviso flotante no intrusivo de Cookies */}
+      <CookieBanner />
 
       {/* 4. Sidebar Drawer Estratégica (Menú Lateral — permanece debajo si abre otro modal) */}
       <SidebarDrawer
@@ -199,7 +215,7 @@ function AppContent() {
         onClose={() => setIsSidebarOpen(false)}
         onOpenProfileModal={handleOpenProfile}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
-        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenTrackingModal={() => handleOpenTracking(null)}
         onOpenNotificationsModal={() => setIsNotificationsOpen(true)}
       />
 
@@ -208,7 +224,7 @@ function AppContent() {
         isOpen={isNotificationsOpen}
         onBack={() => setIsNotificationsOpen(false)}
         onClose={closeAllModals}
-        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenTrackingModal={() => handleOpenTracking(null)}
         onOpenProfileModal={(view = "points") => {
           handleOpenProfile(view);
           if (isProfileModalOpen) {
@@ -241,13 +257,18 @@ function AppContent() {
         onOrderConfirmed={() => {
           setIsCartOpen(false);
           setIsCheckoutModalOpen(false);
-          setIsTrackingModalOpen(true);
+          handleOpenTracking(null);
         }}
       />
 
       <OrderTrackingModal
+        key={isTrackingModalOpen ? `track-${trackingOrderId || "live"}` : "track-closed"}
         isOpen={isTrackingModalOpen}
-        onBack={() => setIsTrackingModalOpen(false)}
+        orderId={trackingOrderId}
+        onBack={() => {
+          setIsTrackingModalOpen(false);
+          setTrackingOrderId(null);
+        }}
         onClose={closeAllModals}
       />
 
@@ -264,7 +285,7 @@ function AppContent() {
           clearResetTokenUrl();
         }}
         onClose={closeAllModals}
-        onOpenTrackingModal={() => setIsTrackingModalOpen(true)}
+        onOpenTrackingModal={handleOpenTracking}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
         onOpenNotificationsModal={() => {
           if (isNotificationsOpen) {

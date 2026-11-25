@@ -10,6 +10,37 @@ const { emitirNotificacion } = require("../socket");
 const crypto = require("crypto");
 
 /**
+ * Sanitiza el objeto estructurado de dirección para integraciones de envíos
+ */
+function sanitizeDireccionDatos(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const cleanStr = (val, max = 120) =>
+    typeof val === "string" ? val.trim().slice(0, max) : "";
+
+  const calle = cleanStr(raw.calle, 120);
+  const altura = cleanStr(raw.altura, 24);
+  const piso = cleanStr(raw.piso, 16);
+  const depto = cleanStr(raw.depto, 24);
+  const localidad = cleanStr(raw.localidad, 80);
+  const codigo_postal = cleanStr(raw.codigo_postal, 16);
+  const referencias = cleanStr(raw.referencias, 200);
+
+  if (!calle && !altura && !localidad && !codigo_postal) return null;
+
+  return {
+    calle,
+    altura,
+    piso,
+    depto,
+    localidad,
+    codigo_postal,
+    referencias,
+    provincia: cleanStr(raw.provincia, 60) || "Buenos Aires",
+    pais: cleanStr(raw.pais, 8) || "AR",
+  };
+}
+
+/**
  * Genera un código de referido de 5 dígitos único (10000-99999)
  */
 async function generarReferralCode(dbClient) {
@@ -225,9 +256,9 @@ const loginCliente = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, nombre, email, password, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code
+      `SELECT id, nombre, email, password, telefono, usuario, direccion_default, direccion_datos, puntos_acumulados, perfil_completo, avatar_url, referral_code
        FROM clientes
-       WHERE email = $1 OR usuario = $1 OR telefono = $1
+       WHERE email = $1 OR usuario = $1 OR telefono = $1 OR referral_code = $1
        LIMIT 1`,
       [cleanIdent]
     );
@@ -292,7 +323,7 @@ const googleAuth = async (req, res) => {
 
   try {
     let clienteRes = await pool.query(
-      `SELECT id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code
+      `SELECT id, nombre, email, telefono, usuario, direccion_default, direccion_datos, puntos_acumulados, perfil_completo, avatar_url, referral_code
        FROM clientes
        WHERE (google_id IS NOT NULL AND google_id = $1) OR email = $2
        LIMIT 1`,
@@ -326,7 +357,7 @@ const googleAuth = async (req, res) => {
         `INSERT INTO clientes (
            nombre, email, google_id, avatar_url, telefono, puntos_acumulados, perfil_completo, referral_code
          ) VALUES ($1, $2, $3, $4, '', 0, false, $5)
-         RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code`,
+         RETURNING id, nombre, email, telefono, usuario, direccion_default, direccion_datos, puntos_acumulados, perfil_completo, avatar_url, referral_code`,
         [nombre || "Usuario Valette", emailClean, google_id || null, avatar_url || null, code]
       );
       cliente = insertRes.rows[0];
@@ -362,7 +393,7 @@ const getPerfil = async (req, res) => {
     const result = await pool.query(
       `SELECT
          c.id, c.nombre, c.email, c.telefono, c.usuario,
-         c.direccion_default, c.puntos_acumulados, c.perfil_completo,
+         c.direccion_default, c.direccion_datos, c.puntos_acumulados, c.perfil_completo,
          c.avatar_url, c.creado_en, c.referral_code,
          c.latitud, c.longitud,
          (SELECT COUNT(*) FROM clientes r WHERE r.referido_por = c.id) AS referidos_count
@@ -391,10 +422,23 @@ const getPerfil = async (req, res) => {
  */
 const updatePerfil = async (req, res) => {
   const clienteId = req.user.id;
-  const { nombre, usuario, telefono, direccion_default, latitud, longitud, avatar_url } = req.body;
+  const {
+    nombre,
+    usuario,
+    telefono,
+    direccion_default,
+    direccion_datos,
+    latitud,
+    longitud,
+    avatar_url,
+  } = req.body;
 
   const usuarioClean = usuario ? usuario.trim().replace(/^@/, "").toLowerCase() : null;
   const telefonoClean = telefono ? telefono.trim() : null;
+  const shouldUpdateDireccionDatos = direccion_datos !== undefined;
+  const direccionDatosClean = shouldUpdateDireccionDatos
+    ? sanitizeDireccionDatos(direccion_datos)
+    : null;
   const shouldUpdateAvatar = avatar_url !== undefined;
   let avatarClean = null;
   if (shouldUpdateAvatar && avatar_url !== null && String(avatar_url).trim() !== "") {
@@ -445,9 +489,10 @@ const updatePerfil = async (req, res) => {
            latitud = COALESCE($7, latitud),
            longitud = COALESCE($8, longitud),
            avatar_url = CASE WHEN $9::boolean THEN $10 ELSE avatar_url END,
+           direccion_datos = CASE WHEN $11::boolean THEN $12::jsonb ELSE direccion_datos END,
            actualizado_en = NOW()
-       WHERE id = $11
-       RETURNING id, nombre, email, telefono, usuario, direccion_default, puntos_acumulados, perfil_completo, avatar_url, referral_code, latitud, longitud`,
+       WHERE id = $13
+       RETURNING id, nombre, email, telefono, usuario, direccion_default, direccion_datos, puntos_acumulados, perfil_completo, avatar_url, referral_code, latitud, longitud`,
       [
         nombre ? nombre.trim() : null,
         usuarioClean,
@@ -459,6 +504,8 @@ const updatePerfil = async (req, res) => {
         longitud !== undefined ? longitud : null,
         shouldUpdateAvatar,
         avatarClean,
+        shouldUpdateDireccionDatos,
+        direccionDatosClean ? JSON.stringify(direccionDatosClean) : null,
         clienteId,
       ]
     );
@@ -708,7 +755,6 @@ const solicitarRecuperacionPassword = async (req, res) => {
     }
 
     // Generar token aleatorio seguro
-    const crypto = require("crypto");
     const token = crypto.randomBytes(32).toString("hex");
 
     // Guardar token con expiración de 15 minutos en PostgreSQL
@@ -1206,7 +1252,8 @@ const getClientesAdmin = async (req, res) => {
       where = `WHERE LOWER(COALESCE(c.nombre, '')) LIKE $1
                   OR LOWER(COALESCE(c.email, '')) LIKE $1
                   OR LOWER(COALESCE(c.usuario, '')) LIKE $1
-                  OR LOWER(COALESCE(c.telefono, '')) LIKE $1`;
+                  OR LOWER(COALESCE(c.telefono, '')) LIKE $1
+                  OR LOWER(COALESCE(c.referral_code, '')) LIKE $1`;
     }
 
     const result = await pool.query(
@@ -1231,11 +1278,12 @@ const getClientesAdmin = async (req, res) => {
 };
 
 const ajustarPuntosClienteAdmin = async (req, res) => {
-  const clienteId = Number(req.params.id);
+  const rawIdent = String(req.params.id || "").trim();
+  const numericIdent = Number(rawIdent);
   const delta = Math.round(Number(req.body.puntos));
   const descripcion = String(req.body.descripcion || "").trim();
 
-  if (!Number.isFinite(clienteId) || clienteId <= 0) {
+  if (!rawIdent) {
     return res.status(400).json({ error: "Cliente inválido." });
   }
   if (!Number.isFinite(delta) || delta === 0) {
@@ -1250,13 +1298,20 @@ const ajustarPuntosClienteAdmin = async (req, res) => {
     await dbClient.query("BEGIN");
 
     const cliRes = await dbClient.query(
-      `SELECT id, nombre, puntos_acumulados FROM clientes WHERE id = $1 FOR UPDATE`,
-      [clienteId]
+      `SELECT id, nombre, puntos_acumulados, referral_code
+       FROM clientes
+       WHERE referral_code = $1 OR ($2::int IS NOT NULL AND id = $2::int)
+       ORDER BY (referral_code = $1) DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [rawIdent, Number.isInteger(numericIdent) && numericIdent > 0 ? numericIdent : null]
     );
     if (cliRes.rows.length === 0) {
       await dbClient.query("ROLLBACK");
       return res.status(404).json({ error: "Cliente no encontrado." });
     }
+
+    const clienteId = cliRes.rows[0].id;
 
     const saldoPrevio = Number(cliRes.rows[0].puntos_acumulados) || 0;
     const nuevoSaldo = Math.max(0, saldoPrevio + delta);

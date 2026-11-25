@@ -1,4 +1,5 @@
 import { API_URL } from "@/config/api";
+import { isAnalyticsAllowed } from "@/utils/cookieConsent";
 
 const visitedRoutesInSession = new Set();
 
@@ -29,6 +30,7 @@ export function detectAnalyticsDevice() {
  * Evita duplicar la misma ruta dentro de la misma sesión de pestaña.
  */
 export function trackPageView(ruta = "/") {
+  if (!isAnalyticsAllowed()) return;
   const cleanRuta = String(ruta || "/").slice(0, 255);
   if (visitedRoutesInSession.has(cleanRuta)) return;
   visitedRoutesInSession.add(cleanRuta);
@@ -51,7 +53,7 @@ export function trackPageView(ruta = "/") {
  * Registra un evento de interacción en PostgreSQL (metricas_eventos).
  */
 export function trackEvent(tipo_evento, elemento_id = null, metadata = {}) {
-  if (!tipo_evento) return;
+  if (!tipo_evento || !isAnalyticsAllowed()) return;
 
   const sesion_id = getAnalyticsSesionId();
   const dispositivo = detectAnalyticsDevice();

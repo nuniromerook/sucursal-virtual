@@ -9,8 +9,7 @@ import {
   Scale,
   Users,
   Sparkles,
-  Check,
-  Flame,
+  Package,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
@@ -24,10 +23,9 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
   const [cantidad, setCantidad] = useState(1);
   const [notas, setNotas] = useState("");
 
-  // Manejo de comportamiento nativo de modal: ESC, backdrop, overflow body y gesto de arrastre mobile
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
-    onClose,
+    onBack || onClose,
   );
 
   if (!isOpen || !combo) return null;
@@ -50,24 +48,17 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
   const totalAnterior = precioAnteriorUnitario * cantidad;
   const totalAhorro = ahorroUnitario * cantidad;
   const totalKilos = kilosUnitario * cantidad;
-  const totalPuntos = puntosUnitario * cantidad;
+  const comboImg =
+    combo.imagen_url ||
+    combo.imagenUrl ||
+    items[0]?.imagen_url ||
+    items[0]?.imagenUrl ||
+    "";
 
-  const handleIncrement = () => {
-    setCantidad((prev) => prev + 1);
-  };
-
-  const handleDecrement = () => {
-    setCantidad((prev) => Math.max(1, prev - 1));
-  };
+  const handleIncrement = () => setCantidad((prev) => prev + 1);
+  const handleDecrement = () => setCantidad((prev) => Math.max(1, prev - 1));
 
   const handleAddToCart = () => {
-    const mainImg =
-      combo.imagen_url ||
-      combo.imagenUrl ||
-      items[0]?.imagen_url ||
-      items[0]?.imagenUrl ||
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop";
-
     addToCart(
       {
         id: `combo-${combo.id}`,
@@ -79,7 +70,7 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
         precio: precioUnitario,
         unidad_medida: "u",
         puntos: puntosUnitario,
-        imagen_url: mainImg,
+        imagen_url: comboImg,
       },
       cantidad,
       {
@@ -98,7 +89,7 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
         ? `Sumaste ${cantidad} combos (${combo.nombre}) al pedido 🥩`
         : `Sumaste ${combo.nombre} al pedido 🥩`,
     );
-    onClose();
+    (onBack || onClose)();
   };
 
   return (
@@ -109,216 +100,203 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
       aria-modal="true"
       aria-labelledby="combo-detail-title"
     >
-      {/* Contenedor Modal / Bottom Sheet */}
       <div
         ref={modalRef}
-        className="bg-white w-full sm:max-w-2xl md:max-w-3xl rounded-t-4xl sm:rounded-3xl shadow-2xl h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="bg-white w-full sm:max-w-xl rounded-t-4xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[88dvh] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 overscroll-contain"
       >
-        {/* Zona táctil de arrastre (celulares) y Header */}
+        {/* Header limpio y deslizable */}
         <div
           {...dragHandleProps}
-          className="touch-none select-none shrink-0 px-6 pt-3.5 pb-3 border-b border-slate-200/60"
+          className="touch-none select-none shrink-0 px-5 sm:px-6 pt-3 pb-3 border-b border-slate-100 bg-white"
         >
-          {/* Barra táctil para deslizar en celulares */}
-          <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="w-11 h-1 bg-slate-300 rounded-full mx-auto mb-3 sm:hidden shrink-0 cursor-grab active:cursor-grabbing" />
 
-          {/* Header Superior del Modal */}
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={onBack || onClose}
               title="Volver"
               aria-label="Volver"
-              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
             >
               <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
 
-            <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[12px] font-extrabold uppercase tracking-wider text-slate-600">
-                Combos especiales
-              </span>
-            </div>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              Combo Valette
+            </span>
 
             <button
               type="button"
               onClick={onClose}
-              title="Cerrar ventana"
-              aria-label="Cerrar ventana"
-              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold transition-colors cursor-pointer shadow-2xs"
+              title="Cerrar"
+              aria-label="Cerrar"
+              className="size-8 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
             >
               <X className="size-4 stroke-[2.25]" />
             </button>
           </div>
         </div>
 
-        {/* Cuerpo del Modal con scroll fluido */}
-        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-7 py-4 space-y-8">
-          {/* 1. Hero Card con Datos Clave del Combo */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#002244] to-[#003366] text-white p-5 sm:p-6 shadow-md">
-            {/* Adorno de fondo */}
-            <div className="absolute -right-10 -bottom-10 size-44 rounded-full bg-white/5 pointer-events-none" />
+        {/* Cuerpo scrolleable, respirado y directo */}
+        <div className="overflow-y-auto no-scrollbar flex-1 px-5 sm:px-6 py-4 space-y-5 overscroll-contain">
+          {/* 1. Foto Protagonista aspect-video (idéntica a la card) */}
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-100">
+            {comboImg ? (
+              <img
+                src={comboImg}
+                alt={combo.nombre}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                <Package className="size-10 stroke-[1.5]" />
+              </div>
+            )}
 
-            <div className="relative z-10 flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-white/15 text-white border border-white/20 text-[11px] font-black uppercase tracking-wide">
-                  {combo.badge || "🔥 Combo Ahorro"}
-                </span>
+            {/* Pill de ahorro o categoría (arriba izquierda) */}
+            {(combo.badge || ahorroUnitario > 0) && (
+              <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                {combo.badge && (
+                  <span className="px-2.5 py-1 rounded-xl bg-slate-900/85 text-white text-[11px] font-extrabold tracking-tight shadow-xs">
+                    {combo.badge}
+                  </span>
+                )}
                 {ahorroUnitario > 0 && (
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-extrabold flex items-center gap-1">
-                    <Flame className="size-3 text-emerald-400" />
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-[11px] font-black font-num shadow-xs">
                     Ahorrás {formatPrecio(ahorroUnitario)}
                   </span>
                 )}
               </div>
+            )}
 
-              <div>
-                <h2
-                  id="combo-detail-title"
-                  className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight"
-                >
-                  {combo.nombre}
+            {/* Pill compacto Club Valette (abajo izquierda) */}
+            <div className="absolute bottom-3 left-3">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/95 text-amber-900 text-[11px] font-black font-num shadow-xs">
+                <Sparkles className="size-3 text-amber-500" />+{puntosUnitario}{" "}
+                pts Club
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Título, datos esenciales en línea y descripción breve */}
+          <div className="space-y-2">
+            <h1
+              id="combo-detail-title"
+              className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug"
+            >
+              {combo.nombre}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-600">
+              {kilosUnitario > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-num">
+                  <Scale className="size-3.5 text-[#003366]" />
+                  {kilosUnitario} kg
+                </span>
+              )}
+              {combo.rinde && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">
+                  <Users className="size-3.5 text-[#003366]" />
+                  {combo.rinde}
+                </span>
+              )}
+            </div>
+
+            {combo.descripcion && (
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed pt-0.5">
+                {combo.descripcion}
+              </p>
+            )}
+          </div>
+
+          {/* 3. Lista limpia y escaneable de cortes incluidos */}
+          {items.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                  Qué incluye ({items.length} cortes)
                 </h2>
-                {combo.descripcion && (
-                  <p className="text-xs sm:text-sm text-slate-200/90 mt-1.5 leading-relaxed max-w-xl">
-                    {combo.descripcion}
-                  </p>
-                )}
               </div>
 
-              {/* Píldoras de Rendimiento, Peso y Puntos */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-white/10 mt-1">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl">
-                  <Scale className="size-4 text-slate-200 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-300 block">
-                      Peso Total
-                    </span>
-                    <span className="text-xs font-black text-white font-num">
-                      {kilosUnitario} kg carne
-                    </span>
-                  </div>
-                </div>
+              <div className="rounded-2xl bg-slate-50/90 border border-slate-200/70 divide-y divide-slate-200/60 overflow-hidden">
+                {items.map((item, index) => {
+                  const cutImg = item.imagen_url || item.imagenUrl || "";
+                  const desc = item.descripcion_item || item.descripcion || "";
+                  const peso = item.cantidad_o_peso || item.peso || "";
 
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl">
-                  <Users className="size-4 text-slate-200 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-300 block">
-                      Rinde Aprox.
-                    </span>
-                    <span className="text-xs font-black text-white">
-                      {combo.rinde || "6 a 8 personas"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl col-span-2 sm:col-span-1">
-                  <Sparkles className="size-4 text-amber-300 shrink-0" />
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-300 block">
-                      Club Valette
-                    </span>
-                    <span className="text-xs font-black text-amber-300 font-num">
-                      +{puntosUnitario} puntos
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Visualización Detallada de Cada Corte con Imagen */}
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  <span>Cortes incluidos en este combo</span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Inspeccioná las fotos reales y cantidades de cada producto del
-                  combo:
-                </p>
-              </div>
-            </div>
-
-            {/* Grilla de Cortes con Foto Individual */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {items.map((item, index) => {
-                const cutImg =
-                  item.imagen_url ||
-                  item.imagenUrl ||
-                  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=400";
-
-                return (
-                  <div
-                    key={index}
-                    className="bg-white border border-slate-200/90 rounded-2xl p-3 flex gap-3 items-center hover:border-slate-300 hover:shadow-2xs transition-all group"
-                  >
-                    {/* Fotografía del corte */}
-                    <div className="relative size-20 sm:size-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
-                      <img
-                        src={cutImg}
-                        alt={item.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                      <div className="absolute bottom-1 right-1">
-                        <span className="px-1.5 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-black font-num shadow-xs">
-                          {item.cantidad_o_peso || item.peso}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Descripción y Especificación del corte */}
-                    <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-[#003366] shrink-0" />
-                          <h4 className="font-black text-slate-900 text-xs sm:text-sm leading-snug group-hover:text-[#003366] transition-colors truncate">
-                            {item.nombre}
-                          </h4>
+                  return (
+                    <div
+                      key={item.id || index}
+                      className="px-3.5 py-3 flex items-center gap-3"
+                    >
+                      {cutImg ? (
+                        <img
+                          src={cutImg}
+                          alt={item.nombre}
+                          className="size-11 rounded-xl object-cover bg-slate-200 shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="size-11 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
+                          <Package className="size-4" />
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {item.descripcion_item ||
-                            item.descripcion ||
-                            "Corte fresco seleccionado fraccionado en el día con cadena de frío."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                      )}
 
-          {/* 3. Indicaciones / Notas al Cortador */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
+                          {item.nombre}
+                        </p>
+                        {desc && (
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {desc}
+                          </p>
+                        )}
+                      </div>
+
+                      {peso && (
+                        <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/90 text-slate-800 text-xs font-black font-num shrink-0">
+                          {peso}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Nota opcional al carnicero (discreta) */}
           <div>
-            <label className="text-xs font-bold text-slate-800 mb-1.5 block">
-              Indicaciones especiales para el cortador (opcional):
+            <label
+              htmlFor="combo-notes"
+              className="text-xs font-bold text-slate-600 mb-1.5 block"
+            >
+              Nota para el carnicero{" "}
+              <span className="text-slate-400 font-medium">(opcional)</span>
             </label>
             <input
+              id="combo-notes"
               type="text"
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Ej: marcar vacío parrillero, separar chorizos en dos bolsitas..."
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:ring-2 focus:ring-[#003366]/20 transition-all outline-none font-medium"
+              placeholder="Ej: separar en bolsitas, asado corte fino..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#003366] transition-colors outline-none"
             />
           </div>
         </div>
 
-        {/* Footer Fijo con Precios, Selector de Cantidad y Botón CTA */}
-        <div className="border-t border-slate-100 p-4 sm:p-5 bg-white shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Selector de cantidad y precios */}
-          <div className="flex items-center justify-between sm:justify-start gap-4">
-            {/* Control de unidades del combo */}
-            <div className="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/80 shrink-0">
+        {/* Footer fijo limpio orientado a conversión */}
+        <div className="border-t border-slate-100 px-5 sm:px-6 py-3.5 bg-white shrink-0 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            {/* Stepper compacto */}
+            <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
               <button
                 type="button"
                 onClick={handleDecrement}
                 disabled={cantidad <= 1}
                 aria-label="Restar combo"
-                className="size-8 rounded-lg bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center disabled:opacity-40 disabled:hover:bg-white transition-colors cursor-pointer shadow-2xs"
+                className="size-8 rounded-lg bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center disabled:opacity-40 transition-colors cursor-pointer shadow-2xs"
               >
                 <Minus className="size-3.5 stroke-[2.5]" />
               </button>
@@ -335,20 +313,10 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
               </button>
             </div>
 
-            {/* Desglose de Precios */}
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">
-                  Total ({totalKilos} kg)
-                </span>
-                {totalAhorro > 0 && (
-                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 font-num">
-                    Ahorrás {formatPrecio(totalAhorro)}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight font-num">
+            {/* Precio final */}
+            <div className="text-right sm:text-left">
+              <div className="flex items-baseline justify-end sm:justify-start gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 leading-none font-num">
                   {formatPrecio(totalPrecio)}
                 </span>
                 {totalAnterior > totalPrecio && (
@@ -357,20 +325,22 @@ export const ComboDetailModal = ({ isOpen, onClose, onBack, combo }) => {
                   </span>
                 )}
               </div>
+              {totalAhorro > 0 && (
+                <span className="text-[11px] font-bold text-emerald-700 font-num">
+                  Ahorrás {formatPrecio(totalAhorro)}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Botón CTA de Agregar al Carrito */}
           <button
             type="button"
             onClick={handleAddToCart}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm bg-[#003366] hover:bg-valette-dark text-white active:scale-98 transition-all cursor-pointer"
+            className="w-full sm:w-auto sm:min-w-48 px-5 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 bg-[#003366] hover:bg-valette-dark text-white active:scale-[0.98] transition-all cursor-pointer shadow-sm"
           >
             <ShoppingCart className="size-4" />
             <span>
-              {cantidad > 1
-                ? `Agregar ${cantidad} Combos al Carrito`
-                : "Agregar Combo al Carrito"}
+              {cantidad > 1 ? `Agregar (${cantidad})` : "Agregar al Carrito"}
             </span>
           </button>
         </div>

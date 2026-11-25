@@ -68,10 +68,16 @@ function getHeroStatusInfo(pedido) {
   };
 }
 
-export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
+export const OrderTrackingModal = ({
+  isOpen,
+  orderId = null,
+  onClose,
+  onBack,
+}) => {
   const { showToast } = useToast();
   const { activeOrderId, setActiveOrderId, sesionId } = useCart();
   const { pedidosHistorial, token } = useAuth();
+  const isInspectingSpecificOrder = Boolean(orderId);
   const activeFromHistory = pedidosHistorial?.find((p) => {
     const est = String(p?.estado_local || p?.estado || "").toLowerCase();
     return (
@@ -81,7 +87,7 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
       !est.includes("rechazado")
     );
   });
-  const targetOrderId = activeOrderId || activeFromHistory?.id || null;
+  const targetOrderId = orderId || activeOrderId || activeFromHistory?.id || null;
 
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
@@ -89,7 +95,7 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
   );
 
   const [pedido, setPedido] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => Boolean(isOpen && targetOrderId));
 
   const buildOrderHeaders = useCallback(() => {
     const headers = {};
@@ -135,6 +141,7 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
 
     let isMounted = true;
     const loadOrder = async () => {
+      setIsLoading(true);
       try {
         const res = await fetch(`${API_URL}/pedidos/${targetOrderId}`, {
           headers: buildOrderHeaders(),
@@ -142,20 +149,30 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
         if (res.ok && isMounted) {
           const data = await res.json();
           setPedido(data);
-          const est = String(data?.estado_local || data?.estado || "").toLowerCase();
-          if (
-            est.includes("entregado") ||
-            est.includes("completado") ||
-            est.includes("cancelado") ||
-            est.includes("rechazado")
-          ) {
-            setActiveOrderId(null);
+          if (!isInspectingSpecificOrder) {
+            const est = String(
+              data?.estado_local || data?.estado || "",
+            ).toLowerCase();
+            if (
+              est.includes("entregado") ||
+              est.includes("completado") ||
+              est.includes("cancelado") ||
+              est.includes("rechazado")
+            ) {
+              setActiveOrderId(null);
+            }
           }
         } else if ((res.status === 403 || res.status === 404) && isMounted) {
           setPedido(null);
-          setActiveOrderId(null);
+          if (!isInspectingSpecificOrder) {
+            setActiveOrderId(null);
+          }
         }
-      } catch {}
+      } catch {
+        // Silencioso
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     };
     loadOrder();
 
@@ -190,11 +207,24 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
       socket.off("connect", handleJoin);
       socket.off("pedido_actualizado", handleUpdated);
     };
-  }, [isOpen, targetOrderId, showToast, buildOrderHeaders, setActiveOrderId]);
+  }, [
+    isOpen,
+    targetOrderId,
+    isInspectingSpecificOrder,
+    showToast,
+    buildOrderHeaders,
+    setActiveOrderId,
+  ]);
 
   if (!isOpen) return null;
 
-  const displayedPedido = targetOrderId ? pedido : null;
+  const displayedPedido =
+    pedido &&
+    (isInspectingSpecificOrder ||
+      !targetOrderId ||
+      Number(pedido.id) === Number(targetOrderId))
+      ? pedido
+      : null;
 
   const handleRefresh = () => {
     if (targetOrderId) {
@@ -274,7 +304,7 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
     >
       <div
         ref={modalRef}
-        className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl pb-6 shadow-2xl h-[80vh] sm:max-h-[88vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col"
+        className="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-3xl pb-6 shadow-2xl h-[80dvh] sm:max-h-[88dvh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-bottom-4 duration-200 flex flex-col overscroll-contain"
       >
         {/* Header con soporte de arrastre */}
         <div
@@ -294,10 +324,10 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
               <ChevronLeft className="size-4 stroke-[2.25]" />
             </button>
             <h3 className="text-[15px] font-extrabold text-slate-900 tracking-tight font-num">
-              {pedido?.id
-                ? `Seguimiento #${String(pedido.id).padStart(4, "0")}`
+              {displayedPedido?.id
+                ? `${isInspectingSpecificOrder ? "Pedido" : "Seguimiento"} #${String(displayedPedido.id).padStart(4, "0")}`
                 : targetOrderId
-                  ? `Seguimiento #${String(targetOrderId).padStart(4, "0")}`
+                  ? `${isInspectingSpecificOrder ? "Pedido" : "Seguimiento"} #${String(targetOrderId).padStart(4, "0")}`
                   : "Seguimiento en Vivo"}
             </h3>
             <div className="flex items-center gap-1.5">
