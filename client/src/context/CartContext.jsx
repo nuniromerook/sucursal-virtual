@@ -11,8 +11,19 @@ import { calculateItemPrice } from "@/utils/priceCalculator";
 import { formatUnidadMedida } from "@/utils/formatters";
 import { API_URL } from "@/config/api";
 import { trackEvent } from "@/utils/analytics";
+import { getSocket } from "@/utils/socket";
 
 const CartContext = createContext(null);
+
+function isOrderTerminal(estadoRaw) {
+  const est = String(estadoRaw || "").toLowerCase();
+  return (
+    est.includes("entregado") ||
+    est.includes("completado") ||
+    est.includes("cancelado") ||
+    est.includes("rechazado")
+  );
+}
 
 const DEFAULT_CUT_IMAGE =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800";
@@ -62,6 +73,55 @@ export const CartProvider = ({ children }) => {
       }
     } catch {}
   }, []);
+
+  // Limpiar automáticamente activeOrderId si el pedido ya fue entregado/cancelado o no pertenece a la sesión
+  useEffect(() => {
+    if (!activeOrderId) return;
+    let isMounted = true;
+
+    const checkActiveOrder = async () => {
+      try {
+        const res = await fetch(`${API_URL}/pedidos/${activeOrderId}`, {
+          headers: {
+            ...getAuthHeaders(),
+            ...(sesionId ? { "X-Sesion-Id": sesionId } : {}),
+          },
+        });
+        if (!isMounted) return;
+        if (res.status === 403 || res.status === 404) {
+          setActiveOrderId(null);
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && isOrderTerminal(data?.estado_local || data?.estado)) {
+            setActiveOrderId(null);
+          }
+        }
+      } catch {
+        // Sin red: no limpiar preventivamente
+      }
+    };
+
+    checkActiveOrder();
+
+    const socket = getSocket();
+    const handleOrderUpdate = (updated) => {
+      if (
+        updated &&
+        Number(updated.id) === Number(activeOrderId) &&
+        isOrderTerminal(updated.estado_local || updated.estado)
+      ) {
+        setActiveOrderId(null);
+      }
+    };
+
+    socket.on("pedido_actualizado", handleOrderUpdate);
+    return () => {
+      isMounted = false;
+      socket.off("pedido_actualizado", handleOrderUpdate);
+    };
+  }, [activeOrderId, sesionId, setActiveOrderId]);
 
   // Inicializar carrito real desde localStorage (sin ítems demo hardcodeados)
   const [cartItems, setCartItems] = useState(() => {

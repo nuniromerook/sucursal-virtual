@@ -70,6 +70,16 @@ function composeAddress({ calle = "", altura = "", localidad = "" }) {
   return [street, loc].filter(Boolean).join(", ");
 }
 
+function isOrderTerminal(estadoRaw) {
+  const est = String(estadoRaw || "").toLowerCase();
+  return (
+    est.includes("entregado") ||
+    est.includes("completado") ||
+    est.includes("cancelado") ||
+    est.includes("rechazado")
+  );
+}
+
 export const ProfileModal = ({
   isOpen,
   initialView = "main",
@@ -201,6 +211,22 @@ export const ProfileModal = ({
 
   if (!isOpen) return null;
 
+  const activeOrderFromHistory = isAuthenticated
+    ? pedidosHistorial.find(
+        (p) => !isOrderTerminal(p?.estado_local || p?.estado),
+      ) || null
+    : null;
+
+  const activeOrderMatch = activeOrderId
+    ? pedidosHistorial.find((p) => Number(p.id) === Number(activeOrderId))
+    : null;
+
+  const resolvedPedidoActivoId =
+    activeOrderId &&
+    !(activeOrderMatch && isOrderTerminal(activeOrderMatch.estado_local || activeOrderMatch.estado))
+      ? activeOrderId
+      : activeOrderFromHistory?.id || null;
+
   const profileData = {
     nombre: user?.nombre || "Invitado Valette",
     email: user?.email || "Iniciá sesión para sumar puntos Club Valette",
@@ -209,9 +235,7 @@ export const ProfileModal = ({
     puntos: Number(user?.puntos || 0),
     equivalenciaPesos: Number(user?.equivalenciaPesos || 0),
     codigoReferido: user?.codigoReferido || "VALETTE",
-    pedidoActivoId:
-      activeOrderId ||
-      (pedidosHistorial[0]?.id ? pedidosHistorial[0].id : null),
+    pedidoActivoId: resolvedPedidoActivoId,
   };
 
   const favoriteProducts = productos.filter((p) =>
@@ -748,22 +772,24 @@ export const ProfileModal = ({
                     </span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormError(null);
-                      setActiveView(isAuthenticated ? "security" : "auth");
-                    }}
-                    className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Lock className="size-[18px] text-slate-600 stroke-[1.75]" />
-                      <span className="text-[13px] font-semibold text-slate-800">
-                        Contraseña y Seguridad
+                  {isAuthenticated && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormError(null);
+                        setActiveView("security");
+                      }}
+                      className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Lock className="size-[18px] text-slate-600 stroke-[1.75]" />
+                        <span className="text-[13px] font-semibold text-slate-800">
+                          Contraseña y Seguridad
+                        </span>
                       </span>
-                    </span>
-                    <ChevronRight className="size-4 text-slate-400" />
-                  </button>
+                      <ChevronRight className="size-4 text-slate-400" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -917,6 +943,7 @@ export const ProfileModal = ({
                   <button
                     type="button"
                     onClick={() => {
+                      setActiveOrderId(null);
                       logout();
                       handleCloseModal();
                       showToast("Sesión cerrada correctamente", "info");

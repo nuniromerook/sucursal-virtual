@@ -336,15 +336,7 @@ export const CombosSection = ({ searchQuery = "" }) => {
             >
               <div>
                 {/* 1. Imagen Única Custom del Combo */}
-                <div className="relative w-full rounded-xl overflow-hidden border border-slate-200/90 bg-slate-100 shadow-2xs mb-3.5">
-                  {/* Badge flotante de Kilos Totales sobre la foto */}
-                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 text-white text-[10px] font-black uppercase tracking-wide shadow-xs flex items-center gap-1 font-num">
-                      <Scale className="size-3" />
-                      <span>{combo.kilos} kg en total</span>
-                    </span>
-                  </div>
-
+                <div className="relative w-full rounded-xl overflow-hidden bg-slate-100 mb-3.5">
                   {/* Badge flotante "Ver detalle" en esquina derecha */}
                   <div className="absolute top-2.5 right-2.5 z-10 hidden sm:flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
                     <span className="px-2 py-0.5 rounded-lg bg-white/90 text-[#003366] text-[10px] font-black uppercase tracking-tight shadow-xs flex items-center gap-1">

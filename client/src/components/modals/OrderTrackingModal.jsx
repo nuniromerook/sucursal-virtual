@@ -70,9 +70,18 @@ function getHeroStatusInfo(pedido) {
 
 export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
   const { showToast } = useToast();
-  const { activeOrderId, sesionId } = useCart();
+  const { activeOrderId, setActiveOrderId, sesionId } = useCart();
   const { pedidosHistorial, token } = useAuth();
-  const targetOrderId = activeOrderId || pedidosHistorial?.[0]?.id || null;
+  const activeFromHistory = pedidosHistorial?.find((p) => {
+    const est = String(p?.estado_local || p?.estado || "").toLowerCase();
+    return (
+      !est.includes("entregado") &&
+      !est.includes("completado") &&
+      !est.includes("cancelado") &&
+      !est.includes("rechazado")
+    );
+  });
+  const targetOrderId = activeOrderId || activeFromHistory?.id || null;
 
   const { handleBackdropClick, modalRef, dragHandleProps } = useModalBehavior(
     isOpen,
@@ -133,6 +142,18 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
         if (res.ok && isMounted) {
           const data = await res.json();
           setPedido(data);
+          const est = String(data?.estado_local || data?.estado || "").toLowerCase();
+          if (
+            est.includes("entregado") ||
+            est.includes("completado") ||
+            est.includes("cancelado") ||
+            est.includes("rechazado")
+          ) {
+            setActiveOrderId(null);
+          }
+        } else if ((res.status === 403 || res.status === 404) && isMounted) {
+          setPedido(null);
+          setActiveOrderId(null);
         }
       } catch {}
     };
@@ -169,9 +190,11 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
       socket.off("connect", handleJoin);
       socket.off("pedido_actualizado", handleUpdated);
     };
-  }, [isOpen, targetOrderId, showToast, buildOrderHeaders]);
+  }, [isOpen, targetOrderId, showToast, buildOrderHeaders, setActiveOrderId]);
 
   if (!isOpen) return null;
+
+  const displayedPedido = targetOrderId ? pedido : null;
 
   const handleRefresh = () => {
     if (targetOrderId) {
@@ -179,27 +202,31 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
     }
   };
 
-  const currentStep = getStepIndex(pedido?.estado_local || pedido?.estado);
-  const hero = getHeroStatusInfo(pedido);
-  const items = Array.isArray(pedido?.items) ? pedido.items : [];
-  const isPickup = pedido?.tipo_entrega === "retiro_sucursal";
+  const currentStep = getStepIndex(
+    displayedPedido?.estado_local || displayedPedido?.estado,
+  );
+  const hero = getHeroStatusInfo(displayedPedido);
+  const items = Array.isArray(displayedPedido?.items)
+    ? displayedPedido.items
+    : [];
+  const isPickup = displayedPedido?.tipo_entrega === "retiro_sucursal";
   const hasRealWeight =
-    Number(pedido?.monto_total_final || pedido?.monto_final_real) > 0 ||
+    Number(displayedPedido?.monto_total_final || displayedPedido?.monto_final_real) > 0 ||
     items.some((it) => Number(it.peso_real) > 0);
   const totalMostrar =
-    Number(pedido?.monto_total_final || pedido?.monto_final_real) ||
-    Number(pedido?.monto_total_estimado) ||
+    Number(displayedPedido?.monto_total_final || displayedPedido?.monto_final_real) ||
+    Number(displayedPedido?.monto_total_estimado) ||
     0;
 
-  const horaCreacion = pedido?.creado_en
-    ? new Date(pedido.creado_en).toLocaleTimeString("es-AR", {
+  const horaCreacion = displayedPedido?.creado_en
+    ? new Date(displayedPedido.creado_en).toLocaleTimeString("es-AR", {
         hour: "2-digit",
         minute: "2-digit",
       })
     : "Recibido";
 
-  const horaActualizacion = pedido?.actualizado_en
-    ? new Date(pedido.actualizado_en).toLocaleTimeString("es-AR", {
+  const horaActualizacion = displayedPedido?.actualizado_en
+    ? new Date(displayedPedido.actualizado_en).toLocaleTimeString("es-AR", {
         hour: "2-digit",
         minute: "2-digit",
       })
@@ -304,7 +331,7 @@ export const OrderTrackingModal = ({ isOpen, onClose, onBack }) => {
 
         <div className="flex flex-col size-full overflow-y-auto">
           {/* Estado vacío cuando el usuario no tiene un pedido propio activo */}
-          {!pedido && !isLoading ? (
+          {!displayedPedido && !isLoading ? (
             <div className="p-8 my-auto space-y-3 text-center">
               <div className="size-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                 <Package className="size-7 stroke-[1.75]" />
