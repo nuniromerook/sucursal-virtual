@@ -18,6 +18,8 @@ const bannersRoutes = require("./routes/banners.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const notificacionesRoutes = require("./routes/notificaciones.routes");
 const seoRoutes = require("./routes/seo.routes");
+const configuracionRoutes = require("./routes/configuracion.routes");
+const { DEFAULT_HOME_CONFIG } = require("./controllers/configuracion.controller");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -103,6 +105,7 @@ app.use(bannersRoutes);
 app.use(dashboardRoutes);
 app.use(notificacionesRoutes);
 app.use(seoRoutes);
+app.use(configuracionRoutes);
 
 app.get("/", (req, res) => {
   res.send("Sucursal Virtual running with Socket.io!");
@@ -171,7 +174,20 @@ httpServer.listen(PORT, async () => {
     );
     await pool.query("ALTER TABLE banners_publicidad ADD COLUMN IF NOT EXISTS texto_secundario VARCHAR(160) DEFAULT '';");
     await pool.query("ALTER TABLE banners_publicidad ADD COLUMN IF NOT EXISTS accion_tipo VARCHAR(40) DEFAULT 'categoria';");
-    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo', 'clientes' y 'banners_publicidad' verificados.");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS configuracion_sitio (
+        clave VARCHAR(80) PRIMARY KEY,
+        valor JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await pool.query(
+      `INSERT INTO configuracion_sitio (clave, valor)
+       VALUES ($1, $2::jsonb)
+       ON CONFLICT (clave) DO NOTHING`,
+      ["home_inicio", JSON.stringify(DEFAULT_HOME_CONFIG)],
+    );
+    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo', 'clientes', 'banners_publicidad' y 'configuracion_sitio' verificados.");
   } catch (err) {
     console.error("⚠️ [DB Auto-Migration Error]:", err.message);
   }

@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Tag,
   Image as ImageIcon,
+  LayoutTemplate,
   BarChart3,
   Database,
   Users,
@@ -47,6 +48,12 @@ export default function Sidebar({ totalCortes = 0 }) {
       id: "banners",
       label: "Banners Portada",
       icon: ImageIcon,
+      staffAllowed: false,
+    },
+    {
+      id: "contenido",
+      label: "Contenido / Inicio",
+      icon: LayoutTemplate,
       staffAllowed: false,
     },
     {

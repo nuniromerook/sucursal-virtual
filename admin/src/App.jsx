@@ -15,6 +15,7 @@ import CatalogoPage from "./pages/CatalogoPage";
 import KdsPage from "./pages/KdsPage";
 import CombosPage from "./pages/CombosPage";
 import BannersPage from "./pages/BannersPage";
+import ContenidoInicioPage from "./pages/ContenidoInicioPage";
 import MetricasPage from "./pages/MetricasPage";
 import EquipoPage from "./pages/EquipoPage";
 import NotificacionesPage from "./pages/NotificacionesPage";
@@ -72,6 +73,10 @@ function AppContent() {
 
               <div style={{ display: effectiveTab === "banners" ? "block" : "none" }}>
                 <BannersPage />
+              </div>
+
+              <div style={{ display: effectiveTab === "contenido" ? "block" : "none" }}>
+                <ContenidoInicioPage />
               </div>
 
               <div style={{ display: effectiveTab === "clientes" ? "block" : "none" }}>

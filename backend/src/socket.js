@@ -197,6 +197,15 @@ const emitirCambioCatalogo = (data) => {
 };
 
 /**
+ * Emite evento de cambio en contenido dinámico del sitio (Home / Inicio)
+ */
+const emitirCambioContenido = (data) => {
+  if (!io) return;
+  console.log("📢 [Socket.io] Emitiendo 'contenido_actualizado'");
+  io.emit("contenido_actualizado", data);
+};
+
+/**
  * Emite evento de notificación genérica o personalizada
  */
 const emitirNotificacion = (notificacion) => {
@@ -230,5 +239,6 @@ module.exports = {
   emitirActualizacionPedido,
   emitirCambioStock,
   emitirCambioCatalogo,
+  emitirCambioContenido,
   emitirNotificacion,
 };

@@ -5,7 +5,9 @@ import {
   CORTES_MOCK,
   fetchCatalogo,
   fetchBanners,
+  fetchHomeConfig,
 } from "@/services/catalogo.service";
+import { DEFAULT_HOME_CONFIG } from "@/utils/horarios";
 import { matchesAnimalCategory } from "@/components/products/CategoryHorizontalShelf";
 
 const CatalogoContext = createContext(null);
@@ -24,6 +26,18 @@ export const CatalogoProvider = ({ children }) => {
   });
 
   const [banners, setBanners] = useState([]);
+  const [homeConfig, setHomeConfig] = useState(() => {
+    try {
+      const cached = localStorage.getItem("valette_home_config_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === "object") {
+          return { ...DEFAULT_HOME_CONFIG, ...parsed };
+        }
+      }
+    } catch {}
+    return DEFAULT_HOME_CONFIG;
+  });
   const [isLoadingBanners, setIsLoadingBanners] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -34,9 +48,10 @@ export const CatalogoProvider = ({ children }) => {
 
     const runFetch = async () => {
       try {
-        const [cortesData, bannersData] = await Promise.all([
+        const [cortesData, bannersData, homeCfgData] = await Promise.all([
           fetchCatalogo(),
           fetchBanners(),
+          fetchHomeConfig(),
         ]);
 
         if (!isCancelled) {
@@ -44,6 +59,9 @@ export const CatalogoProvider = ({ children }) => {
             setProductos(cortesData);
           }
           setBanners(Array.isArray(bannersData) ? bannersData : []);
+          if (homeCfgData) {
+            setHomeConfig({ ...DEFAULT_HOME_CONFIG, ...homeCfgData });
+          }
           setIsLoadingBanners(false);
           setIsError(false);
         }
@@ -59,7 +77,7 @@ export const CatalogoProvider = ({ children }) => {
 
     runFetch();
 
-    // Suscripción en tiempo real a cambios de catálogo o stock vía Socket singleton
+    // Suscripción en tiempo real a cambios de catálogo, stock o contenido vía Socket singleton
     const socket = getSocket();
 
     const handleConnect = () => {
@@ -67,6 +85,22 @@ export const CatalogoProvider = ({ children }) => {
     };
     const handleRefresh = () => {
       runFetch();
+    };
+    const handleContenidoActualizado = (payload) => {
+      if (
+        payload?.clave === "home_inicio" &&
+        payload?.valor &&
+        typeof payload.valor === "object"
+      ) {
+        const merged = { ...DEFAULT_HOME_CONFIG, ...payload.valor };
+        setHomeConfig(merged);
+        try {
+          localStorage.setItem(
+            "valette_home_config_cache",
+            JSON.stringify(merged),
+          );
+        } catch {}
+      }
     };
 
     if (socket.connected) {
@@ -76,27 +110,33 @@ export const CatalogoProvider = ({ children }) => {
     socket.on("connect", handleConnect);
     socket.on("catalogo_actualizado", handleRefresh);
     socket.on("stock_actualizado", handleRefresh);
+    socket.on("contenido_actualizado", handleContenidoActualizado);
 
     return () => {
       isCancelled = true;
       socket.off("connect", handleConnect);
       socket.off("catalogo_actualizado", handleRefresh);
       socket.off("stock_actualizado", handleRefresh);
+      socket.off("contenido_actualizado", handleContenidoActualizado);
     };
   }, []);
 
   const refreshCatalogo = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [cortesData, bannersData] = await Promise.all([
+      const [cortesData, bannersData, homeCfgData] = await Promise.all([
         fetchCatalogo(),
         fetchBanners(),
+        fetchHomeConfig(),
       ]);
 
       if (cortesData && cortesData.length > 0) {
         setProductos(cortesData);
       }
       setBanners(Array.isArray(bannersData) ? bannersData : []);
+      if (homeCfgData) {
+        setHomeConfig({ ...DEFAULT_HOME_CONFIG, ...homeCfgData });
+      }
       setIsLoadingBanners(false);
       setIsError(false);
     } catch (err) {
@@ -160,6 +200,7 @@ export const CatalogoProvider = ({ children }) => {
       value={{
         productos,
         banners,
+        homeConfig,
         isLoadingBanners,
         isLoading,
         isError,

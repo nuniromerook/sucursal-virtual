@@ -20,6 +20,7 @@ export const TabNavigationProvider = ({ children }) => {
     pedidos: 0,
     combos: 0,
     banners: 0,
+    contenido: 0,
     metricas: 0,
     clientes: 0,
     notificaciones: 0,

@@ -832,6 +832,36 @@ export const fetchSucursales = async () => {
   return null;
 };
 
+const CACHE_KEY_HOME_CONFIG = "valette_home_config_cache";
+
+/**
+ * Obtiene la configuración dinámica de portada (saludo y mensajes) desde PostgreSQL.
+ */
+export const fetchHomeConfig = async () => {
+  try {
+    const res = await fetch(`${API_URL}/configuracion/home`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const valor =
+      data && typeof data.valor === "object" && data.valor !== null
+        ? data.valor
+        : null;
+
+    if (valor) {
+      try {
+        localStorage.setItem(CACHE_KEY_HOME_CONFIG, JSON.stringify(valor));
+      } catch {}
+    }
+    return valor;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Compatibilidad hacia atrás
  */

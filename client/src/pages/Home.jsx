@@ -15,6 +15,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useAuth } from "@/context/AuthContext";
 import { scoreProductMatch } from "@/utils/searchRanking";
 import { formatDisplayAddress } from "@/utils/address";
+import { resolveHomeHeaderContent } from "@/utils/horarios";
 import { ChevronDown, MapPin, Store, Search, X } from "lucide-react";
 
 export const Home = ({
@@ -29,13 +30,24 @@ export const Home = ({
   onResetFilters,
   onStickyChange,
 }) => {
-  const { productos, isLoading, categoryCounts } = useCatalogo();
+  const { productos, homeConfig, isLoading, categoryCounts } = useCatalogo();
   const { customerAddress, deliveryMode, selectedBranch } = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
+  const [clockTick, setClockTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setClockTick((t) => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const firstName =
     isAuthenticated && user?.nombre ? user.nombre.trim().split(/\s+/)[0] : "";
+
+  const homeHeader = useMemo(() => {
+    void clockTick;
+    return resolveHomeHeaderContent(homeConfig, selectedBranch, firstName);
+  }, [homeConfig, selectedBranch, firstName, clockTick]);
 
   const [activeSection, setActiveSection] = useState("combos");
   const [isNavbarFused, setIsNavbarFused] = useState(false);
@@ -323,11 +335,13 @@ export const Home = ({
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col bg-slate-100">
-      <div className="px-4 sm:px-6 pt-4 flex flex-col -space-y-1">
-        <h1 className="text-2xl font-bold">
-          Hola {firstName ? firstName : "invitado"}!
+      <div className="px-4 sm:px-6 pt-4 sm:pt-5 flex flex-col gap-0.5">
+        <h1 className="text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-tight">
+          {homeHeader.title}
         </h1>
-        <h2>Qué vas a pedir hoy?</h2>
+        <p className="text-sm text-slate-500 font-medium leading-snug">
+          {homeHeader.subtitle}
+        </p>
       </div>
       {/* 1. Selector de Entrega / Retiro & Dirección Mobile */}
       <div className="px-4 sm:px-6 pt-4 sm:hidden">

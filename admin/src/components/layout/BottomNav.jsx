@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Tag,
   Image as ImageIcon,
+  LayoutTemplate,
   BarChart3,
   Users,
   BellRing,
@@ -48,6 +49,7 @@ export default function BottomNav() {
   const extraItems = [
     { id: "combos", label: "Combos & Promos", icon: Tag },
     { id: "banners", label: "Banners Portada", icon: ImageIcon },
+    { id: "contenido", label: "Contenido / Inicio", icon: LayoutTemplate },
     { id: "notificaciones", label: "Difusión Push", icon: BellRing },
     { id: "equipo", label: "Equipo & Roles", icon: UserCog },
     { id: "ajustes", label: "Sucursal & Horarios", icon: Store },
