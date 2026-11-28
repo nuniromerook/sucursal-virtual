@@ -34,11 +34,160 @@ body {
   }
 }
 
+:root {
+  --in-oklab: ;
+}
+
+@supports (background: linear-gradient(in oklab, white, black)) {
+  :root {
+    --in-oklab: in oklab;
+  }
+}
+
 .banner-carousel-track {
   overscroll-behavior-x: contain;
   touch-action: manipulation;
   @media (prefers-reduced-motion: no-preference) {
     scroll-behavior: smooth;
+  }
+}
+
+@keyframes banner-dot-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.banner-dot-progress-fill {
+  transform-origin: left center;
+  transform: scaleX(1);
+  @media (prefers-reduced-motion: no-preference) {
+    transform: scaleX(0);
+    animation: banner-dot-progress var(--banner-autoplay-ms, 7000ms) linear
+      forwards;
+  }
+}
+
+/* Modo ambiental inmersivo unificado (Mobile 4:5 + Desktop horizontal) sin backdrop-blur ni blur pesado */
+.banner-immersive-slide {
+  isolation: isolate;
+  background-color: var(--banner-base, #0b1220);
+  @media (prefers-reduced-motion: no-preference) {
+    transition: background-color 420ms ease;
+  }
+}
+
+.banner-immersive-scrim {
+  background: linear-gradient(
+    to top var(--in-oklab),
+    rgb(7 10 18 / 0.96) 0%,
+    rgb(7 10 18 / 0.86) 24%,
+    rgb(7 10 18 / 0.64) 44%,
+    rgb(7 10 18 / 0.24) 64%,
+    transparent 82%,
+    rgb(7 10 18 / 0.24) 100%
+  );
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 420ms ease;
+  }
+}
+
+@supports (color: color-mix(in oklab, black, transparent)) {
+  .banner-immersive-scrim {
+    background: linear-gradient(
+      to top var(--in-oklab),
+      color-mix(in oklab, var(--banner-base, #0b1220) 96%, black) 0%,
+      color-mix(in oklab, var(--banner-base, #0b1220) 88%, transparent) 24%,
+      color-mix(in oklab, var(--banner-glow-bottom, #121e34) 74%, transparent)
+        44%,
+      color-mix(in oklab, var(--banner-edge, #142138) 28%, transparent) 64%,
+      transparent 82%,
+      color-mix(in oklab, var(--banner-base, #0b1220) 26%, transparent) 100%
+    );
+  }
+}
+
+@media (min-width: 640px) {
+  .banner-desktop-ambient {
+    background:
+      radial-gradient(
+        ellipse 74% 92% at 12% 6% var(--in-oklab),
+        var(--banner-glow-top, rgb(31 52 88)) 0%,
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 72% 90% at 26% 98% var(--in-oklab),
+        var(--banner-glow-bottom, rgb(18 30 52)) 0%,
+        transparent 74%
+      ),
+      radial-gradient(
+        ellipse 48% 112% at 44% 50% var(--in-oklab),
+        var(--banner-edge, rgb(20 33 56)) 0%,
+        transparent 76%
+      ),
+      linear-gradient(
+        to right var(--in-oklab),
+        var(--banner-base, #0b1220) 0%,
+        var(--banner-edge, #142138) 52%,
+        var(--banner-base, #0b1220) 100%
+      );
+    @media (prefers-reduced-motion: no-preference) {
+      transition: opacity 420ms ease;
+    }
+  }
+
+  .banner-desktop-photo {
+    mask-image: linear-gradient(
+      to right var(--in-oklab),
+      transparent 0%,
+      rgb(0 0 0 / 0.14) 9%,
+      rgb(0 0 0 / 0.46) 20%,
+      rgb(0 0 0 / 0.82) 31%,
+      rgb(0 0 0 / 0.96) 38%,
+      rgb(0 0 0 / 1) 44%
+    );
+  }
+
+  .banner-immersive-scrim {
+    background: linear-gradient(
+      to right var(--in-oklab),
+      rgb(7 10 18 / 0.34) 0%,
+      rgb(7 10 18 / 0.42) 34%,
+      rgb(7 10 18 / 0.2) 48%,
+      transparent 60%
+    );
+  }
+
+  @supports (color: color-mix(in oklab, black, transparent)) {
+    .banner-immersive-scrim {
+      background: linear-gradient(
+        to right var(--in-oklab),
+        color-mix(in oklab, var(--banner-base, #0b1220) 34%, transparent) 0%,
+        color-mix(in oklab, var(--banner-base, #0b1220) 44%, transparent) 34%,
+        color-mix(in oklab, var(--banner-base, #0b1220) 20%, transparent) 48%,
+        transparent 60%
+      );
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .banner-immersive-slide {
+    background-color: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+
+  .banner-desktop-ambient,
+  .banner-immersive-scrim {
+    display: none;
+  }
+
+  .banner-dot-progress-fill {
+    background-color: Highlight;
   }
 }
 

@@ -322,8 +322,8 @@ export const Home = ({
     sectionsWithProducts.length > 0 || (!searchQuery.trim() && !onlyStock);
 
   return (
-    <div className="max-w-6xl mx-auto flex flex-col">
-      <div className="px-4 sm:px-6 pt-4 flex flex-col -space-y-2">
+    <div className="max-w-6xl mx-auto flex flex-col bg-slate-100">
+      <div className="px-4 sm:px-6 pt-4 flex flex-col -space-y-1">
         <h1 className="text-2xl font-bold">
           Hola {firstName ? firstName : "invitado"}!
         </h1>

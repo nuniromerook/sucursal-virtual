@@ -11,3 +11,6 @@ Todas las generaciones de UI, pantallas, modales, formularios y recursos visuale
 ## Flujo de Trabajo y Despliegue
 - Durante el desarrollo habitual, guardar cambios **solo en local**.
 - Nunca ejecutar `git commit`, `git push` ni `deploy.sh` hasta que el usuario solicite explícitamente `git-pull` o desplegar (ver `.agents/rules/deployment.md`).
+
+## Diccionario del Proyecto
+- **global**: aplica tanto a **desktop** como a **mobile** (ambos viewports).

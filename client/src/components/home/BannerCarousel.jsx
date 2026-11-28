@@ -11,6 +11,11 @@ import {
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useCart } from "@/context/CartContext";
 import { API_URL } from "@/config/api";
+import {
+  DEFAULT_AMBIENT_PALETTE,
+  extractBannerAmbient,
+  getCachedBannerAmbient,
+} from "@/utils/bannerAmbient";
 
 function resolveBannerAction(banner) {
   const rawType = String(banner?.accion_tipo || "").trim().toLowerCase();
@@ -84,6 +89,8 @@ function resolveBannerAction(banner) {
   return { type: "categoria", category: matchedCat, isExternalVisual: false };
 }
 
+const AUTOPLAY_MS = 7000;
+
 export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
   const { banners, isLoadingBanners } = useCatalogo();
   const { sesionId } = useCart();
@@ -91,10 +98,22 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [failedBannerIds, setFailedBannerIds] = useState(() => new Set());
   const [isPaused, setIsPaused] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 640px)").matches
+      : false,
+  );
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false,
+  );
+  const [ambientPalettes, setAmbientPalettes] = useState({});
 
   const trackRef = useRef(null);
-  const isInteractingRef = useRef(false);
+  const touchEndTimerRef = useRef(null);
   const pendingTargetRef = useRef(null);
   const settledSlideRef = useRef(0);
   const trackedImpressionsRef = useRef(new Set());
@@ -229,24 +248,80 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
     };
   }, [totalSlides]);
 
-  // Auto-avance suave cada 7 segundos (se pausa al interactuar o pausar manualmente)
+  // Detectar viewport y preferencia de movimiento reducido
   useEffect(() => {
-    if (totalSlides <= 1 || isPaused) return;
+    if (typeof window === "undefined") return;
+    const mqDesktop = window.matchMedia("(min-width: 640px)");
+    const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onDesktopChange = (e) => setIsDesktop(e.matches);
+    const onMotionChange = (e) => setPrefersReducedMotion(e.matches);
+    mqDesktop.addEventListener("change", onDesktopChange);
+    mqMotion.addEventListener("change", onMotionChange);
+    return () => {
+      mqDesktop.removeEventListener("change", onDesktopChange);
+      mqMotion.removeEventListener("change", onMotionChange);
+      if (touchEndTimerRef.current) clearTimeout(touchEndTimerRef.current);
+    };
+  }, []);
+
+  // Extraer colores ambientales de cada banner activo (mobile y desktop, < 1ms en canvas)
+  useEffect(() => {
+    if (validBanners.length === 0) return;
+    let cancelled = false;
+
+    const urls = Array.from(
+      new Set(
+        validBanners
+          .map((b) =>
+            isDesktop
+              ? b.imagen_desktop_url || b.imagenUrl || b.imagen_mobile_url || ""
+              : b.imagen_mobile_url || b.imagen_desktop_url || b.imagenUrl || "",
+          )
+          .filter(Boolean),
+      ),
+    );
+
+    urls.forEach((url) => {
+      if (getCachedBannerAmbient(url)) return;
+
+      extractBannerAmbient(url).then((palette) => {
+        if (cancelled) return;
+        setAmbientPalettes((prev) =>
+          prev[url] === palette ? prev : { ...prev, [url]: palette },
+        );
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isDesktop, validBanners]);
+
+  const isAutoplayPaused = isPaused || isInteracting;
+
+  // Fallback de auto-avance cuando prefers-reduced-motion desactiva la animación CSS de progreso
+  useEffect(() => {
+    if (totalSlides <= 1 || isAutoplayPaused || !prefersReducedMotion) return;
     const timer = setInterval(() => {
-      if (isInteractingRef.current) return;
       scrollToSlide(safeIndex + 1, false);
-    }, 7000);
+    }, AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [totalSlides, isPaused, safeIndex, scrollToSlide]);
+  }, [
+    totalSlides,
+    isAutoplayPaused,
+    prefersReducedMotion,
+    safeIndex,
+    scrollToSlide,
+  ]);
 
   // Skeleton limpio mientras cargan los banners reales desde PostgreSQL
   if (isLoadingBanners) {
     return (
       <div
         aria-label="Cargando promociones"
-        className="relative rounded-3xl overflow-hidden bg-slate-200/80 border border-slate-200/70 mb-8 aspect-4/5 sm:aspect-auto sm:h-[310px] lg:h-[360px] animate-pulse"
+        className="relative rounded-3xl overflow-hidden bg-slate-200/80 border border-slate-200/70 mb-8 aspect-4/5 sm:aspect-auto sm:h-[315px] md:h-[345px] lg:h-[378px] animate-pulse"
       >
-        <div className="absolute inset-x-5 bottom-6 sm:inset-y-8 sm:left-8 sm:right-auto sm:w-80 flex flex-col justify-end sm:justify-center gap-3">
+        <div className="absolute inset-x-5 bottom-6 sm:inset-y-8 sm:left-11 lg:left-14 sm:right-auto sm:w-80 flex flex-col justify-end sm:justify-center gap-3">
           <div className="h-5 w-28 rounded-full bg-slate-300/80" />
           <div className="h-7 w-64 rounded-xl bg-slate-300/80" />
           <div className="h-4 w-52 rounded-lg bg-slate-300/70" />
@@ -296,19 +371,32 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
     <section
       aria-roledescription="carousel"
       aria-label="Promociones destacadas"
-      onMouseEnter={() => {
-        isInteractingRef.current = true;
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") setIsInteracting(true);
       }}
-      onMouseLeave={() => {
-        isInteractingRef.current = false;
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") setIsInteracting(false);
       }}
       onTouchStart={() => {
-        isInteractingRef.current = true;
+        if (touchEndTimerRef.current) {
+          clearTimeout(touchEndTimerRef.current);
+          touchEndTimerRef.current = null;
+        }
+        setIsInteracting(true);
       }}
       onTouchEnd={() => {
-        setTimeout(() => {
-          isInteractingRef.current = false;
+        if (touchEndTimerRef.current) clearTimeout(touchEndTimerRef.current);
+        touchEndTimerRef.current = setTimeout(() => {
+          touchEndTimerRef.current = null;
+          setIsInteracting(false);
         }, 400);
+      }}
+      onTouchCancel={() => {
+        if (touchEndTimerRef.current) {
+          clearTimeout(touchEndTimerRef.current);
+          touchEndTimerRef.current = null;
+        }
+        setIsInteracting(false);
       }}
       className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-native mb-8 text-white select-none group"
     >
@@ -381,6 +469,17 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
             banner.imagen_mobile_url ||
             banner.imagen_desktop_url ||
             banner.imagenUrl;
+          const activeSampleImg = isDesktop ? desktopImg : mobileImg;
+          const ambient =
+            ambientPalettes[activeSampleImg] ||
+            getCachedBannerAmbient(activeSampleImg) ||
+            DEFAULT_AMBIENT_PALETTE;
+          const ambientVars = {
+            "--banner-base": ambient.base,
+            "--banner-edge": ambient.edge,
+            "--banner-glow-top": ambient.glowTop,
+            "--banner-glow-bottom": ambient.glowBottom,
+          };
 
           return (
             <div
@@ -388,15 +487,22 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
               role="group"
               aria-roledescription="slide"
               aria-label={`${idx + 1} de ${totalSlides}`}
-              className="w-full shrink-0 snap-center snap-always aspect-4/5 sm:aspect-auto"
+              className="w-full shrink-0 snap-center snap-always aspect-4/5 sm:aspect-auto sm:h-[315px] md:h-[345px] lg:h-[378px]"
             >
               <div
-                className={`relative w-full h-full sm:h-auto flex flex-col sm:flex-row-reverse items-center justify-between sm:bg-linear-to-r ${
-                  banner.bgClass || "from-valette-dark via-[#003366] to-slate-900"
-                }`}
+                style={ambientVars}
+                className="banner-immersive-slide relative w-full h-full flex flex-col sm:flex-row items-stretch overflow-hidden"
               >
-                {/* Imagen Mobile (4:5) / Desktop (16:9) con descarte limpio si falla */}
-                <picture className="absolute inset-0 w-full h-full sm:relative sm:inset-auto sm:w-60 md:w-80 lg:w-2xl sm:aspect-4/5 lg:aspect-video block shrink-0">
+                {/* Capa ambiental inmersiva en Desktop (colores reales de la imagen, sin blur pesado) */}
+                <div
+                  className={`banner-desktop-ambient hidden sm:block absolute inset-0 z-0 pointer-events-none ${
+                    ambient.extracted ? "opacity-100" : "opacity-85"
+                  }`}
+                  aria-hidden="true"
+                />
+
+                {/* Imagen Mobile (4:5 completo) / Desktop (fundida suavemente por su borde izquierdo) */}
+                <picture className="banner-desktop-photo absolute inset-0 w-full h-full sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[62%] md:w-[64%] lg:w-[66%] z-[1] block shrink-0">
                   {mobileImg && (
                     <source media="(max-width: 639px)" srcSet={mobileImg} />
                   )}
@@ -410,18 +516,18 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
                   />
                 </picture>
 
-                {/* Gradiente de contraste en Mobile (sin backdrop-blur para 60fps) */}
+                {/* Sombra inmersiva con tonos reales de la imagen (inferior en Mobile, lateral en Desktop) */}
                 <div
-                  className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/65 to-black/25 sm:hidden pointer-events-none"
+                  className="banner-immersive-scrim absolute inset-0 z-[2] pointer-events-none"
                   aria-hidden="true"
                 />
 
                 {/* Contenido / Info */}
-                <div className="absolute inset-0 sm:relative sm:inset-auto flex flex-col justify-end sm:justify-center p-5 pb-12 sm:p-8 sm:max-w-md z-10">
+                <div className="absolute inset-0 sm:relative sm:inset-auto flex flex-col justify-end sm:justify-center p-5 pb-12 sm:pl-11 sm:pr-6 sm:py-8 sm:pb-11 lg:pl-14 lg:pr-6 lg:py-9 sm:max-w-[56%] md:max-w-[50%] lg:max-w-[46%] z-10">
                   <div
                     className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold mb-2.5 w-fit ${
                       banner.tagColor ||
-                      "bg-red-500/30 border-red-400/40 text-red-200"
+                      "bg-white/14 border-white/25 text-white/95"
                     }`}
                   >
                     <span>{tagText}</span>
@@ -431,7 +537,7 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
                     {banner.titulo}
                   </h2>
 
-                  <p className="text-xs sm:text-sm text-slate-200 sm:text-slate-300 mt-2 line-clamp-3 sm:line-clamp-none sm:min-h-[3lh]">
+                  <p className="text-xs sm:text-sm text-white/85 mt-2 line-clamp-3 sm:line-clamp-none sm:min-h-[3lh]">
                     {descText}
                   </p>
 
@@ -441,7 +547,7 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
                       onClick={() => handleAction(banner)}
                       className={`px-5 py-2.5 rounded-xl font-extrabold text-xs transition-transform active:scale-95 whitespace-nowrap shadow-sm cursor-pointer inline-flex items-center gap-1.5 ${
                         banner.btnClass ||
-                        "bg-white text-[#003366] hover:bg-slate-100"
+                        "bg-white text-slate-950 hover:bg-slate-100"
                       }`}
                     >
                       <span>{btnText}</span>
@@ -458,7 +564,7 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
                       )}
                     </button>
                     {secondaryText && (
-                      <span className="text-[11px] text-slate-300 font-medium">
+                      <span className="text-[11px] text-white/75 font-medium">
                         {secondaryText}
                       </span>
                     )}
@@ -475,11 +581,11 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
         {announcement}
       </p>
 
-      {/* Marcadores de navegación (área táctil >= 24px y estado activo con forma + color) */}
+      {/* Marcadores de navegación con progreso tipo Instagram Stories (global: mobile y desktop) */}
       {totalSlides > 1 && (
         <nav
           aria-label="Elegir banner"
-          className="absolute bottom-2 left-4 sm:left-7 flex items-center gap-0.5 z-20"
+          className="absolute bottom-2 left-4 sm:left-10 lg:left-12 flex items-center gap-0.5 z-20"
         >
           {validBanners.map((b, idx) => {
             const isActive = idx === safeIndex;
@@ -493,12 +599,30 @@ export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
                 className="min-w-6 min-h-6 flex items-center justify-center cursor-pointer group/dot"
               >
                 <span
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`relative block h-2 rounded-full overflow-hidden transition-[width,background-color] duration-300 ${
                     isActive
-                      ? "bg-white w-6"
-                      : "bg-white/45 group-hover/dot:bg-white/75 w-2"
+                      ? "w-7 bg-white/30"
+                      : "w-2 bg-white/35 group-hover/dot:bg-white/65"
                   }`}
-                />
+                >
+                  {isActive && (
+                    <span
+                      key={`progress-${safeIndex}`}
+                      style={{
+                        "--banner-autoplay-ms": `${AUTOPLAY_MS}ms`,
+                        animationPlayState: isAutoplayPaused
+                          ? "paused"
+                          : "running",
+                      }}
+                      onAnimationEnd={() => {
+                        if (!isAutoplayPaused && !prefersReducedMotion) {
+                          scrollToSlide(safeIndex + 1, false);
+                        }
+                      }}
+                      className="banner-dot-progress-fill absolute inset-0 bg-white"
+                    />
+                  )}
+                </span>
               </button>
             );
           })}
