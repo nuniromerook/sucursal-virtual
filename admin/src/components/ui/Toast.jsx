@@ -11,7 +11,7 @@ export default function Toast() {
   const isInfo = toast.type === "info";
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-xl text-xs font-medium text-white bg-slate-900 border border-slate-800 transition-all transform animate-in fade-in slide-in-from-bottom-3 duration-200">
+    <div className="fixed bottom-5 right-5 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-lg shadow-xl text-xs font-medium text-white bg-slate-900 border border-slate-800 transition-all transform animate-in fade-in slide-in-from-bottom-3 duration-200">
       {isError ? (
         <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
       ) : isInfo ? (

@@ -10,7 +10,6 @@ import {
   Store,
   Truck,
   MapPin,
-  Clock,
   Banknote,
   Landmark,
   CreditCard,
@@ -26,10 +25,7 @@ import { useToast } from "@/context/ToastContext";
 import { formatPrecio, formatUnidadMedida } from "@/utils/formatters";
 import { calculateItemPrice } from "@/utils/priceCalculator";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
-import {
-  getAvailableDeliverySlots,
-  getBranchOpenStatus,
-} from "@/utils/horarios";
+import { getBranchOpenStatus } from "@/utils/horarios";
 import {
   parseAddressParts,
   composeAddress,
@@ -72,6 +68,7 @@ export const CheckoutModal = ({
   onClose,
   onBack,
   onOrderConfirmed,
+  onRequireAuth,
 }) => {
   const {
     cartItems,
@@ -96,10 +93,6 @@ export const CheckoutModal = ({
 
   const branch = selectedBranch || CASA_CENTRAL_BRANCH;
   const branchStatus = getBranchOpenStatus(branch);
-  const availableSlots = useMemo(
-    () => getAvailableDeliverySlots(branch),
-    [branch],
-  );
 
   const initialAddr = useMemo(
     () =>
@@ -116,9 +109,6 @@ export const CheckoutModal = ({
     () => !hasRequiredAddress(initialAddr),
   );
   const [notas, setNotas] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState(
-    () => availableSlots[0]?.key || "Mañana 08:30 - 11:00",
-  );
   const [medioPago, setMedioPago] = useState("efectivo");
   const [currentStep, setCurrentStep] = useState("checkout_datos");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,10 +146,6 @@ export const CheckoutModal = ({
     }
   };
 
-  const activeSlotKey = availableSlots.some((s) => s.key === selectedSlot)
-    ? selectedSlot
-    : availableSlots[0]?.key || selectedSlot;
-
   const formattedAddressPreview = composeAddress(addressForm);
   const addressIsComplete = hasRequiredAddress(addressForm);
   const isPickup = deliveryMode === "pickup";
@@ -188,6 +174,11 @@ export const CheckoutModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (!isAuthenticated) {
+      onRequireAuth?.();
+      return;
+    }
 
     if (!cliente.nombre.trim() || !cliente.telefono.trim()) {
       setSubmitError(
@@ -231,12 +222,7 @@ export const CheckoutModal = ({
         ? `Retiro en ${branch.direccion}`
         : direccionFormateada;
 
-      const notasFinal = [
-        `Franja: ${activeSlotKey}`,
-        notas.trim() ? notas.trim() : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
+      const notasFinal = notas.trim() || null;
 
       const res = await fetch(`${API_URL}/pedidos`, {
         method: "POST",
@@ -530,7 +516,7 @@ export const CheckoutModal = ({
               </div>
             </section>
 
-            {/* Sección 2: Modalidad de Entrega, Dirección Estructurada y Franja Horaria */}
+            {/* Sección 2: Modalidad de Entrega y Dirección Estructurada */}
             <section
               onFocus={() => markStep("checkout_entrega")}
               className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3.5"
@@ -540,7 +526,7 @@ export const CheckoutModal = ({
                   className="size-3.5 text-[#003366]"
                   aria-hidden="true"
                 />
-                <span>2. Entrega y horario</span>
+                <span>2. Modalidad de entrega</span>
               </span>
 
               {/* Selector Envío vs Retiro */}
@@ -831,43 +817,6 @@ export const CheckoutModal = ({
                   </div>
                 </div>
               )}
-
-              {/* Selector dinámico de Franjas Horarias reales */}
-              <div className="space-y-1.5">
-                <span className="text-[10.5px] font-bold text-slate-500 inline-flex items-center gap-1">
-                  <Clock className="size-3 text-slate-400" aria-hidden="true" />
-                  <span>
-                    {isPickup ? "Franja para retirar" : "Franja de entrega"}
-                  </span>
-                </span>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  {availableSlots.map((slot) => {
-                    const isSelected = activeSlotKey === slot.key;
-                    return (
-                      <button
-                        key={slot.key}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSlot(slot.key);
-                          markStep("checkout_entrega");
-                        }}
-                        className={`py-2 px-1.5 rounded-xl border transition-all cursor-pointer ${
-                          isSelected
-                            ? "border-[#003366] bg-[#EFF4F9] text-[#003366]"
-                            : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
-                        }`}
-                      >
-                        <span className="block font-extrabold text-[11.5px] leading-tight">
-                          {slot.dia}
-                        </span>
-                        <span className="block text-[10px] font-semibold font-num opacity-80 mt-0.5">
-                          {slot.horario}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
               {/* Nota general para el pedido */}
               <div>

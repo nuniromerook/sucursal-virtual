@@ -34,6 +34,7 @@ import {
   Ticket,
   Truck,
   Mail,
+  ShoppingBag,
 } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { useLocation } from "@/context/LocationContext";
@@ -71,6 +72,8 @@ export const ProfileModal = ({
   isOpen,
   initialView = "main",
   originView = "main",
+  pendingCheckout = false,
+  onAuthFlowComplete,
   resetToken = "",
   onClearResetToken,
   onBack,
@@ -241,7 +244,7 @@ export const ProfileModal = ({
 
   const profileData = {
     nombre: user?.nombre || "Invitado Valette",
-    email: user?.email || "Iniciá sesión para sumar puntos Club Valette",
+    email: user?.email || "Para sumar puntos Club Valette",
     usuario: user?.usuario || "",
     telefono: user?.telefono || "",
     puntos: Number(user?.puntos || 0),
@@ -416,9 +419,10 @@ export const ProfileModal = ({
         token: resetToken,
         newPassword: resetForm.newPassword,
       });
-      showToast(data.message || "¡Contraseña restablecida con éxito! 🔒");
+      showToast(data.message || "Contraseña restablecida con éxito");
       setResetForm({ newPassword: "", confirmPassword: "" });
       onClearResetToken?.();
+      if (onAuthFlowComplete?.()) return;
       setActiveView("main");
     } catch (err) {
       setFormError(err.message || "El enlace expiró o es inválido.");
@@ -462,8 +466,9 @@ export const ProfileModal = ({
       if (data.user?.direccion_default && !customerAddress) {
         updateCustomerAddress(data.user.direccion_default);
       }
-      showToast(`¡Bienvenido, ${data.user?.nombre || "a Valette"}! 🥩`);
       setLoginForm({ identificador: "", password: "" });
+      if (onAuthFlowComplete?.()) return;
+      showToast(`Bienvenido, ${data.user?.nombre || "a Valette"}`);
       setActiveView("main");
     } catch (err) {
       setFormError(err.message || "Error al iniciar sesión.");
@@ -526,7 +531,8 @@ export const ProfileModal = ({
       if (direccionFormateada) {
         updateCustomerAddress(direccionFormateada);
       }
-      showToast("¡Listo! Guardamos tu dirección de entrega 🥩");
+      if (onAuthFlowComplete?.()) return;
+      showToast("Dirección de entrega guardada");
       setActiveView("main");
     } catch (err) {
       setFormError(err.message || "No pudimos guardar tu dirección.");
@@ -683,7 +689,7 @@ export const ProfileModal = ({
                 className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3.5 cursor-pointer hover:border-slate-300 transition-all group"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="relative size-15 rounded-full bg-[#E4E6EB] flex items-center justify-center shrink-0 shadow-xs border border-slate-200/90">
+                  <div className="relative size-18 rounded-full bg-[#E4E6EB] flex items-center justify-center shrink-0 shadow-xs border border-slate-200/90">
                     {isAuthenticated && user?.avatar_url ? (
                       <img
                         src={user.avatar_url}
@@ -693,7 +699,7 @@ export const ProfileModal = ({
                     ) : (
                       <div className="size-full rounded-full overflow-hidden bg-[#E4E6EB] flex items-end justify-center">
                         <svg
-                          viewBox="0 0 36 36"
+                          viewBox="0 0 35 30"
                           fill="none"
                           aria-hidden="true"
                           className="size-full text-[#65676B]"
@@ -706,32 +712,29 @@ export const ProfileModal = ({
                         </svg>
                       </div>
                     )}
-                    <span className="absolute -bottom-0.5 -right-0.5 size-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
-                      {isAuthenticated ? (
-                        <Camera
-                          className="size-3 text-[#003366]"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <LogIn
-                          className="size-3 text-[#003366]"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </span>
+                    {isAuthenticated && (
+                      <span className="absolute -bottom-0.5 -right-0.5 size-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                        <span className="absolute -bottom-0.5 -right-0.5 size-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                          <Camera
+                            className="size-3 text-[#003366]"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="min-w-0">
                     <h4 className="text-[15px] font-extrabold text-slate-900 leading-snug truncate">
                       {isAuthenticated
                         ? profileData.nombre
-                        : "Ingresar a mi cuenta"}
+                        : "Ingresá a tu cuenta"}
                     </h4>
                     <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
                       {profileData.email}
                     </p>
                     {!isAuthenticated && (
-                      <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-[#003366] text-white text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-1 rounded-full bg-[#003366] text-white text-[10px] font-bold">
                         <span>Iniciar sesión o registrarme</span>
                         <ChevronRight className="size-3" />
                       </span>
@@ -1028,6 +1031,16 @@ export const ProfileModal = ({
           {/* SUB-VISTA: AUTENTICACIÓN REAL (LOGIN / REGISTRO) */}
           {currentView === "auth" && (
             <div className="space-y-4 pb-6">
+              {pendingCheckout && (
+                <div className="p-3 rounded-2xl bg-[#EFF4F9] border border-[#003366]/15 text-[#003366] text-xs font-bold flex items-center gap-2.5">
+                  <ShoppingBag className="size-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    Tu carrito quedó guardado. Ingresá o creá tu cuenta para
+                    retomar tu compra.
+                  </span>
+                </div>
+              )}
+
               {/* Selector Login vs Registro */}
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-2xl">
                 <button
@@ -1692,11 +1705,14 @@ export const ProfileModal = ({
                   type="button"
                   onClick={() => {
                     setFormError(null);
+                    if (onAuthFlowComplete?.()) return;
                     setActiveView("main");
                   }}
                   className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 transition-colors cursor-pointer"
                 >
-                  Completar más tarde
+                  {pendingCheckout
+                    ? "Continuar al pedido sin cargar dirección"
+                    : "Completar más tarde"}
                 </button>
               </div>
             </form>
@@ -2770,7 +2786,7 @@ export const ProfileModal = ({
                           Demora o Cambio de Horario de Entrega
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          Coordinar franja horaria con logística de sucursal
+                          Coordinar tu entrega con la sucursal
                         </p>
                       </div>
                     </div>

@@ -6,6 +6,8 @@ import {
   Minus,
   Percent,
   ShoppingBasket,
+  Sparkles,
+  Package,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
@@ -113,42 +115,55 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
       }`}
     >
       <div>
-        {/* Imagen con badges nativos y favorito */}
+        {/* Imagen con badges limpios y favorito */}
         <div
           onClick={handleOpenDetail}
-          className={`relative aspect-square w-full bg-slate-100 mb-3 cursor-pointer group ${
+          className={`relative aspect-square w-full bg-slate-100 mb-3 cursor-pointer group overflow-hidden ${
             isOutOfStock ? "grayscale-30" : ""
           }`}
         >
-          <img
-            src={
-              product.imagen_url ||
-              "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800"
-            }
-            alt={productName}
-            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-            loading="lazy"
-          />
+          {product.imagen_url ? (
+            <img
+              src={product.imagen_url}
+              alt={productName}
+              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-300">
+              <Package className="size-9 stroke-[1.5]" aria-hidden="true" />
+            </div>
+          )}
 
-          {/* Badges superiores */}
-          <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start max-w-18/20">
+          {/* Badges superiores limpios y legibles sobre cualquier foto */}
+          <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap gap-1.5 items-start pointer-events-none">
             {isOutOfStock ? (
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black uppercase shadow-xs">
-                Agotado por Hoy
+              <span className="px-2.5 py-1 rounded-xl bg-slate-900/90 text-white text-[10.5px] font-extrabold tracking-tight shadow-xs">
+                Agotado por hoy
               </span>
             ) : promoInfo ? (
-              <span className="rounded-lg text-valette-blue text-[12px] font-bold flex items-center max-w-full">
-                <span className="pr-1">
-                  Llevando + {promoInfo.cant}
-                  {unidadMedida}:
+              <span className="px-2.5 py-1 rounded-xl bg-white/95 border border-slate-200/80 text-slate-700 text-[11px] font-bold shadow-xs inline-flex items-center gap-1 max-w-full font-num">
+                <span className="truncate">
+                  Desde {promoInfo.cant}
+                  {unidadMedida}
                 </span>
-                <strong className="text-amber-600 font-black pr-1">
+                <strong className="text-[#003366] font-black shrink-0">
                   {formatPrecio(promoInfo.unitPrice)}/{unidadMedida}
                 </strong>
               </span>
             ) : product.precio_anterior > product.precio ? (
-              <span className="px-2.5 py-1 rounded-lg bg-valette-red text-white text-[10px] font-black uppercase shadow-xs">
-                Oferta Especial
+              <span className="px-2.5 py-1 rounded-xl bg-rose-600 text-white text-[10.5px] font-extrabold tracking-tight shadow-xs font-num">
+                {Math.round(
+                  ((product.precio_anterior - product.precio) /
+                    product.precio_anterior) *
+                    100,
+                ) >= 5
+                  ? `-${Math.round(
+                      ((product.precio_anterior - product.precio) /
+                        product.precio_anterior) *
+                        100,
+                    )}% OFF`
+                  : "Oferta"}
               </span>
             ) : null}
           </div>
@@ -160,19 +175,27 @@ export const ProductCard = ({ product, onOpenCustomizer }) => {
               e.stopPropagation();
               toggleFavorite(product.id, productName);
             }}
-            className={`absolute bottom-2.5 right-2.5 size-9 rounded-full bg-white flex items-center justify-center transition-colors duration-400 shadow-xs cursor-pointer border border-neutral-100 ${
-              isFav ? "text-red-500" : "text-neutral-400 hover:text-red-500"
+            aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+            className={`absolute bottom-2.5 right-2.5 size-9 rounded-full bg-white flex items-center justify-center transition-colors duration-300 shadow-xs cursor-pointer border border-slate-200/70 ${
+              isFav ? "text-red-500" : "text-slate-400 hover:text-red-500"
             }`}
           >
             <Heart
-              className={`size-5 stroke-1.1 ${isFav ? "fill-red-500 text-red-500" : ""}`}
+              className={`size-4.5 stroke-[2] ${isFav ? "fill-red-500 text-red-500" : ""}`}
+              aria-hidden="true"
             />
           </button>
 
-          {/* Puntos Club flotantes */}
-          <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-amber-300/90 border border-amber-500 text-amber-700 text-[10px] font-bold">
-            Sumá +{product.puntos || 15} pts
-          </span>
+          {/* Puntos Club Valette (unificado con ProductDetailModal y ComboDetailModal) */}
+          {product.gana_puntos !== false && Number(product.puntos || 15) > 0 && (
+            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/95 border border-slate-200/70 text-amber-900 text-[10.5px] font-black font-num shadow-xs">
+              <Sparkles
+                className="size-3 text-amber-500 shrink-0"
+                aria-hidden="true"
+              />
+              <span>+{Number(product.puntos || 15)} pts</span>
+            </span>
+          )}
         </div>
 
         {/* Título y Metadata */}

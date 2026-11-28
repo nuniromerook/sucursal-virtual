@@ -12,6 +12,7 @@ import {
 } from "@/components/products/CategoryHorizontalShelf";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useLocation } from "@/context/LocationContext";
+import { useAuth } from "@/context/AuthContext";
 import { scoreProductMatch } from "@/utils/searchRanking";
 import { formatDisplayAddress } from "@/utils/address";
 import { ChevronDown, MapPin, Store, Search, X } from "lucide-react";
@@ -29,7 +30,11 @@ export const Home = ({
 }) => {
   const { productos, isLoading, categoryCounts } = useCatalogo();
   const { customerAddress, deliveryMode, selectedBranch } = useLocation();
+  const { user, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
+
+  const firstName =
+    isAuthenticated && user?.nombre ? user.nombre.trim().split(/\s+/)[0] : "";
 
   const [activeSection, setActiveSection] = useState("combos");
   const [isNavbarFused, setIsNavbarFused] = useState(false);
@@ -317,6 +322,12 @@ export const Home = ({
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col">
+      <div className="px-4 sm:px-6 pt-4 flex flex-col -space-y-2">
+        <h1 className="text-2xl font-bold">
+          Hola {firstName ? firstName : "invitado"}!
+        </h1>
+        <h2>Qué vas a pedir hoy?</h2>
+      </div>
       {/* 1. Selector de Entrega / Retiro & Dirección Mobile */}
       <div className="px-4 sm:px-6 pt-4 sm:hidden">
         <button

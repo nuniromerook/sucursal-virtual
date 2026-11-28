@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { BrowserRouter, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { trackPageView, trackEvent } from "@/utils/analytics";
-import { ToastProvider } from "@/context/ToastContext";
+import { ToastProvider, useToast } from "@/context/ToastContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -35,9 +35,10 @@ import { SearchFilterModal } from "@/components/modals/SearchFilterModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 
 function AppContent() {
-  const { isCartOpen, setIsCartOpen } = useCart();
+  const { cartItems, isCartOpen, setIsCartOpen } = useCart();
   const { getProductBySlugOrId, refreshCatalogo } = useCatalogo();
   const { isAuthenticated, refreshProfile, refreshRecompensas } = useAuth();
+  const { showToast } = useToast();
   const {
     isNotificationsOpen,
     setIsNotificationsOpen,
@@ -76,7 +77,26 @@ function AppContent() {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState(() => {
+    try {
+      return sessionStorage.getItem("valette_pending_checkout") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [isNavbarFused, setIsNavbarFused] = useState(false);
+
+  const setPendingCheckoutFlag = useCallback((nextVal) => {
+    const active = Boolean(nextVal);
+    setPendingCheckout(active);
+    try {
+      if (active) {
+        sessionStorage.setItem("valette_pending_checkout", "1");
+      } else {
+        sessionStorage.removeItem("valette_pending_checkout");
+      }
+    } catch {}
+  }, []);
 
   // Registro automático de vista de página en PostgreSQL (metricas_visitas)
   useEffect(() => {
@@ -151,11 +171,18 @@ function AppContent() {
     setTrackingOrderId(null);
     setIsProfileModalOpen(false);
     setProfileInitialView("main");
+    setPendingCheckoutFlag(false);
     setIsBranchModalOpen(false);
     setIsFiltersModalOpen(false);
     closeProductInUrl();
     clearResetTokenUrl();
-  }, [setIsNotificationsOpen, setIsCartOpen, closeProductInUrl, clearResetTokenUrl]);
+  }, [
+    setIsNotificationsOpen,
+    setIsCartOpen,
+    setPendingCheckoutFlag,
+    closeProductInUrl,
+    clearResetTokenUrl,
+  ]);
 
   const handleOpenProfile = (view = "main") => {
     const targetView = typeof view === "string" ? view : "main";
@@ -172,6 +199,46 @@ function AppContent() {
     setTrackingOrderId(numericId);
     setIsTrackingModalOpen(true);
   }, []);
+
+  const handleProceedToCheckout = useCallback(() => {
+    if (!isAuthenticated) {
+      // Guardar carrito en caché local antes de derivar al login/registro
+      try {
+        localStorage.setItem("valette_cart_v1", JSON.stringify(cartItems));
+      } catch {}
+      setPendingCheckoutFlag(true);
+      setIsCartOpen(false);
+      setIsCheckoutModalOpen(false);
+      setProfileInitialView("auth");
+      setIsProfileModalOpen(true);
+      showToast(
+        "Iniciá sesión o creá tu cuenta para finalizar tu pedido",
+        "info",
+      );
+      return;
+    }
+    setPendingCheckoutFlag(false);
+    setIsCheckoutModalOpen(true);
+  }, [
+    isAuthenticated,
+    cartItems,
+    setPendingCheckoutFlag,
+    setIsCartOpen,
+    showToast,
+  ]);
+
+  const handleAuthFlowComplete = useCallback(() => {
+    if (!pendingCheckout) return false;
+    setPendingCheckoutFlag(false);
+    setIsProfileModalOpen(false);
+    setProfileInitialView("main");
+    if (cartItems.length > 0) {
+      setIsCheckoutModalOpen(true);
+      showToast("Retomamos tu pedido pendiente", "info");
+      return true;
+    }
+    return false;
+  }, [pendingCheckout, cartItems.length, setPendingCheckoutFlag, showToast]);
 
   const effectiveProfileOpen = isProfileModalOpen || isResetRoute;
   const effectiveProfileView = isResetRoute
@@ -291,15 +358,17 @@ function AppContent() {
         isOpen={isCartOpen}
         onBack={() => setIsCartOpen(false)}
         onClose={closeAllModals}
-        onOpenCheckout={() => setIsCheckoutModalOpen(true)}
+        onOpenCheckout={handleProceedToCheckout}
       />
 
       <CheckoutModal
         key={isCheckoutModalOpen ? "checkout-open" : "checkout-closed"}
-        isOpen={isCheckoutModalOpen}
+        isOpen={isCheckoutModalOpen && isAuthenticated}
         onBack={() => setIsCheckoutModalOpen(false)}
         onClose={closeAllModals}
+        onRequireAuth={handleProceedToCheckout}
         onOrderConfirmed={() => {
+          setPendingCheckoutFlag(false);
           setIsCartOpen(false);
           setIsCheckoutModalOpen(false);
           handleOpenTracking(null);
@@ -322,11 +391,16 @@ function AppContent() {
         isOpen={effectiveProfileOpen}
         initialView={effectiveProfileView}
         originView={effectiveProfileView}
+        pendingCheckout={pendingCheckout}
+        onAuthFlowComplete={handleAuthFlowComplete}
         resetToken={resetTokenParam}
         onClearResetToken={clearResetTokenUrl}
         onBack={() => {
           setIsProfileModalOpen(false);
           setProfileInitialView("main");
+          if (!isAuthenticated) {
+            setPendingCheckoutFlag(false);
+          }
           clearResetTokenUrl();
         }}
         onClose={closeAllModals}
