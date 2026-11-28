@@ -6,9 +6,20 @@ const THRESHOLD = 72; // px visuales para habilitar el refetch al soltar
 const MAX_PULL = 112; // límite máximo de arrastre amortiguado
 const RESISTANCE = 0.48; // resistencia elástica estilo iOS / Instagram
 
+function triggerHaptic(pattern) {
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
+    return;
+  }
+  try {
+    navigator.vibrate(pattern);
+  } catch {
+    // Dispositivo o navegador sin soporte háptico
+  }
+}
+
 /**
- * Indicador nativo 2026 de Pull-to-Refresh que emerge suavemente debajo de la Navbar fija.
- * Solo anima `transform` y `opacity` (compositor 60fps, sin backdrop-blur).
+ * Indicador circular discreto 2026 de Pull-to-Refresh que emerge suavemente
+ * debajo de la Navbar fija (solo ícono circular, sin texto visible, 60fps).
  */
 export const PullToRefresh = ({ onRefresh, disabled = false }) => {
   const [pullDistance, setPullDistance] = useState(0);
@@ -33,7 +44,7 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
 
   const triggerRefresh = useCallback(async () => {
     updatePhase("refreshing");
-    updatePull(54);
+    updatePull(52);
 
     const startedAt = Date.now();
     try {
@@ -42,19 +53,19 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
       // Silencioso: cada contexto maneja su propio estado de error
     }
 
-    // Duración mínima cómoda para evitar parpadeos en conexiones ultra rápidas
     const elapsed = Date.now() - startedAt;
     if (elapsed < 550) {
       await new Promise((r) => setTimeout(r, 550 - elapsed));
     }
 
     updatePhase("done");
+    triggerHaptic(10);
     setTimeout(() => {
       updatePull(0);
       setTimeout(() => {
         updatePhase("idle");
       }, 220);
-    }, 650);
+    }, 600);
   }, [onRefresh, updatePhase, updatePull]);
 
   useEffect(() => {
@@ -67,7 +78,6 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
       if (e.touches.length !== 1) return;
       if (window.scrollY > 2) return;
 
-      // Ignorar gestos iniciados sobre inputs o sliders horizontales
       const target = e.target;
       if (
         target instanceof Element &&
@@ -101,8 +111,10 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
       const deltaY = currentY - startYRef.current;
       const deltaX = currentX - startXRef.current;
 
-      // Si el gesto es hacia arriba o predominantemente horizontal, cancelar
-      if (deltaY <= 0 || (Math.abs(deltaX) > Math.abs(deltaY) && pullRef.current === 0)) {
+      if (
+        deltaY <= 0 ||
+        (Math.abs(deltaX) > Math.abs(deltaY) && pullRef.current === 0)
+      ) {
         if (pullRef.current > 0) {
           updatePull(0);
           updatePhase("idle");
@@ -111,30 +123,32 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
         return;
       }
 
-      // Evitar el rebote nativo del navegador mientras arrastramos hacia abajo
       if (deltaY > 6 && e.cancelable) {
         e.preventDefault();
       }
 
-      // Amortiguación progresiva suave (rubber-band)
       const damped = Math.min(
         MAX_PULL,
-        Math.round(deltaY * RESISTANCE - Math.max(0, deltaY * RESISTANCE - THRESHOLD) * 0.35),
+        Math.round(
+          deltaY * RESISTANCE -
+            Math.max(0, deltaY * RESISTANCE - THRESHOLD) * 0.35,
+        ),
       );
       updatePull(damped);
 
       if (damped >= THRESHOLD) {
         if (phaseRef.current !== "ready") {
           updatePhase("ready");
-          if (!armedHapticRef.current && typeof navigator !== "undefined" && navigator.vibrate) {
+          if (!armedHapticRef.current) {
             armedHapticRef.current = true;
-            try {
-              navigator.vibrate(12);
-            } catch {}
+            triggerHaptic(18);
           }
         }
-      } else if (damped > 8) {
-        if (phaseRef.current !== "pulling") {
+      } else {
+        if (damped < THRESHOLD - 10) {
+          armedHapticRef.current = false;
+        }
+        if (damped > 8 && phaseRef.current !== "pulling") {
           updatePhase("pulling");
         }
       }
@@ -169,12 +183,12 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
   const isVisible = phase !== "idle" || pullDistance > 4;
   const isSettling = phase !== "pulling" && phase !== "ready";
 
-  // Progreso circular SVG (r = 9 -> circunferencia ~ 56.55)
-  const circumference = 2 * Math.PI * 9;
+  // Progreso circular SVG (r = 9.5 -> circunferencia ~ 59.69)
+  const circumference = 2 * Math.PI * 9.5;
   const strokeOffset = circumference * (1 - progress);
 
-  // Desplazamiento vertical suave emergiendo exactamente desde detrás de la Navbar fija
-  const translateY = isVisible ? Math.max(-44, pullDistance - 44) : -56;
+  // Desplazamiento vertical suave emergiendo desde detrás de la Navbar fija
+  const translateY = isVisible ? Math.max(-44, pullDistance - 44) : -52;
 
   return (
     <div
@@ -191,59 +205,71 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
     >
       <div
         style={{
-          transform: `scale(${phase === "ready" ? 1.04 : phase === "done" ? 1.02 : 0.94 + progress * 0.06})`,
+          transform: `scale(${
+            phase === "ready"
+              ? 1.08
+              : phase === "done"
+                ? 1.04
+                : 0.9 + progress * 0.1
+          })`,
         }}
-        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-full border shadow-lg transition-colors duration-200 ${
+        className={`size-10 rounded-full border shadow-lg flex items-center justify-center transition-colors duration-200 ${
           phase === "done"
             ? "bg-emerald-600 border-emerald-500 text-white"
             : phase === "ready"
               ? "bg-[#003366] border-[#003366] text-white"
-              : "bg-white border-slate-200/90 text-slate-700"
+              : "bg-white border-slate-200/90 text-[#003366]"
         }`}
       >
-        {/* Indicador circular de progreso / spinner / check */}
-        <span className="relative size-5 flex items-center justify-center shrink-0">
+        <span className="relative size-6 flex items-center justify-center shrink-0">
           {phase === "refreshing" ? (
             <Loader2
-              className="size-4 text-[#003366] ptr-spin stroke-[2.5]"
+              className="size-4.5 text-[#003366] ptr-spin stroke-[2.5]"
               aria-hidden="true"
             />
           ) : phase === "done" ? (
-            <Check className="size-4 text-white stroke-[3]" aria-hidden="true" />
+            <Check
+              className="size-4.5 text-white stroke-[3]"
+              aria-hidden="true"
+            />
           ) : (
             <>
               <svg
-                className="size-5 -rotate-90"
+                className="size-6 -rotate-90"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
                 <circle
                   cx="12"
                   cy="12"
-                  r="9"
+                  r="9.5"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.2"
-                  className={phase === "ready" ? "opacity-25" : "text-slate-200"}
+                  className={
+                    phase === "ready" ? "opacity-25" : "text-slate-200"
+                  }
                 />
                 <circle
                   cx="12"
                   cy="12"
-                  r="9"
+                  r="9.5"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeOffset}
-                  className={phase === "ready" ? "text-white" : "text-[#003366]"}
+                  className={
+                    phase === "ready" ? "text-white" : "text-[#003366]"
+                  }
                 />
               </svg>
               <ArrowDown
                 style={{
                   transform: `rotate(${phase === "ready" ? 180 : Math.round(progress * 180)}deg)`,
                 }}
-                className={`size-2.5 absolute stroke-[2.75] transition-transform duration-150 ${
+                className={`size-3 absolute stroke-[2.75] transition-transform duration-150 ${
                   phase === "ready" ? "text-white" : "text-[#003366]"
                 }`}
                 aria-hidden="true"
@@ -252,15 +278,15 @@ export const PullToRefresh = ({ onRefresh, disabled = false }) => {
           )}
         </span>
 
-        {/* Texto de estado compacto */}
-        <span className="text-[11.5px] font-extrabold tracking-tight leading-none whitespace-nowrap">
+        {/* Texto oculto visualmente para accesibilidad */}
+        <span className="sr-only">
           {phase === "refreshing"
-            ? "Actualizando..."
+            ? "Actualizando contenido"
             : phase === "done"
-              ? "Actualizado"
+              ? "Contenido actualizado"
               : phase === "ready"
                 ? "Soltá para actualizar"
-                : "Deslizá para actualizar"}
+                : ""}
         </span>
       </div>
     </div>

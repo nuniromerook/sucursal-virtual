@@ -34,6 +34,14 @@ body {
   }
 }
 
+.banner-carousel-track {
+  overscroll-behavior-x: contain;
+  touch-action: manipulation;
+  @media (prefers-reduced-motion: no-preference) {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Sombras nativas ultra limpias estilo Apple / Uber */
 .shadow-native {
   box-shadow:

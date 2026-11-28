@@ -210,47 +210,8 @@ export const SidebarDrawer = ({
         className="bg-white w-full max-w-77.5 sm:max-w-82.5 h-dvh shadow-2xl relative flex flex-col justify-between overflow-hidden animate-in slide-in-from-left duration-250 border-r border-slate-200/80 overscroll-contain"
       >
         {/* 1. Header Horizontal Compacto con Estado Operativo en Vivo */}
-        <div className="px-4 py-4 border-b border-slate-100 flex items-start justify-between gap-2.5 shrink-0 bg-white">
-          <button
-            type="button"
-            onClick={() => handleNav(goToHome)}
-            className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer group"
-          >
-            <img
-              src="/favicon.svg"
-              alt="Abastecedora Valette"
-              className="size-12 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <h1
-                id="sidebar-drawer-title"
-                className="font-black text-[15px] text-slate-900 tracking-tight leading-tight truncate group-hover:text-[#003366] transition-colors"
-              >
-                Abastecedora Valette
-              </h1>
-              <div
-                className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold leading-tight max-w-full ${
-                  branchStatus.isOpen
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                <span
-                  className={`size-1.5 rounded-full shrink-0 ${
-                    branchStatus.isOpen ? "bg-emerald-500" : "bg-slate-400"
-                  }`}
-                  aria-hidden="true"
-                />
-                <span className="truncate">
-                  {branchStatus.isOpen
-                    ? "Abierto ahora · Envíos hoy"
-                    : branchStatus.badgeText}
-                </span>
-              </div>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="px-4 py-4 border-b border-slate-100 flex flex-col items-start justify-between gap-2.5 shrink-0 bg-white relative">
+          <div className="flex absolute right-4 top-4 w-fit ml-auto items-center gap-1.5 shrink-0">
             {onRefreshData && (
               <button
                 type="button"
@@ -284,6 +245,45 @@ export const SidebarDrawer = ({
             >
               <X className="size-4 stroke-[2.25]" aria-hidden="true" />
             </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleNav(goToHome)}
+            className="flex flex-col w-full items-center gap-2 min-w-0 text-left cursor-pointer group mt-4"
+          >
+            <img
+              src="/favicon.svg"
+              alt="Abastecedora Valette"
+              className="size-35 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <h1
+                id="sidebar-drawer-title"
+                className="flex w-full justify-center font-black text-2xl text-slate-900 tracking-tight leading-tight truncate group-hover:text-[#003366] transition-colors"
+              >
+                Abastecedora Valette
+              </h1>
+            </div>
+          </button>
+          <div
+            className={`flex items-center w-fit justify-center mx-auto gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold leading-tight max-w-full ${
+              branchStatus.isOpen
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            <span
+              className={`size-1.5 rounded-full shrink-0 ${
+                branchStatus.isOpen ? "bg-emerald-500" : "bg-slate-400"
+              }`}
+              aria-hidden="true"
+            />
+            <span className="truncate">
+              {branchStatus.isOpen
+                ? "Abierto ahora · Envíos hoy"
+                : branchStatus.badgeText}
+            </span>
           </div>
         </div>
 

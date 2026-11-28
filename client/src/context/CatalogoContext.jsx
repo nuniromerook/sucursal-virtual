@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { getSocket } from "@/utils/socket";
 import {
   CORTES_MOCK,
-  DEFAULT_BANNERS,
   fetchCatalogo,
   fetchBanners,
 } from "@/services/catalogo.service";
@@ -24,7 +23,8 @@ export const CatalogoProvider = ({ children }) => {
     return CORTES_MOCK;
   });
 
-  const [banners, setBanners] = useState(DEFAULT_BANNERS);
+  const [banners, setBanners] = useState([]);
+  const [isLoadingBanners, setIsLoadingBanners] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -43,14 +43,15 @@ export const CatalogoProvider = ({ children }) => {
           if (cortesData && cortesData.length > 0) {
             setProductos(cortesData);
           }
-          if (bannersData && bannersData.length > 0) {
-            setBanners(bannersData);
-          }
+          setBanners(Array.isArray(bannersData) ? bannersData : []);
+          setIsLoadingBanners(false);
           setIsError(false);
         }
       } catch (err) {
         if (!isCancelled) {
           console.error("Error al cargar datos oficiales:", err);
+          setBanners([]);
+          setIsLoadingBanners(false);
           setIsError(true);
         }
       }
@@ -95,9 +96,8 @@ export const CatalogoProvider = ({ children }) => {
       if (cortesData && cortesData.length > 0) {
         setProductos(cortesData);
       }
-      if (bannersData && bannersData.length > 0) {
-        setBanners(bannersData);
-      }
+      setBanners(Array.isArray(bannersData) ? bannersData : []);
+      setIsLoadingBanners(false);
       setIsError(false);
     } catch (err) {
       console.error("Error al refrescar datos:", err);
@@ -160,6 +160,7 @@ export const CatalogoProvider = ({ children }) => {
       value={{
         productos,
         banners,
+        isLoadingBanners,
         isLoading,
         isError,
         refreshCatalogo,

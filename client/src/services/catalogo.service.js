@@ -546,58 +546,6 @@ export const CORTES_MOCK = [
   },
 ];
 
-export const DEFAULT_BANNERS = [
-  {
-    id: 1,
-    titulo: "¡Promo Asado Fin de Semana!",
-    subtitulo: "Llevando 3 kg o más congelás precio promocional exclusivo.",
-    imagen_desktop_url:
-      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=3480&auto=format&fit=crop",
-    imagen_mobile_url:
-      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1280&auto=format&fit=crop",
-    enlace_url: "/productos?q=asado",
-    badge_texto: "🔥 OFERTA EXCLUSIVA WEB",
-    badge_color: "rojo",
-    boton_texto: "Ver promo",
-    categoria: "asado",
-    bgClass: "from-[#002244] via-[#003366] to-slate-900",
-    btnClass: "bg-white text-[#003366] hover:bg-slate-100",
-  },
-  {
-    id: 2,
-    titulo: "Cortes Magros para la Semana",
-    subtitulo:
-      "Milanesas, bifes y supremas con descuentos especiales por volumen.",
-    imagen_desktop_url:
-      "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=3480&auto=format&fit=crop",
-    imagen_mobile_url:
-      "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?q=80&w=1280&auto=format&fit=crop",
-    enlace_url: "/productos?q=milanesas",
-    badge_texto: "🥩 SEMANA DE AHORRO",
-    badge_color: "dorado",
-    boton_texto: "Aprovechar",
-    categoria: "vacuno",
-    bgClass: "from-slate-900 via-[#003366] to-emerald-950",
-    btnClass: "bg-white text-slate-900 hover:bg-slate-100",
-  },
-  {
-    id: 3,
-    titulo: "Sumá Puntos Club Valette",
-    subtitulo: "Cada compra acumula puntos canjeables por kilos gratis.",
-    imagen_desktop_url:
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=3480&auto=format&fit=crop",
-    imagen_mobile_url:
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1280&auto=format&fit=crop",
-    enlace_url: "/club-valette",
-    badge_texto: "⭐ BENEFICIO EXCLUSIVO",
-    badge_color: "dorado",
-    boton_texto: "Conocer más",
-    categoria: "puntos",
-    bgClass: "from-amber-950 via-amber-900 to-slate-950",
-    btnClass: "bg-white text-amber-950 hover:bg-slate-100",
-  },
-];
-
 const CACHE_KEY_CATALOGO = "valette_catalogo_cache";
 
 /**
@@ -819,7 +767,7 @@ export const fetchCatalogo = async () => {
 };
 
 /**
- * Obtiene los banners publicitarios activos.
+ * Obtiene los banners publicitarios activos reales desde PostgreSQL (sin fallbacks dummy).
  */
 export const fetchBanners = async () => {
   try {
@@ -828,20 +776,18 @@ export const fetchBanners = async () => {
       headers: { Accept: "application/json" },
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-    }
-  } catch (err) {
-    console.warn(
-      "⚠️ [Catalogo Service] Usando banners por defecto:",
-      err.message,
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.filter(
+      (b) =>
+        b &&
+        b.activo !== false &&
+        Boolean(b.imagen_desktop_url || b.imagenUrl || b.imagen_mobile_url),
     );
+  } catch {
+    return [];
   }
-
-  return DEFAULT_BANNERS;
 };
 
 /**
