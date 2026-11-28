@@ -127,12 +127,11 @@ export default function AjustesSucursalPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Ajustes de Sucursal & Horarios Reales
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Sucursal y Horarios de Atención
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Estos horarios controlan automáticamente el indicador “Abierto ahora /
-            Cerrado” en la tienda en hora oficial de Argentina.
+          <p className="text-xs text-slate-500">
+            Controlan en tiempo real el estado Abierto / Cerrado y los mensajes dinámicos del inicio (hora Argentina).
           </p>
         </div>
 
@@ -140,16 +139,16 @@ export default function AjustesSucursalPage() {
           type="button"
           onClick={loadSucursal}
           disabled={isLoading}
-          className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 cursor-pointer shadow-xs self-start sm:self-auto"
+          className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer self-start sm:self-auto"
           title="Recargar datos"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
         {/* Datos Generales */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 shadow-native space-y-3.5">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Store className="w-4 h-4 text-[#002244]" />
             <h2 className="font-black text-slate-900 text-sm">
@@ -242,11 +241,11 @@ export default function AjustesSucursalPage() {
         </div>
 
         {/* Grilla semanal de Horarios */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
+        <div className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 shadow-native space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <Clock className="w-4 h-4 text-[#c53030]" />
-            <h2 className="font-black text-slate-900 text-sm">
-              Horarios de Atención por Día (Argentina)
+            <Clock className="w-4 h-4 text-[#002244]" />
+            <h2 className="font-bold text-slate-900 text-sm">
+              Horarios por día (hora Argentina)
             </h2>
           </div>
 
@@ -301,10 +300,10 @@ export default function AjustesSucursalPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full mt-2 py-3 rounded-xl bg-[#c53030] hover:bg-[#a82525] text-white font-black text-xs shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transition-colors"
+            className="w-full mt-2 py-2.5 rounded-lg bg-[#002244] hover:bg-[#1e3b6c] text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transition-colors"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? "Guardando cambios..." : "Guardar Ajustes de Sucursal"}</span>
+            <span>{isSaving ? "Guardando cambios..." : "Guardar ajustes de sucursal"}</span>
           </button>
         </div>
       </form>

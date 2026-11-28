@@ -8,6 +8,7 @@ const {
   toggleStockCatalogoItem,
   toggleActivoCatalogoItem,
   deleteCatalogoItem,
+  ajusteMasivoPrecios,
   createPromo,
   updatePromo,
   deletePromo,
@@ -28,6 +29,7 @@ router.get("/catalogo/favoritos/ranking", getFavoritosRanking);
 router.get("/catalogo/favoritos/cliente/:clienteId", getFavoritosCliente);
 router.post("/catalogo/favoritos/sincronizar", sincronizarFavoritos);
 router.post("/catalogo/generar-ficha-ia", requireAdmin, aiLimiter, generarFichaIA);
+router.post("/catalogo/ajuste-masivo", requireAdmin, ajusteMasivoPrecios);
 router.get("/catalogo/:id", getCatalogoItem);
 router.post("/catalogo", requireAdmin, createCatalogoItem);
 router.put("/catalogo/:id", requireAdmin, updateCatalogoItem);

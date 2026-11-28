@@ -257,16 +257,15 @@ export default function CombosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Combos & Paquetes Ahorro
+            <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              Combos y Paquetes Ahorro
             </h1>
-            <span className="text-[11px] font-bold text-valette-red bg-red-50 border border-red-200/80 px-2.5 py-0.5 rounded-full font-num">
-              {combos.length} paquetes
+            <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded tabular-nums">
+              {combos.length}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Cada tarjeta muestra su imagen custom principal y vincula sus cortes
-            en vivo con el catálogo.
+          <p className="text-xs text-slate-500">
+            Armá combos combinando cortes reales del catálogo con cálculo automático de peso y ahorro.
           </p>
         </div>
 
@@ -275,35 +274,35 @@ export default function CombosPage() {
             type="button"
             onClick={() => loadCombos(true)}
             disabled={isRefreshing || isLoading}
-            className="p-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-lg border border-slate-200 transition-colors cursor-pointer disabled:opacity-50"
             title="Recargar combos"
           >
             <RefreshCw
-              className={`size-4 ${isRefreshing ? "animate-spin" : ""}`}
+              className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`}
             />
           </button>
 
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer w-fit"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#002244] hover:bg-[#1e3b6c] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer w-fit"
           >
-            <Plus className="size-4 stroke-[2.5]" />
-            <span>Armar Nuevo Combo</span>
+            <Plus className="size-3.5 stroke-[2.4]" />
+            <span>Nuevo combo</span>
           </button>
         </div>
       </div>
 
       {/* 2. Barra de Búsqueda y Filtros de Estado */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="relative flex-1">
-          <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-xl border border-slate-200/90">
+        <div className="relative flex-1 max-w-md">
+          <Search className="size-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, corte incluido o etiqueta..."
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#002244] outline-none transition-colors"
+            placeholder="Buscar combo o corte incluido..."
+            className="w-full h-8 pl-8 pr-8 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#002244] outline-none transition-colors"
           />
           {searchTerm && (
             <button
@@ -316,14 +315,14 @@ export default function CombosPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto no-scrollbar">
+        <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setStatusFilter("todos")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-md text-[11px] transition-colors cursor-pointer whitespace-nowrap ${
               statusFilter === "todos"
-                ? "bg-[#002244] text-white shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-white text-slate-900 font-bold shadow-2xs"
+                : "text-slate-600 font-semibold hover:text-slate-900"
             }`}
           >
             Todos ({counts.todos})
@@ -332,10 +331,10 @@ export default function CombosPage() {
           <button
             type="button"
             onClick={() => setStatusFilter("activos")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-md text-[11px] transition-colors cursor-pointer whitespace-nowrap ${
               statusFilter === "activos"
-                ? "bg-emerald-600 text-white shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-white text-emerald-700 font-bold shadow-2xs"
+                : "text-slate-600 font-semibold hover:text-slate-900"
             }`}
           >
             Activos ({counts.activos})
@@ -344,10 +343,10 @@ export default function CombosPage() {
           <button
             type="button"
             onClick={() => setStatusFilter("pausados")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-md text-[11px] transition-colors cursor-pointer whitespace-nowrap ${
               statusFilter === "pausados"
-                ? "bg-slate-700 text-white shadow-2xs"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-white text-slate-900 font-bold shadow-2xs"
+                : "text-slate-600 font-semibold hover:text-slate-900"
             }`}
           >
             Pausados ({counts.pausados})
@@ -436,7 +435,7 @@ export default function CombosPage() {
                   <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-red-50 text-valette-red border border-red-200/80">
-                        {c.badge || "🔥 Combo Ahorro"}
+                        {c.badge || "Combo Ahorro"}
                       </span>
                       <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded flex items-center gap-1 font-num">
                         <Sparkles className="size-2.5 text-amber-600" />+
@@ -593,7 +592,7 @@ export default function CombosPage() {
 
             <div className="text-center space-y-1">
               <h3 className="text-base font-black text-slate-900">
-                ¿Eliminar este combo?
+                Eliminar este combo?
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Estás por eliminar{" "}

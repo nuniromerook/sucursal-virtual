@@ -18,6 +18,7 @@ export const TabNavigationProvider = ({ children }) => {
   const scrollPositions = useRef({
     catalogo: 0,
     pedidos: 0,
+    ingresos: 0,
     combos: 0,
     banners: 0,
     contenido: 0,

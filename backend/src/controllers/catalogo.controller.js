@@ -737,6 +737,45 @@ Valores nutricionales:
   }
 };
 
+// POST /catalogo/ajuste-masivo (ajuste porcentual masivo por categoría redondeado a $50)
+const ajusteMasivoPrecios = async (req, res) => {
+  try {
+    const categoria = String(req.body?.categoria || "todos").trim().toLowerCase();
+    const porcentaje = Number(req.body?.porcentaje);
+    if (!Number.isFinite(porcentaje) || porcentaje === 0 || Math.abs(porcentaje) > 100) {
+      return res
+        .status(400)
+        .json({ error: "Indicá un porcentaje válido entre -100% y +100%." });
+    }
+
+    const factor = 1 + porcentaje / 100;
+    const isAll = categoria === "todos" || categoria === "todas" || categoria === "";
+
+    const query = isAll
+      ? `UPDATE catalogo
+         SET precio = GREATEST(50, ROUND((precio * $1) / 50.0) * 50),
+             actualizado_en = NOW()
+         RETURNING id, nombre_producto, categoria, precio`
+      : `UPDATE catalogo
+         SET precio = GREATEST(50, ROUND((precio * $1) / 50.0) * 50),
+             actualizado_en = NOW()
+         WHERE LOWER(categoria) = $2 OR LOWER(especie) = $2
+         RETURNING id, nombre_producto, categoria, precio`;
+
+    const params = isAll ? [factor] : [factor, categoria];
+    const result = await pool.query(query, params);
+
+    emitirCambioCatalogo({ tipo: "bulk_price_update", categoria, porcentaje, count: result.rows.length });
+    return res.json({
+      actualizados: result.rows.length,
+      items: result.rows,
+    });
+  } catch (error) {
+    console.error("Error en ajusteMasivoPrecios:", error.message);
+    return res.status(500).json({ error: "No se pudo aplicar el ajuste masivo de precios." });
+  }
+};
+
 module.exports = {
   getCatalogo,
   getCatalogoItem,
@@ -745,6 +784,7 @@ module.exports = {
   toggleStockCatalogoItem,
   toggleActivoCatalogoItem,
   deleteCatalogoItem,
+  ajusteMasivoPrecios,
   createPromo,
   updatePromo,
   deletePromo,

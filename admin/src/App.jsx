@@ -1,18 +1,23 @@
 // admin/src/App.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import { AdminProvider } from "./context/AdminContext";
-import { TabNavigationProvider, useTabNavigation } from "./context/TabNavigationContext";
+import {
+  TabNavigationProvider,
+  useTabNavigation,
+} from "./context/TabNavigationContext";
 
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
 import BottomNav from "./components/layout/BottomNav";
+import CommandPalette from "./components/layout/CommandPalette";
 import Toast from "./components/ui/Toast";
 
 import CatalogoPage from "./pages/CatalogoPage";
 import KdsPage from "./pages/KdsPage";
+import IngresosPage from "./pages/IngresosPage";
 import CombosPage from "./pages/CombosPage";
 import BannersPage from "./pages/BannersPage";
 import ContenidoInicioPage from "./pages/ContenidoInicioPage";
@@ -27,13 +32,27 @@ function AppContent() {
   const { isAuthenticated, isLoading, isManager } = useAuth();
   const { activeTab } = useTabNavigation();
   const [totalCortes, setTotalCortes] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  // Atajo global Ctrl+K / Cmd+K para saltar rápido entre módulos
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#002244] text-white text-xs font-semibold">
-        <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#c53030] animate-ping"></span>
-          <span>Iniciando panel Valette Admin...</span>
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#f6f8fa] text-slate-700 text-xs font-semibold">
+        <div className="flex items-center gap-2.5 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-[#002244] animate-pulse" />
+          <span>Iniciando Valette OS...</span>
         </div>
       </div>
     );
@@ -43,20 +62,26 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  // Si es rol cortador y por algún motivo quedara en un tab de gestión, mostrar KDS
   const effectiveTab =
     !isManager && activeTab !== "pedidos" && activeTab !== "catalogo"
       ? "pedidos"
       : activeTab;
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-12 bg-[#F6F8FA] antialiased">
-      <Navbar />
+    <div className="min-h-screen flex bg-[#f6f8fa] text-slate-900 antialiased">
+      <Sidebar
+        totalCortes={totalCortes}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
+      />
 
-      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-4 flex gap-6">
-        <Sidebar totalCortes={totalCortes} />
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Navbar
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onOpenCommandPalette={() => setCommandOpen(true)}
+        />
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 p-4 lg:p-6 max-w-[1440px] w-full mx-auto pb-24 lg:pb-8">
           <div style={{ display: effectiveTab === "pedidos" ? "block" : "none" }}>
             <KdsPage />
           </div>
@@ -67,6 +92,10 @@ function AppContent() {
 
           {isManager && (
             <>
+              <div style={{ display: effectiveTab === "ingresos" ? "block" : "none" }}>
+                <IngresosPage />
+              </div>
+
               <div style={{ display: effectiveTab === "combos" ? "block" : "none" }}>
                 <CombosPage />
               </div>
@@ -104,6 +133,7 @@ function AppContent() {
       </div>
 
       <BottomNav />
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
       <Toast />
     </div>
   );

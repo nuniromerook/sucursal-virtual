@@ -22,6 +22,11 @@ export default function CatalogoPage({ onProductsLoaded }) {
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Ajuste masivo porcentual por categoría
+  const [bulkCat, setBulkCat] = useState("todos");
+  const [bulkPct, setBulkPct] = useState("5");
+  const [isApplyingBulk, setIsApplyingBulk] = useState(false);
+
   const { showToast } = useAdmin();
   const { authHeaders, isManager } = useAuth();
 
@@ -268,6 +273,63 @@ export default function CatalogoPage({ onProductsLoaded }) {
     }
   };
 
+  // Edición inline de precio directo sobre la planilla
+  const handleInlinePriceSave = async (product, rawPrice) => {
+    const nextPrice = Math.round(Number(rawPrice));
+    if (!Number.isFinite(nextPrice) || nextPrice <= 0) return;
+    if (Math.round(Number(product.precio) || 0) === nextPrice) return;
+
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, precio: nextPrice } : p)),
+    );
+
+    try {
+      const res = await fetch(`${VITE_API_URL}/catalogo/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ precio: nextPrice }),
+      });
+      if (!res.ok) throw new Error();
+      showToast(`${product.nombre_producto} actualizado a $${nextPrice.toLocaleString("es-AR")}.`);
+    } catch {
+      await loadProducts();
+      showToast("No se pudo actualizar el precio.", "error");
+    }
+  };
+
+  // Ajuste masivo por porcentaje
+  const handleBulkPriceApply = async () => {
+    const pct = parseFloat(bulkPct);
+    if (!Number.isFinite(pct) || pct === 0) return;
+    const labelCat = bulkCat === "todos" ? "todos los rubros" : bulkCat;
+    if (
+      !window.confirm(
+        `Aplicar un ajuste de ${pct > 0 ? "+" : ""}${pct}% a ${labelCat} (redondeado a $50)?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsApplyingBulk(true);
+    try {
+      const res = await fetch(`${VITE_API_URL}/catalogo/ajuste-masivo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ categoria: bulkCat, porcentaje: pct }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "No se pudo aplicar el ajuste.");
+      showToast(
+        `Ajuste ${pct > 0 ? "+" : ""}${pct}% aplicado a ${data.actualizados || 0} cortes.`,
+      );
+      await loadProducts();
+    } catch (err) {
+      showToast(err.message || "Error al aplicar ajuste masivo.", "error");
+    } finally {
+      setIsApplyingBulk(false);
+    }
+  };
+
   // Estadísticas calculadas
   const total = products.length;
   const enStock = products.filter((p) => !p.sin_stock).length;
@@ -277,26 +339,63 @@ export default function CatalogoPage({ onProductsLoaded }) {
   return (
     <div className="space-y-4">
       {/* Barra de Título y Acción Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            Gestión de Cortes & Catálogo
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Planilla de Cortes, Precios y Stock
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Control directo de precios, stock en mostrador y fotos para venta online.
+          <p className="text-xs text-slate-500">
+            Editá precios directo en la tabla, pausá stock en 1 click o aplicá ajustes masivos por rubro.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isManager && (
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1">
+              <span className="text-[11px] font-semibold text-slate-500 hidden xl:inline">
+                Ajuste:
+              </span>
+              <select
+                value={bulkCat}
+                onChange={(e) => setBulkCat(e.target.value)}
+                className="h-7 px-1.5 rounded border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-800 outline-none"
+              >
+                <option value="todos">Todos</option>
+                <option value="vacuno">Vacuno</option>
+                <option value="cerdo">Cerdo</option>
+                <option value="pollo">Pollo</option>
+                <option value="embutidos">Embutidos</option>
+                <option value="preparados">Preparados</option>
+                <option value="almacen">Almacén</option>
+              </select>
+              <input
+                type="number"
+                step="0.5"
+                value={bulkPct}
+                onChange={(e) => setBulkPct(e.target.value)}
+                className="w-14 h-7 px-1.5 rounded border border-slate-200 text-xs font-bold text-right tabular-nums outline-none"
+              />
+              <span className="text-[11px] font-bold text-slate-500">%</span>
+              <button
+                type="button"
+                onClick={handleBulkPriceApply}
+                disabled={isApplyingBulk}
+                className="h-7 px-2.5 rounded bg-slate-900 hover:bg-[#002244] text-white text-[11px] font-bold cursor-pointer disabled:opacity-50"
+              >
+                {isApplyingBulk ? "..." : "Aplicar"}
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={loadProducts}
             disabled={isLoading}
-            className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+            className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             title="Recargar catálogo"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin text-[#002244]" : ""}`}
+              className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[#002244]" : ""}`}
             />
           </button>
 
@@ -307,103 +406,97 @@ export default function CatalogoPage({ onProductsLoaded }) {
                 setEditingProduct(null);
                 setDrawerOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#002244] hover:bg-[#1e3b6c] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Nuevo Corte / Producto</span>
+              <Plus className="w-3.5 h-3.5 stroke-[2.4]" />
+              <span>Nuevo corte</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Tarjetas de Resumen Operativo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold text-slate-500 uppercase">
-              Total Catálogo
-            </div>
-            <div className="text-lg font-black text-slate-900">
-              {total} cortes
-            </div>
+      {/* KPI Strip compacto de 1 fila */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200/90">
+          <div className="text-[11px] font-semibold text-slate-500">
+            Total catálogo
+          </div>
+          <div className="text-xl font-extrabold text-slate-900 tabular-nums mt-0.5">
+            {total}
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold text-emerald-700 uppercase">
-              En Stock
-            </div>
-            <div className="text-lg font-black text-emerald-700">
-              {enStock} activos
-            </div>
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200/90">
+          <div className="text-[11px] font-semibold text-slate-500">
+            En stock
+          </div>
+          <div className="text-xl font-extrabold text-emerald-700 tabular-nums mt-0.5">
+            {enStock}
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold text-rose-700 uppercase">
-              Agotados / Sin Stock
-            </div>
-            <div className="text-lg font-black text-rose-700">
-              {sinStock} pausados
-            </div>
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200/90">
+          <div className="text-[11px] font-semibold text-slate-500">
+            Agotados / pausados
+          </div>
+          <div
+            className={`text-xl font-extrabold tabular-nums mt-0.5 ${
+              sinStock > 0 ? "text-[#c53030]" : "text-slate-900"
+            }`}
+          >
+            {sinStock}
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold text-sky-700 uppercase">
-              Visibles en Tienda
-            </div>
-            <div className="text-lg font-black text-sky-700">
-              {activos} publicados
-            </div>
+        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200/90">
+          <div className="text-[11px] font-semibold text-slate-500">
+            Visibles en tienda
+          </div>
+          <div className="text-xl font-extrabold text-slate-900 tabular-nums mt-0.5">
+            {activos}
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        {/* Buscador Rápido */}
+      <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
+          <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-3.5 h-3.5" />
           </span>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre (ej: Asado, Nalga, Chorizo)..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200/80 focus:bg-white focus:border-[#002244] rounded-xl text-xs font-medium transition-colors outline-none"
+            placeholder="Buscar corte o rubro (ej: Asado, Nalga, Chorizo)..."
+            className="w-full h-8 pl-8 pr-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#002244] rounded-lg text-xs font-medium transition-colors outline-none"
           />
         </div>
 
-        {/* Filtros de Categoría & Stock */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          {["todos", "vacuno", "cerdo", "pollo", "preparados", "almacen"].map(
-            (cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-colors cursor-pointer whitespace-nowrap ${
-                  categoryFilter === cat
-                    ? "bg-[#002244] text-white shadow-2xs"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                }`}
-              >
-                {cat === "todos" ? "Todos" : cat}
-              </button>
-            )
-          )}
-
-          <div className="h-4 w-px bg-slate-200 mx-1 shrink-0"></div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 md:pb-0 no-scrollbar">
+          <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+            {["todos", "vacuno", "cerdo", "pollo", "embutidos", "preparados", "almacen"].map(
+              (cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] capitalize transition-colors cursor-pointer whitespace-nowrap ${
+                    categoryFilter === cat
+                      ? "bg-white text-slate-900 font-bold shadow-2xs"
+                      : "text-slate-600 font-semibold hover:text-slate-900"
+                  }`}
+                >
+                  {cat === "todos" ? "Todos" : cat}
+                </button>
+              ),
+            )}
+          </div>
 
           <select
             value={stockFilter}
             onChange={(e) => setStockFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-bold outline-none cursor-pointer"
+            className="h-8 bg-slate-50 border border-slate-200 rounded-lg px-2.5 text-xs text-slate-700 font-semibold outline-none cursor-pointer"
           >
             <option value="todos">Todos los estados</option>
             <option value="en_stock">Solo en stock</option>
@@ -424,6 +517,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
             : null
         }
         onDeleteProduct={isManager ? (p) => setDeletingProduct(p) : null}
+        onInlinePriceSave={isManager ? handleInlinePriceSave : null}
         onToggleStock={handleToggleStock}
         onToggleActivo={handleToggleActivo}
         searchTerm={searchTerm}
@@ -459,7 +553,7 @@ export default function CatalogoPage({ onProductsLoaded }) {
 
             <div className="text-center space-y-1">
               <h3 className="text-base font-black text-slate-900">
-                ¿Eliminar este corte?
+                Eliminar este corte?
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Estás por eliminar{" "}

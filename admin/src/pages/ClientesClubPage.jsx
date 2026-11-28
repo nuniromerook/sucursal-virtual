@@ -171,7 +171,7 @@ export default function ClientesClubPage() {
   };
 
   const handleDeleteReward = async (rew) => {
-    if (!window.confirm(`¿Eliminar el premio "${rew.titulo}"?`)) return;
+    if (!window.confirm(`Eliminar el premio "${rew.titulo}"?`)) return;
     try {
       const res = await fetch(`${VITE_API_URL}/recompensas/${rew.id}`, {
         method: "DELETE",
@@ -189,7 +189,7 @@ export default function ClientesClubPage() {
     if (
       nuevoEstado === "cancelado" &&
       !window.confirm(
-        `¿Cancelar el canje ${canje.codigo_canje} y devolver ${canje.puntos_gastados} puntos al cliente?`
+        `Cancelar el canje ${canje.codigo_canje} y devolver ${canje.puntos_gastados} puntos al cliente?`
       )
     ) {
       return;
@@ -232,13 +232,11 @@ export default function ClientesClubPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Clientes & Club Valette
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Clientes y Club Valette
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Fidelización estratégica: gestioná clientes, acreditación manual de
-            puntos, catálogo de premios (sorteos, cortes, envíos) y validación de
-            códigos de canje.
+          <p className="text-xs text-slate-500">
+            Consultá clientes por ID de caja (5 dígitos), acreditá puntos y validá códigos de canje.
           </p>
         </div>
 
@@ -247,10 +245,10 @@ export default function ClientesClubPage() {
             type="button"
             onClick={loadAll}
             disabled={isLoading}
-            className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 cursor-pointer shadow-xs"
+            className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer"
             title="Actualizar"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
           <button
             type="button"
@@ -258,22 +256,22 @@ export default function ClientesClubPage() {
               setRewardForm({ ...EMPTY_REWARD, orden: recompensas.length + 1 });
               setRewardModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#002244] hover:bg-[#1e3b6c] text-white rounded-lg text-xs font-bold cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Premio</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nuevo premio</span>
           </button>
         </div>
       </div>
 
-      {/* Sub-pestañas */}
-      <div className="inline-flex p-1 bg-slate-200/60 rounded-xl gap-1 text-xs font-bold">
+      {/* Sub-pestañas compactas */}
+      <div className="inline-flex p-0.5 bg-white border border-slate-200 rounded-lg gap-0.5 text-xs font-semibold">
         <button
           type="button"
           onClick={() => setSubTab("clientes")}
-          className={`px-3.5 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all ${
+          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer transition-colors ${
             subTab === "clientes"
-              ? "bg-white text-[#002244] shadow-xs"
+              ? "bg-[#002244] text-white font-bold"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
@@ -283,28 +281,28 @@ export default function ClientesClubPage() {
         <button
           type="button"
           onClick={() => setSubTab("premios")}
-          className={`px-3.5 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all ${
+          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer transition-colors ${
             subTab === "premios"
-              ? "bg-white text-[#002244] shadow-xs"
+              ? "bg-[#002244] text-white font-bold"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Gift className="w-3.5 h-3.5" />
-          <span>Premios & Sorteos ({recompensas.length})</span>
+          <span>Premios ({recompensas.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setSubTab("canjes")}
-          className={`px-3.5 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all ${
+          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer transition-colors ${
             subTab === "canjes"
-              ? "bg-white text-[#002244] shadow-xs"
+              ? "bg-[#002244] text-white font-bold"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Ticket className="w-3.5 h-3.5" />
           <span>Canjes ({canjes.length})</span>
           {pendientesCanjes > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-[#c53030] text-white text-[10px] font-black">
+            <span className="px-1.5 py-0.5 rounded-full bg-[#c53030] text-white text-[10px] font-black tabular-nums">
               {pendientesCanjes}
             </span>
           )}
@@ -313,16 +311,16 @@ export default function ClientesClubPage() {
 
       {/* TAB 1: CLIENTES */}
       {subTab === "clientes" && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-3.5 border-b border-slate-100">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-native overflow-hidden">
+          <div className="p-3 border-b border-slate-200/80">
             <div className="relative max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por ID de cliente (caja), nombre, email, usuario o teléfono..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs outline-none focus:bg-white focus:border-[#002244]"
+                placeholder="Buscar por ID de caja (5 dígitos), nombre, email o teléfono..."
+                className="w-full h-8 pl-8 pr-3 rounded-lg bg-slate-50 border border-slate-200 text-xs outline-none focus:bg-white focus:border-[#002244]"
               />
             </div>
           </div>
@@ -332,27 +330,32 @@ export default function ClientesClubPage() {
               No hay clientes registrados para mostrar.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-extrabold">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Planilla de clientes del Club Valette"
+              className="erp-table-wrapper"
+            >
+              <table className="erp-table min-w-[780px]">
+                <thead>
                   <tr>
-                    <th className="py-3 px-4">ID Caja</th>
-                    <th className="py-3 px-4">Cliente</th>
-                    <th className="py-3 px-4">Contacto</th>
-                    <th className="py-3 px-4">Pedidos / Facturado</th>
-                    <th className="py-3 px-4">Puntos Club</th>
-                    <th className="py-3 px-4 text-right">Acciones</th>
+                    <th scope="col">ID Caja</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Contacto</th>
+                    <th scope="col" className="text-right">Pedidos / Facturado</th>
+                    <th scope="col" className="text-right">Puntos Club</th>
+                    <th scope="col" className="text-right">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {filteredClients.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/70">
-                      <td className="py-3 px-4">
-                        <span className="px-2.5 py-1 rounded-lg bg-[#EFF4F9] text-[#002244] font-mono font-black text-xs tracking-wider">
+                    <tr key={c.id}>
+                      <th scope="row" className="whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-md bg-[#EFF4F9] text-[#002244] font-mono font-bold text-xs tracking-wider">
                           {c.referral_code || "—"}
                         </span>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">
+                      </th>
+                      <td className="font-semibold text-slate-900 whitespace-nowrap">
                         <div>{c.nombre}</div>
                         {c.usuario && (
                           <div className="text-[11px] font-normal text-slate-400">
@@ -360,27 +363,27 @@ export default function ClientesClubPage() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-600">
+                      <td className="text-slate-600 whitespace-nowrap">
                         <div>{c.email || "—"}</div>
                         <div className="text-[11px] font-mono text-slate-400">
                           {c.telefono || "—"}
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-mono">
-                        <span className="font-bold text-slate-800">
+                      <td className="text-right tabular-nums whitespace-nowrap">
+                        <span className="font-semibold text-slate-800">
                           {c.pedidos_count || 0} ped.
                         </span>{" "}
-                        <span className="text-slate-400">·</span>{" "}
+                        <span className="text-slate-300">·</span>{" "}
                         <span className="text-emerald-700 font-bold">
                           {formatMoney(c.total_gastado || 0)}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 font-mono font-black">
+                      <td className="text-right whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-900 font-mono font-bold text-xs tabular-nums">
                           {c.puntos_acumulados || 0} pts
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => {
@@ -388,10 +391,10 @@ export default function ClientesClubPage() {
                             setAdjustDelta("100");
                             setAdjustReason("");
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-[#002244] hover:bg-slate-800 text-white font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-[#002244] hover:bg-[#1e3b6c] text-white font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                          <span>Ajustar Puntos</span>
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span>Ajustar puntos</span>
                         </button>
                       </td>
                     </tr>
@@ -480,24 +483,29 @@ export default function ClientesClubPage() {
 
       {/* TAB 3: CANJES & VALIDACIÓN DE CÓDIGOS */}
       {subTab === "canjes" && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-native overflow-hidden">
           {canjes.length === 0 ? (
             <div className="p-10 text-center text-xs text-slate-400">
               Todavía ningún cliente canjeó recompensas.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-extrabold">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Tabla de canjes de Club Valette"
+              className="erp-table-wrapper"
+            >
+              <table className="erp-table min-w-[720px]">
+                <thead>
                   <tr>
-                    <th className="py-3 px-4">Código</th>
-                    <th className="py-3 px-4">Cliente</th>
-                    <th className="py-3 px-4">Premio Canjeado</th>
-                    <th className="py-3 px-4">Fecha / Estado</th>
-                    <th className="py-3 px-4 text-right">Validación</th>
+                    <th scope="col">Código</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Premio canjeado</th>
+                    <th scope="col">Fecha / Estado</th>
+                    <th scope="col" className="text-right">Validación</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {canjes.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/70">
                       <td className="py-3 px-4">

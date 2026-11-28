@@ -150,7 +150,7 @@ export default function EquipoPage() {
       showToast("No podés eliminar tu propia cuenta activa.", "error");
       return;
     }
-    if (!window.confirm(`¿Eliminar a "${emp.nombre}" del equipo?`)) return;
+    if (!window.confirm(`Eliminar a "${emp.nombre}" del equipo?`)) return;
     try {
       const res = await fetch(`${VITE_API_URL}/empleados/${emp.id}`, {
         method: "DELETE",
@@ -168,12 +168,11 @@ export default function EquipoPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Equipo & Roles de Sucursal
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Equipo y Roles de Sucursal
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Administrá accesos por rol: Propietario, Admin, Encargado y Cortador
-            (privacidad de domicilios protegida por rol).
+          <p className="text-xs text-slate-500">
+            Accesos por rol (Propietario, Admin, Encargado y Cortador) con privacidad de domicilios protegida.
           </p>
         </div>
 
@@ -182,116 +181,143 @@ export default function EquipoPage() {
             type="button"
             onClick={loadEquipo}
             disabled={isLoading}
-            className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 cursor-pointer shadow-xs"
+            className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer"
             title="Recargar equipo"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
           <button
             type="button"
             onClick={handleOpenNew}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#002244] hover:bg-[#1e3b6c] text-white rounded-lg text-xs font-bold cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Agregar Miembro</span>
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Agregar miembro</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {empleados.map((emp) => {
-          const roleMeta =
-            ROLE_OPTIONS.find((r) => r.id === emp.rol) || ROLE_OPTIONS[3];
-          const isMe = Number(emp.id) === Number(user?.id);
+      {/* Tabla ERP de Equipo */}
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-native overflow-hidden">
+        {empleados.length === 0 ? (
+          <div className="py-12 text-center text-xs text-slate-400">
+            No hay miembros cargados en el equipo.
+          </div>
+        ) : (
+          <div
+            tabIndex={0}
+            role="region"
+            aria-labelledby="equipo-table-caption"
+            className="erp-table-wrapper"
+          >
+            <table className="erp-table min-w-[740px]">
+              <caption id="equipo-table-caption" className="sr-only-live">
+                Listado de empleados y roles
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Miembro</th>
+                  <th scope="col">Rol</th>
+                  <th scope="col">Contacto</th>
+                  <th scope="col">Actividad / Estado</th>
+                  <th scope="col" className="text-right">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleados.map((emp) => {
+                  const roleMeta =
+                    ROLE_OPTIONS.find((r) => r.id === emp.rol) || ROLE_OPTIONS[3];
+                  const isMe = Number(emp.id) === Number(user?.id);
 
-          return (
-            <div
-              key={emp.id}
-              className={`bg-white rounded-2xl border p-4 shadow-xs flex flex-col justify-between gap-3 ${
-                emp.activo === false
-                  ? "border-slate-200 opacity-60"
-                  : "border-slate-200/80"
-              }`}
-            >
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                      <span>{emp.nombre}</span>
-                      {isMe && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">
-                          Vos
-                        </span>
-                      )}
-                    </h3>
-                    {emp.apodo && (
-                      <p className="text-[11px] text-slate-400 font-semibold">
-                        Apodo en KDS: {emp.apodo}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${roleMeta.cls}`}
-                  >
-                    {emp.rol}
-                  </span>
-                </div>
-
-                <div className="space-y-1 text-xs text-slate-600 pt-1">
-                  {emp.email && (
-                    <p className="flex items-center gap-1.5 truncate">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{emp.email}</span>
-                    </p>
-                  )}
-                  {emp.telefono && (
-                    <p className="flex items-center gap-1.5 font-mono">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span>{emp.telefono}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
-                  {emp.rol === "cortador" ? (
-                    <>
-                      <Scissors className="w-3.5 h-3.5 text-amber-600" />
-                      <span>{emp.pedidos_hoy || 0} cortes hoy</span>
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-3.5 h-3.5 text-[#002244]" />
-                      <span>{emp.activo ? "Acceso activo" : "Desactivado"}</span>
-                    </>
-                  )}
-                </span>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(emp)}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    Editar
-                  </button>
-                  {!isMe && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(emp)}
-                      className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer"
-                      title="Eliminar"
+                  return (
+                    <tr
+                      key={emp.id}
+                      className={emp.activo === false ? "opacity-60" : ""}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+                      <th scope="row" className="whitespace-nowrap">
+                        <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                          <span>{emp.nombre}</span>
+                          {isMe && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">
+                              Vos
+                            </span>
+                          )}
+                        </div>
+                        {emp.apodo && (
+                          <div className="text-[11px] font-normal text-slate-400">
+                            Apodo KDS: {emp.apodo}
+                          </div>
+                        )}
+                      </th>
+                      <td className="whitespace-nowrap">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${roleMeta.cls}`}
+                        >
+                          {emp.rol}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap">
+                        <div className="text-slate-700 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{emp.email || "—"}</span>
+                        </div>
+                        {emp.telefono && (
+                          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5 mt-0.5">
+                            <Phone className="w-3 h-3 shrink-0" />
+                            <span>{emp.telefono}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap">
+                        <span className="text-xs font-semibold text-slate-600 inline-flex items-center gap-1.5">
+                          {emp.rol === "cortador" ? (
+                            <>
+                              <Scissors className="w-3.5 h-3.5 text-amber-600" />
+                              <span className="tabular-nums">
+                                {emp.pedidos_hoy || 0} cortes hoy
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="w-3.5 h-3.5 text-[#002244]" />
+                              <span>
+                                {emp.activo ? "Acceso activo" : "Desactivado"}
+                              </span>
+                            </>
+                          )}
+                        </span>
+                      </td>
+                      <td className="text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(emp)}
+                            className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Editar</span>
+                          </button>
+                          {!isMe && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(emp)}
+                              className="p-1.5 rounded-md border border-slate-200 bg-white hover:bg-rose-50 text-slate-400 hover:text-[#c53030] cursor-pointer"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal Alta/Edición */}

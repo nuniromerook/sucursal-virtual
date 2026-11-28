@@ -19,6 +19,7 @@ const dashboardRoutes = require("./routes/dashboard.routes");
 const notificacionesRoutes = require("./routes/notificaciones.routes");
 const seoRoutes = require("./routes/seo.routes");
 const configuracionRoutes = require("./routes/configuracion.routes");
+const ingresosRoutes = require("./routes/ingresos.routes");
 const { DEFAULT_HOME_CONFIG } = require("./controllers/configuracion.controller");
 
 const app = express();
@@ -106,6 +107,7 @@ app.use(dashboardRoutes);
 app.use(notificacionesRoutes);
 app.use(seoRoutes);
 app.use(configuracionRoutes);
+app.use(ingresosRoutes);
 
 app.get("/", (req, res) => {
   res.send("Sucursal Virtual running with Socket.io!");
@@ -187,7 +189,33 @@ httpServer.listen(PORT, async () => {
        ON CONFLICT (clave) DO NOTHING`,
       ["home_inicio", JSON.stringify(DEFAULT_HOME_CONFIG)],
     );
-    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo', 'clientes', 'banners_publicidad' y 'configuracion_sitio' verificados.");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ingresos_mercaderia (
+        id SERIAL PRIMARY KEY,
+        sucursal_id INTEGER NOT NULL DEFAULT 1,
+        lote VARCHAR(40) NOT NULL,
+        proveedor VARCHAR(120) NOT NULL,
+        remito VARCHAR(80) DEFAULT '',
+        tropa VARCHAR(60) DEFAULT '',
+        mercaderia VARCHAR(160) NOT NULL,
+        rubro VARCHAR(40) NOT NULL DEFAULT 'Vacuno',
+        kg_remito NUMERIC(10, 2) NOT NULL DEFAULT 0,
+        kg_balanza NUMERIC(10, 2) NOT NULL DEFAULT 0,
+        costo_kg NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        camara VARCHAR(60) NOT NULL DEFAULT 'Cámara 1',
+        temperatura VARCHAR(24) DEFAULT '',
+        notas TEXT DEFAULT '',
+        estado VARCHAR(30) NOT NULL DEFAULT 'confirmado',
+        usuario_id INTEGER,
+        usuario_nombre VARCHAR(120) DEFAULT '',
+        creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await pool.query(
+      "CREATE INDEX IF NOT EXISTS idx_ingresos_sucursal_fecha ON ingresos_mercaderia (sucursal_id, creado_en DESC);",
+    );
+    console.log("✅ [DB Auto-Migration] Tablas, columnas e índices verificados (catalogo, clientes, banners_publicidad, configuracion_sitio, ingresos_mercaderia).");
   } catch (err) {
     console.error("⚠️ [DB Auto-Migration Error]:", err.message);
   }

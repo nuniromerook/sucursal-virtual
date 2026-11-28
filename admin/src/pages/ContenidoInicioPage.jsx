@@ -162,7 +162,7 @@ export default function ContenidoInicioPage() {
       };
       const res = await fetch(`${VITE_API_URL}/configuracion/home`, {
         method: "PUT",
-        headers: authHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ valor: payload }),
       });
 
@@ -206,30 +206,22 @@ export default function ContenidoInicioPage() {
   }, [expiraInput, nowMs]);
 
   return (
-    <div className="space-y-5">
-      {/* Encabezado */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#002244] text-white flex items-center justify-center shrink-0">
-            <LayoutTemplate className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-black text-slate-900">
-              Contenido / Inicio
-            </h1>
-            <p className="text-xs text-slate-500">
-              Editá el saludo y los mensajes dinámicos de la portada según horario, día y apertura del local.
-            </p>
-            {updatedAt && (
-              <p className="text-[11px] text-slate-400 mt-1">
-                Última actualización:{" "}
-                {new Date(updatedAt).toLocaleString("es-AR", {
+    <div className="space-y-4">
+      {/* Encabezado compacto Valette OS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Contenido / Inicio
+          </h1>
+          <p className="text-xs text-slate-500">
+            Editá el saludo y los mensajes dinámicos de la portada según horario, día y apertura del local.
+            {updatedAt
+              ? ` · Actualizado ${new Date(updatedAt).toLocaleString("es-AR", {
                   dateStyle: "short",
                   timeStyle: "short",
-                })}
-              </p>
-            )}
-          </div>
+                })}`
+              : ""}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -237,18 +229,18 @@ export default function ContenidoInicioPage() {
             type="button"
             onClick={loadConfig}
             disabled={isLoading}
-            className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-60"
+            className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer transition-colors disabled:opacity-60"
+            title="Recargar configuración"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
             />
-            <span>Recargar</span>
           </button>
           <button
             type="submit"
             form="contenido-inicio-form"
             disabled={isSaving}
-            className="px-4 py-2 rounded-xl bg-[#002244] hover:bg-[#003366] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs disabled:opacity-60"
+            className="px-3.5 py-2 rounded-lg bg-[#002244] hover:bg-[#1e3b6c] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-60"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{isSaving ? "Guardando..." : "Guardar cambios"}</span>
@@ -256,13 +248,11 @@ export default function ContenidoInicioPage() {
         </div>
       </div>
 
-      {/* Selector de sección (pensado para escalar con nuevos bloques del sitio) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-        <span className="px-3.5 py-1.5 rounded-xl bg-[#c53030] text-white text-xs font-bold shadow-2xs whitespace-nowrap">
+      {/* Selector de sección (escalable a futuros bloques) */}
+      <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white">
+        <span className="px-3 py-1 rounded-md bg-[#002244] text-white text-[11px] font-bold inline-flex items-center gap-1.5">
+          <LayoutTemplate className="w-3.5 h-3.5" />
           Saludo y Portada
-        </span>
-        <span className="px-3.5 py-1.5 rounded-xl bg-white border border-dashed border-slate-200 text-slate-400 text-xs font-semibold whitespace-nowrap">
-          Más secciones próximamente
         </span>
       </div>
 

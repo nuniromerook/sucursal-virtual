@@ -71,7 +71,7 @@ export default function NotificacionesPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Error al emitir aviso.");
 
-      showToast("¡Aviso difundido en vivo por WebSocket y Web Push (VAPID)!");
+      showToast("Aviso difundido en vivo por WebSocket y Web Push.");
       setForm({
         titulo: "",
         mensaje: "",
@@ -90,12 +90,11 @@ export default function NotificacionesPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Difusión Push & Avisos a Clientes
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Difusión Push y Avisos a Clientes
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Enviá alertas de ofertas relámpago, reposición de cortes o novedades del
-            Club Valette en tiempo real y por Web Push al celular.
+          <p className="text-xs text-slate-500">
+            Enviá alertas de ofertas, reposición de cortes o novedades del Club Valette en tiempo real.
           </p>
         </div>
 
@@ -103,10 +102,10 @@ export default function NotificacionesPage() {
           type="button"
           onClick={loadHistory}
           disabled={isLoading}
-          className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 cursor-pointer shadow-xs self-start sm:self-auto"
+          className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer self-start sm:self-auto"
           title="Actualizar historial"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
@@ -114,26 +113,26 @@ export default function NotificacionesPage() {
         {/* Formulario Compositor */}
         <form
           onSubmit={handleSend}
-          className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4 text-xs"
+          className="bg-white rounded-xl border border-slate-200/90 p-4 sm:p-5 shadow-native space-y-4 text-xs"
         >
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <BellRing className="w-4 h-4 text-[#c53030]" />
-            <h2 className="font-black text-slate-900 text-sm">
-              Nuevo Aviso Masivo (Broadcast Global)
+            <BellRing className="w-4 h-4 text-[#002244]" />
+            <h2 className="font-bold text-slate-900 text-sm">
+              Nuevo aviso masivo
             </h2>
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">
-              Título de la Notificación *
+              Título de la notificación *
             </label>
             <input
               type="text"
               required
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              placeholder="ej: 🔥 ¡Llegó Asado de Centro Fresco para el finde!"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold outline-none focus:bg-white focus:border-[#002244]"
+              placeholder="Ej: Llegó asado de centro para el finde!"
+              className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 font-semibold outline-none focus:bg-white focus:border-[#002244]"
             />
           </div>
 
@@ -190,11 +189,11 @@ export default function NotificacionesPage() {
           <button
             type="submit"
             disabled={isSending}
-            className="w-full py-3 rounded-xl bg-[#c53030] hover:bg-[#a82525] text-white font-black text-xs shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transition-colors"
+            className="w-full py-2.5 rounded-lg bg-[#002244] hover:bg-[#1e3b6c] text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transition-colors"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
             <span>
-              {isSending ? "Enviando difusión..." : "Enviar Push & Aviso en Vivo"}
+              {isSending ? "Enviando difusión..." : "Enviar push y aviso en vivo"}
             </span>
           </button>
         </form>

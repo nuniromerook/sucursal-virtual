@@ -245,7 +245,7 @@ export default function BannersPage() {
   };
 
   const handleDelete = async (b) => {
-    if (!window.confirm(`¿Eliminar el banner "${b.titulo}"?`)) return;
+    if (!window.confirm(`Eliminar el banner "${b.titulo}"?`)) return;
     try {
       const res = await fetch(`${VITE_API_URL}/banners/${b.id}`, {
         method: "DELETE",
@@ -262,7 +262,7 @@ export default function BannersPage() {
   const handleResetAllAnalytics = async () => {
     if (
       !window.confirm(
-        "¿Reiniciar a 0 las impresiones, clics y ventas atribuidas de TODOS los banners?"
+        "Reiniciar a 0 las impresiones, clics y ventas atribuidas de TODOS los banners?"
       )
     ) {
       return;
@@ -302,12 +302,11 @@ export default function BannersPage() {
       {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Banners de Portada & Rendimiento
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Banners de Portada y Rendimiento
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Gestioná el carrusel principal de la tienda (Desktop + Mobile) y medí
-            impresiones, clics, CTR y ventas atribuidas.
+          <p className="text-xs text-slate-500">
+            Administrá el carrusel principal (global), sus acciones y métricas de vistas, clics y ventas.
           </p>
         </div>
 
@@ -316,28 +315,28 @@ export default function BannersPage() {
             type="button"
             onClick={loadBanners}
             disabled={isLoading}
-            className="p-2.5 border border-slate-200 bg-white rounded-xl hover:bg-slate-50 text-slate-600 cursor-pointer shadow-xs"
+            className="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer"
             title="Recargar"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
 
           <button
             type="button"
             onClick={handleResetAllAnalytics}
-            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Resetear Métricas</span>
+            <span>Resetear métricas</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#002244] hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#002244] hover:bg-[#1e3b6c] text-white rounded-lg text-xs font-bold cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Banner</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nuevo banner</span>
           </button>
         </div>
       </div>

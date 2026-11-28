@@ -139,25 +139,23 @@ export default function MetricasPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Cabecera y Filtro de Rango */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-            Métricas Operativas, Tráfico Web & Carritos en la Nube
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+            Cierre Operativo, Tráfico y Carritos en Vivo
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Balance en vivo de{" "}
-            {selectedSucursal?.nombre || "Luis Guillón (Casa Central)"},
-            interacciones de usuarios y embudo de compra.
+          <p className="text-xs text-slate-500">
+            Balance de {selectedSucursal?.nombre || "Luis Guillón"}, kilos despachados y actividad de compra.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex p-1 bg-slate-200/60 rounded-xl gap-1">
+          <div className="inline-flex p-0.5 bg-white border border-slate-200 rounded-lg gap-0.5">
             {[
               { id: "hoy", label: "Hoy" },
-              { id: "semana", label: "7 Días" },
+              { id: "semana", label: "7 días" },
               { id: "mes", label: "Mes" },
               { id: "anio", label: "Año" },
             ].map((item) => (
@@ -165,9 +163,9 @@ export default function MetricasPage() {
                 key={item.id}
                 type="button"
                 onClick={() => setRango(item.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
                   rango === item.id
-                    ? "bg-[#002244] text-white shadow-xs"
+                    ? "bg-[#002244] text-white"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -180,21 +178,21 @@ export default function MetricasPage() {
             type="button"
             onClick={handleRefreshMetrics}
             disabled={isLoading}
-            className="p-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="p-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 rounded-lg transition-colors cursor-pointer"
             title="Actualizar métricas"
             aria-label="Actualizar métricas"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
             />
           </button>
 
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Imprimir</span>
           </button>
         </div>
@@ -202,62 +200,55 @@ export default function MetricasPage() {
 
       {/* 1. KPIs Principales de Ventas y Tráfico */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white px-4 py-3.5 rounded-xl border border-slate-200/90">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Facturación ({rango})</span>
+            <span className="text-[11px] font-semibold">Facturación ({rango})</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 font-mono">
+          <div className="text-xl font-extrabold text-slate-900 mt-1 tabular-nums">
             {formatMoney(facturacionTotal)}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1 font-medium">
+          <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
             Ticket promedio: {formatMoney(ticketPromedio)}
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white px-4 py-3.5 rounded-xl border border-slate-200/90">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Kilos Despachados</span>
+            <span className="text-[11px] font-semibold">Kilos despachados</span>
             <Scale className="w-4 h-4 text-[#002244]" />
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 font-mono">
+          <div className="text-xl font-extrabold text-slate-900 mt-1 tabular-nums">
             {Number(volumenKg.total || 0).toFixed(1)} kg
           </div>
-          <div className="text-[11px] text-slate-500 mt-1 font-medium">
-            Vacuno: {Number(volumenKg.vacuno || 0).toFixed(1)}kg | Cerdo:{" "}
-            {Number(volumenKg.cerdo || 0).toFixed(1)}kg | Pollo:{" "}
-            {Number(volumenKg.pollo || 0).toFixed(1)}kg
+          <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
+            Vac {Number(volumenKg.vacuno || 0).toFixed(1)} · Cer {Number(volumenKg.cerdo || 0).toFixed(1)} · Pol {Number(volumenKg.pollo || 0).toFixed(1)}
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white px-4 py-3.5 rounded-xl border border-slate-200/90">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Pedidos Registrados</span>
+            <span className="text-[11px] font-semibold">Pedidos registrados</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 font-mono">
-            {pedidosTotal} pedidos
+          <div className="text-xl font-extrabold text-slate-900 mt-1 tabular-nums">
+            {pedidosTotal}
           </div>
-          <div className="text-[11px] text-emerald-700 mt-1 font-bold">
-            {pedidosCompletados} entregados •{" "}
-            {Number(sucursalStats?.pedidos_pendientes || 0)} en curso
+          <div className="text-[11px] text-emerald-700 mt-0.5 font-semibold tabular-nums">
+            {pedidosCompletados} entregados · {Number(sucursalStats?.pedidos_pendientes || 0)} en curso
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white px-4 py-3.5 rounded-xl border border-slate-200/90">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold">Tráfico & Publicidad Web</span>
-            <Eye className="w-4 h-4 text-blue-600" />
+            <span className="text-[11px] font-semibold">Tráfico web y banners</span>
+            <Eye className="w-4 h-4 text-slate-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 font-mono">
+          <div className="text-xl font-extrabold text-slate-900 mt-1 tabular-nums">
             {totalVisitas} visitas
           </div>
-          <div className="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-2">
-            <span>{visitantesUnicos} únicos</span>
-            <span>•</span>
-            <span>{pctMobile}% Celular</span>
-            <span>•</span>
-            <span>CTR Banners: {publicidad.ctr}</span>
+          <div className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
+            {visitantesUnicos} únicos · {pctMobile}% mobile · CTR {publicidad.ctr}
           </div>
         </div>
       </div>
@@ -368,18 +359,17 @@ export default function MetricasPage() {
       </div>
 
       {/* 3. Tabla Responsiva de Carritos en la Nube (Activos / Abandonados por Dispositivo) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-native overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200/80 flex items-center justify-between">
           <div>
             <h2
               id="cloud-carts-caption"
-              className="text-sm font-extrabold text-slate-900"
+              className="text-sm font-bold text-slate-900"
             >
-              Carritos en la Nube en Vivo ({cloudCarts.length})
+              Carritos en la nube en vivo ({cloudCarts.length})
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Qué cortes tiene cada visitante en su carrito, desde qué
-              dispositivo navega y hasta qué paso del checkout llegó.
+            <p className="text-xs text-slate-500">
+              Qué cortes tiene cada visitante en su carrito, desde qué dispositivo navega y hasta qué paso llegó.
             </p>
           </div>
         </div>
@@ -393,29 +383,19 @@ export default function MetricasPage() {
             tabIndex={0}
             role="region"
             aria-labelledby="cloud-carts-caption"
-            className="overflow-x-auto max-h-[420px]"
+            className="erp-table-wrapper"
           >
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-extrabold">
+            <table className="erp-table min-w-[780px]">
+              <thead>
                 <tr>
-                  <th scope="col" className="py-3 px-4">
-                    Visitante / Dispositivo
-                  </th>
-                  <th scope="col" className="py-3 px-4">
-                    Último Paso / Estado
-                  </th>
-                  <th scope="col" className="py-3 px-4">
-                    Cortes en el Carrito
-                  </th>
-                  <th scope="col" className="py-3 px-4">
-                    Total Estimado
-                  </th>
-                  <th scope="col" className="py-3 px-4">
-                    Última Actividad
-                  </th>
+                  <th scope="col">Visitante / Dispositivo</th>
+                  <th scope="col">Último paso</th>
+                  <th scope="col">Cortes en carrito</th>
+                  <th scope="col" className="text-right">Total estimado</th>
+                  <th scope="col">Última actividad</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {cloudCarts.map((cart) => {
                   const items = Array.isArray(cart.items) ? cart.items : [];
                   const isMobile =
