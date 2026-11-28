@@ -169,7 +169,9 @@ httpServer.listen(PORT, async () => {
     await pool.query(
       "CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_referral_code_unique ON clientes (referral_code) WHERE referral_code IS NOT NULL;"
     );
-    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo' y 'clientes' verificados.");
+    await pool.query("ALTER TABLE banners_publicidad ADD COLUMN IF NOT EXISTS texto_secundario VARCHAR(160) DEFAULT '';");
+    await pool.query("ALTER TABLE banners_publicidad ADD COLUMN IF NOT EXISTS accion_tipo VARCHAR(40) DEFAULT 'categoria';");
+    console.log("✅ [DB Auto-Migration] Columnas e índices de 'catalogo', 'clientes' y 'banners_publicidad' verificados.");
   } catch (err) {
     console.error("⚠️ [DB Auto-Migration Error]:", err.message);
   }

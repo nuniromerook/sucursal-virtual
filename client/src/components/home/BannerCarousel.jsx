@@ -1,11 +1,90 @@
 // src/components/home/BannerCarousel.jsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Pause,
+  Play,
+} from "lucide-react";
 import { useCatalogo } from "@/context/CatalogoContext";
 import { useCart } from "@/context/CartContext";
 import { API_URL } from "@/config/api";
 
-export const BannerCarousel = ({ onSelectCategory }) => {
+function resolveBannerAction(banner) {
+  const rawType = String(banner?.accion_tipo || "").trim().toLowerCase();
+  const rawLink = String(banner?.enlace_url || "").trim();
+  const lowerLink = rawLink.toLowerCase();
+
+  if (
+    rawType === "externo" ||
+    rawType === "whatsapp" ||
+    rawType === "app" ||
+    /^https?:\/\//i.test(rawLink) ||
+    /^(tel:|mailto:)/i.test(rawLink)
+  ) {
+    const isDirectAppScheme = /^(tel:|mailto:)/i.test(rawLink);
+    return {
+      type: isDirectAppScheme ? "app_scheme" : "external",
+      url: rawLink,
+      isExternalVisual: true,
+    };
+  }
+
+  if (rawType === "modal" || lowerLink.includes("club-valette")) {
+    const target = rawLink
+      .replace(/^\/+/, "")
+      .replace(/^club-valette$/i, "club")
+      .toLowerCase();
+    return { type: "modal", target: target || "club", isExternalVisual: false };
+  }
+
+  if (rawType === "busqueda" || lowerLink.includes("?q=")) {
+    let query = rawLink;
+    if (lowerLink.includes("?q=")) {
+      try {
+        query = new URLSearchParams(rawLink.split("?")[1] || "").get("q") || "";
+      } catch {
+        query = rawLink.split("?q=")[1] || "";
+      }
+    }
+    return {
+      type: "busqueda",
+      query: query.trim(),
+      isExternalVisual: false,
+    };
+  }
+
+  // Categoría interna (soporta "combos", "/#seccion-combos", "/vacuno", etc.)
+  const cleanedCat =
+    banner?.categoria ||
+    rawLink
+      .replace(/^\/?#?seccion-/i, "")
+      .replace(/^\//, "")
+      .split(/[?#]/)[0]
+      .trim()
+      .toLowerCase();
+
+  const knownCats = [
+    "combos",
+    "asado",
+    "vacuno",
+    "cerdo",
+    "pollo",
+    "embutidos",
+    "preparados",
+    "achuras",
+    "almacen",
+  ];
+  const matchedCat =
+    knownCats.find((c) => cleanedCat === c || lowerLink.includes(c)) ||
+    "combos";
+
+  return { type: "categoria", category: matchedCat, isExternalVisual: false };
+}
+
+export const BannerCarousel = ({ onSelectCategory, onBannerAction }) => {
   const { banners, isLoadingBanners } = useCatalogo();
   const { sesionId } = useCart();
 
@@ -191,20 +270,25 @@ export const BannerCarousel = ({ onSelectCategory }) => {
       }).catch(() => {});
     }
 
+    const resolved = resolveBannerAction(banner);
+
+    if (resolved.type === "app_scheme" && resolved.url) {
+      window.location.href = resolved.url;
+      return;
+    }
+
+    if (resolved.type === "external" && resolved.url) {
+      window.open(resolved.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (resolved.type === "modal" || resolved.type === "busqueda") {
+      onBannerAction?.(resolved);
+      return;
+    }
+
     if (onSelectCategory) {
-      if (banner.categoria) {
-        onSelectCategory(banner.categoria);
-      } else if (banner.enlace_url && banner.enlace_url.includes("asado")) {
-        onSelectCategory("asado");
-      } else if (banner.enlace_url && banner.enlace_url.includes("vacuno")) {
-        onSelectCategory("vacuno");
-      } else if (banner.enlace_url && banner.enlace_url.includes("cerdo")) {
-        onSelectCategory("cerdo");
-      } else if (banner.enlace_url && banner.enlace_url.includes("pollo")) {
-        onSelectCategory("pollo");
-      } else {
-        onSelectCategory("combos");
-      }
+      onSelectCategory(resolved.category || "combos");
     }
   };
 
@@ -287,6 +371,8 @@ export const BannerCarousel = ({ onSelectCategory }) => {
             banner.descripcion ||
             "Cortes seleccionados directo de frigorífico.";
           const btnText = banner.boton_texto || banner.botonTexto || "Ver oferta";
+          const secondaryText = String(banner.texto_secundario || "").trim();
+          const actionMeta = resolveBannerAction(banner);
           const desktopImg =
             banner.imagen_desktop_url ||
             banner.imagenUrl ||
@@ -349,7 +435,7 @@ export const BannerCarousel = ({ onSelectCategory }) => {
                     {descText}
                   </p>
 
-                  <div className="mt-4 flex items-center gap-3">
+                  <div className="mt-4 flex items-center gap-3 flex-wrap">
                     <button
                       type="button"
                       onClick={() => handleAction(banner)}
@@ -359,14 +445,23 @@ export const BannerCarousel = ({ onSelectCategory }) => {
                       }`}
                     >
                       <span>{btnText}</span>
-                      <ArrowRight
-                        className="size-3.5 stroke-[2.5]"
-                        aria-hidden="true"
-                      />
+                      {actionMeta.isExternalVisual ? (
+                        <ExternalLink
+                          className="size-3.5 stroke-[2.4]"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <ArrowRight
+                          className="size-3.5 stroke-[2.5]"
+                          aria-hidden="true"
+                        />
+                      )}
                     </button>
-                    <span className="text-[11px] text-slate-300 font-medium">
-                      Hasta agotar stock
-                    </span>
+                    {secondaryText && (
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        {secondaryText}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

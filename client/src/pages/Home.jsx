@@ -21,6 +21,7 @@ export const Home = ({
   onOpenProduct,
   onOpenCustomizer,
   onOpenBranchModal,
+  onBannerAction,
   searchQuery = "",
   searchSubmitTick = 0,
   sortBy = "destacados",
@@ -372,7 +373,10 @@ export const Home = ({
 
       {/* 2. Carrusel de Banners Publicitarios Oficiales */}
       <div className="px-4 sm:px-6 pt-4 sm:pt-6">
-        <BannerCarousel onSelectCategory={handleCategoryScroll} />
+        <BannerCarousel
+          onSelectCategory={handleCategoryScroll}
+          onBannerAction={onBannerAction}
+        />
       </div>
 
       {/* 4. Sección de Combos con Scroll Horizontal Oficial */}

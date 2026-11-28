@@ -140,6 +140,31 @@ const registrarClickBanner = async (req, res) => {
   }
 };
 
+const VALID_BANNER_ACTIONS = new Set([
+  "categoria",
+  "busqueda",
+  "modal",
+  "externo",
+  "whatsapp",
+  "app",
+]);
+
+function normalizeAccionTipo(raw, enlaceUrl = "") {
+  const clean = String(raw || "").trim().toLowerCase();
+  if (VALID_BANNER_ACTIONS.has(clean)) return clean;
+  const link = String(enlaceUrl || "").trim().toLowerCase();
+  if (link.startsWith("https://wa.me/") || link.startsWith("http://wa.me/")) {
+    return "whatsapp";
+  }
+  if (link.startsWith("tel:") || link.startsWith("mailto:")) {
+    return "app";
+  }
+  if (link.startsWith("http://") || link.startsWith("https://")) {
+    return "externo";
+  }
+  return "categoria";
+}
+
 /**
  * POST /banners
  * Crea un nuevo banner publicitario (Admin)
@@ -150,10 +175,12 @@ const createBanner = async (req, res) => {
     subtitulo = "",
     imagen_desktop_url,
     imagen_mobile_url,
-    enlace_url = "/productos",
+    enlace_url = "combos",
     badge_texto = "",
     badge_color = "rojo",
     boton_texto = "Ver más",
+    texto_secundario = "",
+    accion_tipo,
     orden = 0,
     activo = true,
   } = req.body;
@@ -162,13 +189,17 @@ const createBanner = async (req, res) => {
     return res.status(400).json({ error: "La URL de imagen es obligatoria" });
   }
 
+  const normalizedAction = normalizeAccionTipo(accion_tipo, enlace_url);
+  const secondaryClean = String(texto_secundario || "").trim().slice(0, 160);
+
   try {
     const result = await pool.query(
       `INSERT INTO banners_publicidad (
          titulo, subtitulo, imagen_desktop_url, imagen_mobile_url,
-         enlace_url, badge_texto, badge_color, boton_texto, orden, activo
+         enlace_url, badge_texto, badge_color, boton_texto,
+         texto_secundario, accion_tipo, orden, activo
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         titulo || "Nuevo Banner",
@@ -179,6 +210,8 @@ const createBanner = async (req, res) => {
         badge_texto,
         badge_color,
         boton_texto,
+        secondaryClean,
+        normalizedAction,
         orden,
         activo,
       ]
@@ -205,9 +238,20 @@ const updateBanner = async (req, res) => {
     badge_texto,
     badge_color,
     boton_texto,
+    texto_secundario,
+    accion_tipo,
     orden,
     activo,
   } = req.body;
+
+  const hasTextoSecundario = texto_secundario !== undefined;
+  const textoSecundarioClean = hasTextoSecundario
+    ? String(texto_secundario || "").trim().slice(0, 160)
+    : null;
+  const accionTipoClean =
+    accion_tipo !== undefined
+      ? normalizeAccionTipo(accion_tipo, enlace_url)
+      : null;
 
   try {
     const result = await pool.query(
@@ -220,9 +264,11 @@ const updateBanner = async (req, res) => {
            badge_texto = COALESCE($6, badge_texto),
            badge_color = COALESCE($7, badge_color),
            boton_texto = COALESCE($8, boton_texto),
-           orden = COALESCE($9, orden),
-           activo = COALESCE($10, activo)
-       WHERE id = $11
+           texto_secundario = CASE WHEN $9::boolean THEN $10 ELSE texto_secundario END,
+           accion_tipo = COALESCE($11, accion_tipo),
+           orden = COALESCE($12, orden),
+           activo = COALESCE($13, activo)
+       WHERE id = $14
        RETURNING *`,
       [
         titulo,
@@ -233,6 +279,9 @@ const updateBanner = async (req, res) => {
         badge_texto,
         badge_color,
         boton_texto,
+        hasTextoSecundario,
+        textoSecundarioClean,
+        accionTipoClean,
         orden,
         activo,
         id,

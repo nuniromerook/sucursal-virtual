@@ -4,6 +4,7 @@ import {
   RotateCw,
   Check,
   ChevronLeft,
+  ChevronRight,
   X,
   ReceiptText,
   Store,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   ClipboardCheck,
+  ClipboardList,
   UserCheck,
   CreditCard,
 } from "lucide-react";
@@ -115,6 +117,7 @@ export const OrderTrackingModal = ({
   orderId = null,
   onClose,
   onBack,
+  onOpenOrderHistory,
 }) => {
   const { showToast } = useToast();
   const { activeOrderId, setActiveOrderId, sesionId } = useCart();
@@ -469,10 +472,22 @@ export const OrderTrackingModal = ({
                   estado en tiempo real.
                 </p>
               </div>
+              {onOpenOrderHistory && (
+                <button
+                  type="button"
+                  onClick={onOpenOrderHistory}
+                  className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-[#003366] hover:bg-valette-dark text-white text-xs font-extrabold shadow-2xs active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <ClipboardList className="size-4" aria-hidden="true" />
+                  <span>Ver historial de compras</span>
+                  <ChevronRight className="size-3.5 stroke-[2.5]" aria-hidden="true" />
+                </button>
+              )}
             </div>
           ) : (
-            /* TICKET DIGITAL DE COMPRA */
-            <article className="bg-white rounded-3xl border border-slate-200/90 shadow-native overflow-hidden">
+            <div className="space-y-3">
+              {/* TICKET DIGITAL DE COMPRA */}
+              <article className="bg-white rounded-3xl border border-slate-200/90 shadow-native overflow-hidden">
               {/* 1. Cabecera del Ticket: Marca, Fecha y Comprobante */}
               <div className="px-5 pt-4 pb-3.5 border-b border-slate-100 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -782,6 +797,33 @@ export const OrderTrackingModal = ({
                 </div>
               </div>
             </article>
+
+            {onOpenOrderHistory && (
+              <button
+                type="button"
+                onClick={onOpenOrderHistory}
+                className="w-full px-4 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+              >
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className="size-8 rounded-xl bg-[#EFF4F9] text-[#003366] flex items-center justify-center shrink-0">
+                    <ClipboardList className="size-4 stroke-[2.2]" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-extrabold text-slate-900 group-hover:text-[#003366] transition-colors">
+                      Ver historial de compras
+                    </span>
+                    <span className="block text-[11px] text-slate-500">
+                      Consultá todos tus pedidos anteriores
+                    </span>
+                  </span>
+                </span>
+                <ChevronRight
+                  className="size-4 text-slate-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all shrink-0 stroke-[2.25]"
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+            </div>
           )}
         </div>
       </div>

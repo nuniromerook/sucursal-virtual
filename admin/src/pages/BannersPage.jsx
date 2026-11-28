@@ -21,16 +21,56 @@ import { useAuth } from "../context/AuthContext";
 import { uploadImageToCloudinary } from "../utils/cloudinary";
 import { formatMoney } from "../utils/formatters";
 
+const ACTION_TYPE_OPTIONS = [
+  { value: "categoria", label: "Ir a sección de la tienda" },
+  { value: "modal", label: "Abrir sección de la app (Club / Perfil / Sucursal)" },
+  { value: "busqueda", label: "Buscar en el catálogo" },
+  { value: "whatsapp", label: "Abrir WhatsApp (app / web)" },
+  { value: "externo", label: "Enlace externo (pestaña nueva)" },
+  { value: "app", label: "Abrir app o enlace directo (tel / maps / IG)" },
+];
+
+const CATEGORY_TARGETS = [
+  { value: "combos", label: "Sección Combos" },
+  { value: "asado", label: "Sector Asado" },
+  { value: "vacuno", label: "Cortes Vacunos" },
+  { value: "cerdo", label: "Cortes de Cerdo" },
+  { value: "pollo", label: "Pollo & Granja" },
+  { value: "embutidos", label: "Embutidos Artesanales" },
+  { value: "preparados", label: "Preparados Caseros" },
+  { value: "achuras", label: "Achuras Frescas" },
+  { value: "almacen", label: "Almacén Parrillero" },
+];
+
+const MODAL_TARGETS = [
+  { value: "club", label: "Club Valette (Puntos y Premios)" },
+  { value: "perfil", label: "Mi Perfil / Registro" },
+  { value: "sucursal", label: "Sucursal y Dirección de Envío" },
+  { value: "pedidos", label: "Seguimiento / Mis Compras" },
+  { value: "carrito", label: "Abrir Carrito" },
+];
+
+const ACTION_LABELS = {
+  categoria: "Sección",
+  modal: "App",
+  busqueda: "Búsqueda",
+  whatsapp: "WhatsApp",
+  externo: "Externo",
+  app: "App / Enlace",
+};
+
 const EMPTY_FORM = {
   id: null,
   titulo: "",
   subtitulo: "",
   imagen_desktop_url: "",
   imagen_mobile_url: "",
-  enlace_url: "/#seccion-combos",
+  accion_tipo: "categoria",
+  enlace_url: "combos",
   badge_texto: "OFERTA VALETTE",
   badge_color: "rojo",
   boton_texto: "Ver oferta",
+  texto_secundario: "",
   orden: 0,
   activo: true,
 };
@@ -85,16 +125,35 @@ export default function BannersPage() {
   };
 
   const handleOpenEdit = (b) => {
+    const inferredAction =
+      b.accion_tipo ||
+      (/^https?:\/\/wa\.me\//i.test(b.enlace_url || "")
+        ? "whatsapp"
+        : /^https?:\/\//i.test(b.enlace_url || "")
+          ? "externo"
+          : /^(tel:|mailto:)/i.test(b.enlace_url || "")
+            ? "app"
+            : "categoria");
+
+    const cleanedTarget =
+      inferredAction === "categoria"
+        ? String(b.enlace_url || "combos")
+            .replace(/^\/?#?seccion-/i, "")
+            .replace(/^\//, "") || "combos"
+        : b.enlace_url || "";
+
     setForm({
       id: b.id,
       titulo: b.titulo || "",
       subtitulo: b.subtitulo || "",
       imagen_desktop_url: b.imagen_desktop_url || "",
       imagen_mobile_url: b.imagen_mobile_url || "",
-      enlace_url: b.enlace_url || "/#seccion-combos",
+      accion_tipo: inferredAction,
+      enlace_url: cleanedTarget,
       badge_texto: b.badge_texto || "",
       badge_color: b.badge_color || "rojo",
       boton_texto: b.boton_texto || "Ver oferta",
+      texto_secundario: b.texto_secundario || "",
       orden: Number(b.orden) || 0,
       activo: b.activo !== false,
     });
@@ -142,10 +201,12 @@ export default function BannersPage() {
           imagen_desktop_url: form.imagen_desktop_url.trim(),
           imagen_mobile_url:
             form.imagen_mobile_url.trim() || form.imagen_desktop_url.trim(),
-          enlace_url: form.enlace_url.trim() || "/#seccion-combos",
+          accion_tipo: form.accion_tipo || "categoria",
+          enlace_url: form.enlace_url.trim() || "combos",
           badge_texto: form.badge_texto.trim(),
           badge_color: form.badge_color,
           boton_texto: form.boton_texto.trim() || "Ver más",
+          texto_secundario: form.texto_secundario.trim(),
           orden: Number(form.orden) || 0,
           activo: Boolean(form.activo),
         }),
@@ -367,9 +428,15 @@ export default function BannersPage() {
               </div>
 
               <div className="p-3 flex items-center justify-between gap-2 text-xs">
-                <span className="text-[11px] text-slate-500 truncate">
-                  Destino: <b className="text-slate-700">{b.enlace_url || "/"}</b>
-                </span>
+                <div className="min-w-0 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[#002244] text-[10px] font-extrabold uppercase shrink-0">
+                    {ACTION_LABELS[b.accion_tipo] || "Sección"}
+                  </span>
+                  <span className="text-[11px] text-slate-500 truncate">
+                    <b className="text-slate-700">{b.enlace_url || "/"}</b>
+                    {b.texto_secundario ? ` · ${b.texto_secundario}` : ""}
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
@@ -466,7 +533,7 @@ export default function BannersPage() {
                     onChange={(e) =>
                       setForm({ ...form, badge_texto: e.target.value })
                     }
-                    placeholder="🔥 OFERTA WEB"
+                    placeholder="NUEVOS COMBOS"
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:border-[#002244]"
                   />
                 </div>
@@ -486,23 +553,52 @@ export default function BannersPage() {
                   />
                 </div>
 
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Texto secundario junto al botón{" "}
+                    <span className="font-normal text-slate-400">
+                      (opcional — si queda vacío no se muestra)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={160}
+                    value={form.texto_secundario}
+                    onChange={(e) =>
+                      setForm({ ...form, texto_secundario: e.target.value })
+                    }
+                    placeholder="ej: Hasta agotar stock, Respondemos en el día, Gratis y sin vencimiento..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:border-[#002244]"
+                  />
+                </div>
+
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Destino al hacer clic
+                    Tipo de acción del botón
                   </label>
                   <select
-                    value={form.enlace_url}
-                    onChange={(e) =>
-                      setForm({ ...form, enlace_url: e.target.value })
-                    }
+                    value={form.accion_tipo}
+                    onChange={(e) => {
+                      const nextType = e.target.value;
+                      let defaultTarget = "";
+                      if (nextType === "categoria") defaultTarget = "combos";
+                      else if (nextType === "modal") defaultTarget = "club";
+                      else if (nextType === "whatsapp")
+                        defaultTarget =
+                          "https://wa.me/5491162166222?text=Hola%20Abastecedora%20Valette!";
+                      setForm({
+                        ...form,
+                        accion_tipo: nextType,
+                        enlace_url: defaultTarget,
+                      });
+                    }}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold outline-none focus:bg-white focus:border-[#002244]"
                   >
-                    <option value="/#seccion-combos">Sección Combos</option>
-                    <option value="/#seccion-asado">Sección Asado</option>
-                    <option value="/#seccion-vacuno">Cortes Vacunos</option>
-                    <option value="/#seccion-cerdo">Cortes de Cerdo</option>
-                    <option value="/#seccion-pollo">Pollo & Granja</option>
-                    <option value="/#seccion-preparados">Preparados Caseros</option>
+                    {ACTION_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -516,6 +612,70 @@ export default function BannersPage() {
                     onChange={(e) => setForm({ ...form, orden: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono font-bold outline-none focus:bg-white focus:border-[#002244]"
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {form.accion_tipo === "categoria"
+                      ? "Sección destino"
+                      : form.accion_tipo === "modal"
+                        ? "Pantalla / Modal de la app"
+                        : form.accion_tipo === "busqueda"
+                          ? "Término a buscar en el catálogo"
+                          : form.accion_tipo === "whatsapp"
+                            ? "Enlace de WhatsApp (wa.me)"
+                            : form.accion_tipo === "externo"
+                              ? "URL externa (se abre en pestaña nueva)"
+                              : "Enlace de app (https://, tel:, mailto:, maps)"}
+                  </label>
+
+                  {form.accion_tipo === "categoria" ? (
+                    <select
+                      value={form.enlace_url}
+                      onChange={(e) =>
+                        setForm({ ...form, enlace_url: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold outline-none focus:bg-white focus:border-[#002244]"
+                    >
+                      {CATEGORY_TARGETS.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : form.accion_tipo === "modal" ? (
+                    <select
+                      value={form.enlace_url}
+                      onChange={(e) =>
+                        setForm({ ...form, enlace_url: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold outline-none focus:bg-white focus:border-[#002244]"
+                    >
+                      {MODAL_TARGETS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={form.enlace_url}
+                      onChange={(e) =>
+                        setForm({ ...form, enlace_url: e.target.value })
+                      }
+                      placeholder={
+                        form.accion_tipo === "busqueda"
+                          ? "ej: asado, milanesas, bondiola..."
+                          : form.accion_tipo === "whatsapp"
+                            ? "https://wa.me/5491162166222?text=Hola!"
+                            : form.accion_tipo === "externo"
+                              ? "https://instagram.com/abastecedoravalette"
+                              : "tel:+5491135534033 o https://maps.google.com/..."
+                      }
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[11px] outline-none focus:bg-white focus:border-[#002244]"
+                    />
+                  )}
                 </div>
               </div>
 

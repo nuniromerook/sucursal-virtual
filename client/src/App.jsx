@@ -200,6 +200,34 @@ function AppContent() {
     setIsTrackingModalOpen(true);
   }, []);
 
+  const handleBannerAction = useCallback(
+    (action) => {
+      if (!action) return;
+      if (action.type === "busqueda" && action.query) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("q", action.query);
+        setSearchParams(nextParams, { replace: true });
+        setSearchSubmitTick((t) => t + 1);
+        return;
+      }
+      if (action.type === "modal") {
+        const target = String(action.target || "").toLowerCase();
+        if (target === "club" || target === "puntos" || target === "points") {
+          handleOpenProfile("points");
+        } else if (target === "perfil" || target === "cuenta" || target === "auth") {
+          handleOpenProfile("main");
+        } else if (target === "sucursal" || target === "direccion") {
+          setIsBranchModalOpen(true);
+        } else if (target === "pedidos" || target === "compras") {
+          handleOpenTracking(null);
+        } else if (target === "carrito") {
+          setIsCartOpen(true);
+        }
+      }
+    },
+    [searchParams, setSearchParams, handleOpenTracking, setIsCartOpen],
+  );
+
   const handleProceedToCheckout = useCallback(() => {
     if (!isAuthenticated) {
       // Guardar carrito en caché local antes de derivar al login/registro
@@ -301,6 +329,7 @@ function AppContent() {
           onOpenProduct={openProductInUrl}
           onOpenCustomizer={openProductInUrl}
           onOpenBranchModal={() => setIsBranchModalOpen(true)}
+          onBannerAction={handleBannerAction}
           searchQuery={searchQuery}
           searchSubmitTick={searchSubmitTick}
           sortBy={sortBy}
@@ -384,6 +413,11 @@ function AppContent() {
           setTrackingOrderId(null);
         }}
         onClose={closeAllModals}
+        onOpenOrderHistory={() => {
+          setIsTrackingModalOpen(false);
+          setTrackingOrderId(null);
+          handleOpenProfile("orders");
+        }}
       />
 
       <ProfileModal
